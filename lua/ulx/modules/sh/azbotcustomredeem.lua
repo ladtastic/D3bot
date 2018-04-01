@@ -37,7 +37,7 @@ if engine.ActiveGamemode() == "zombiesurvival" then
 		tierByPl[pl] = nextTier
 		local cooldown = nextTier * 30
 		nextByPl[pl] = CurTime() + cooldown
-		local response = translate.Format("azbot_selfredeemcooldown").." "..math.ceil(cooldown).." "..translate.Format("azbot_selfredeemrecentysec")
+		local response = translate.ClientFormat(pl, "azbot_selfredeemcooldown", math.ceil(cooldown))
 		pl:ChatPrint(response)
 		pl:PrintMessage(HUD_PRINTCENTER, response)
 		pl:ChangeTeam(TEAM_HUMAN)
