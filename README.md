@@ -1,5 +1,6 @@
 # Fork
 This is a fork of [/Azurblau/AzBot](https://github.com/Azurblau/AzBot) with new features and some bugfixes.
+This branch of AzBot alters how redeeming works so it's compatible with [/MrCraigTunstall/zombiesurvival](https://github.com/MrCraigTunstall/zombiesurvival)'s Zombie Survival.
 
 Here is a list of notable changes compared to the original version:
 - Unidirectional links.
