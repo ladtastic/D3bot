@@ -36,7 +36,7 @@ return function(lib)
 	lib.MaintainBotRolesAutomatically = lib.HasMapNavMesh
 	lib.IsSelfRedeemEnabled = lib.HasMapNavMesh
 	lib.IsBonusEnabled = lib.HasMapNavMesh
-	lib.SelfRedeemWaveMax = 4
+	lib.SelfRedeemWaveMax = 1
 	lib.BotHooksId = tostring({})
 	lib.BotClasses = {
 		"Zombie", "Zombie", "Zombie",
