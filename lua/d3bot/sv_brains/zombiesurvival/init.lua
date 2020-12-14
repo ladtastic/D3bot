@@ -1,12 +1,10 @@
-local BRAINS = D3bot.Brains
-
 include("general.lua")
 
-D3bot.AssignBrain = function(bot)
-	local mem = bot.D3bot
+local D3bot = D3bot
+local BRAINS = D3bot.Brains
 
-	mem.Brain = BRAINS.General
-	if mem.Brain.CreateCallback then
-		mem.Brain.CreateCallback(bot)
-	end
+-- Assigns a suitable brain to the bot
+D3bot.AssignBrain = function(bot, mem)
+	-- Assign default brain
+	BRAINS.General(bot, mem)
 end

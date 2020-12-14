@@ -1,3 +1,3 @@
 AddCSLuaFile()
 
-include("d3bot/init.lua")
+include("d3bot/sh_init.lua")

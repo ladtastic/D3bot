@@ -1,3 +1,5 @@
+AddCSLuaFile()
+
 -- Credits for the ULX fix to C0nw0nk https://github.com/C0nw0nk/Garrys-Mod-Fake-Players/blob/f9561c3f8c3dc06dddedac92dfaf437af21a9d83/addons/fakeplayers/lua/autorun/server/sv_fakeplayers.lua#L217
 if (ULib and ULib.bans) then
 	--ULX has some strange bug / issue with NextBot's and Player Authentication.
