@@ -1,4 +1,5 @@
 {
     "cSpell.words": [],
-    "editor.formatOnSave": true
+    "editor.formatOnSave": false,
+    "lua.format.useTabs": true
 }
