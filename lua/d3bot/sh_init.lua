@@ -11,7 +11,6 @@ D3bot.Locomotion = D3bot.Locomotion or {}
 D3bot.Brains = D3bot.Brains or {}
 
 -- Shared files
-include("ulx/modules/sh/d3bot_ulx_fix.lua")
 
 -- Client files
 if CLIENT then
@@ -33,6 +32,7 @@ if SERVER then
 	include("sv_names/" .. nameScript .. ".lua")
 
 	-- Other server side scripts
+	include("sv_ulx_fix.lua")
 	include("sv_util.lua")
 	include("sv_control.lua")
 	include("sv_supervisor.lua")
