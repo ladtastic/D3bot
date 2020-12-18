@@ -1,5 +1,7 @@
 local D3bot = D3bot
 
+-- TODO: Make supervisor gamemode specific
+
 local function MaintainBotRoles()
 	local bots = player.GetBots()
 

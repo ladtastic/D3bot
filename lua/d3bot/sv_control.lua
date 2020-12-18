@@ -3,6 +3,8 @@ local D3bot = D3bot
 local function ControlDistributor(bot, cUserCmd)
 	local mem = bot.D3bot
 
+	-- BUG: This is not called for dead bots for some reason. So there is need for gamemode specific code to bring back players.
+
 	-- Don't take control if there is no D3bot structure
 	if not mem then
 		return
@@ -12,7 +14,9 @@ local function ControlDistributor(bot, cUserCmd)
 	if not mem.Brain then
 		-- "Insane in the membrane"
 		-- "Crazy insane, got no brain"
-		D3bot.AssignBrain(bot, mem)
+		if D3bot.AssignBrain then
+			D3bot.AssignBrain(bot, mem)
+		end
 	end
 	-- Run brain "think" callback. Ideally this will resume one or more coroutines, depending on how complex the brain is.
 	if mem.Brain then
