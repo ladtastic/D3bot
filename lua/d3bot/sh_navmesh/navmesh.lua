@@ -20,7 +20,7 @@ end
 
 -- Will return the edge that is built with the two given points, if there is one.
 function NAV_MESH:FindEdge2P(p1, p2)
-	for edge in ipairs(self.EdgesMap) do
+	for edge in pairs(self.EdgesMap) do
 		if edge:ConsistsOfPoints(p1, p2) then return edge end
 	end
 
@@ -48,7 +48,7 @@ end
 
 -- Will return the triangle that is built with the three given edges, if there is one.
 function NAV_MESH:FindTriangle3E(e1, e2, e3)
-	for triangle in ipairs(self.TrianglesMap) do
+	for triangle in pairs(self.TrianglesMap) do
 		if triangle:ConsistsOfEdges(e1, e2, e3) then return triangle end
 	end
 
@@ -77,12 +77,12 @@ end
 -- Draw the navmesh into a 3D rendering context.
 function NAV_MESH:Render3D()
 	-- Draw edges
-	for edge in ipairs(self.EdgesMap) do
+	for edge in pairs(self.EdgesMap) do
 		edge:Render3D()
 	end
 
 	-- Draw triangles
-	for triangle in ipairs(self.TrianglesMap) do
+	for triangle in pairs(self.TrianglesMap) do
 		triangle:Render3D()
 	end
 end
