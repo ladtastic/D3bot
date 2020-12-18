@@ -1,4 +1,5 @@
 local D3bot = D3bot
+local UTIL = D3bot.Util
 
 -- http://www.fantasynamegenerators.com/username-generator.php
 local names = {
@@ -516,15 +517,15 @@ local names = {
 	"Zebrawl"
 }
 
-local tempNames = nil
-D3bot.GetBotName = function()
+local tempNames = {}
+function D3bot.GetBotName()
 	if #tempNames == 0 then
 		tempNames = table.Copy(names)
 	end
 	local name = table.remove(tempNames, math.random(#tempNames))
 
 	-- Check if the username already exists
-	local usernames = D3bot.Util.GetUsernamesMap()
+	local usernames = UTIL.GetUsernamesMap()
 	if usernames[name] then
 		local number = 2
 		while usernames[string.format("%s(%i)", name, number)] do

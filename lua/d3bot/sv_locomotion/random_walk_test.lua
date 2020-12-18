@@ -2,7 +2,7 @@ local D3bot = D3bot
 local LOCOMOTION = D3bot.Locomotion
 
 -- Add new locomotion controller
-LOCOMOTION.RandomWalkTest = function(bot, mem, duration)
+function LOCOMOTION.RandomWalkTest(bot, mem, duration)
 	-- Init
 	mem.Locomotion = {}
 

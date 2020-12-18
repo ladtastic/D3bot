@@ -2,7 +2,7 @@ local D3bot = D3bot
 local LOCOMOTION = D3bot.Locomotion
 
 -- Add new locomotion controller
-LOCOMOTION.SinCosTest = function(bot, mem, duration)
+function LOCOMOTION.SinCosTest(bot, mem, duration)
 	-- Init
 	mem.Locomotion = {}
 

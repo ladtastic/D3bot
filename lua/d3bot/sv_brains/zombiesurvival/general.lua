@@ -4,7 +4,7 @@ local BRAINS = D3bot.Brains
 local LOCOMOTION = D3bot.Locomotion
 
 -- Add new brain
-BRAINS.General = function(bot, mem)
+function BRAINS.General(bot, mem)
 	-- Init brain
 	mem.Brain = {}
 
@@ -17,6 +17,9 @@ BRAINS.General = function(bot, mem)
 
 			-- Walk in some random directino for 3 seconds
 			LOCOMOTION.RandomWalkTest(bot, mem, 3)
+
+			-- Wait 2 seconds
+			coroutine.wait(2)
 
 			-- A new brain will be assigned at the end of all logic
 		end

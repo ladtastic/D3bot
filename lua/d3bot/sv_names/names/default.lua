@@ -1,10 +1,11 @@
 local D3bot = D3bot
+local UTIL = D3bot.Util
 
-D3bot.GetBotName = function()
+function D3bot.GetBotName()
 	local name = "D3bot"
 
 	-- Check if the username already exists
-	local usernames = D3bot.Util.GetUsernamesMap()
+	local usernames = UTIL.GetUsernamesMap()
 	if usernames[name] then
 		local number = 2
 		while usernames[string.format("%s %i", name, number)] do
