@@ -12,6 +12,8 @@ function NAV_EDGE:New(p1, p2)
 		Points = {UTIL.RoundVector(p1), UTIL.RoundVector(p2)}
 	}
 
+	-- TODO: Selfcheck
+
 	setmetatable(obj, self)
 	self.__index = self
 	return obj
@@ -24,4 +26,11 @@ function NAV_EDGE:ConsistsOfPoints(p1, p2)
 	if self.Points[1] == p1 and self.Points[2] == p2 then return true end
 	if self.Points[1] == p2 and self.Points[2] == p1 then return true end
 	return false
+end
+
+-- Draw the edge into a 3D rendering context.
+function NAV_EDGE:Render3D()
+	local p1, p2 = self.Points[1], self.Points[2]
+
+	render.DrawLine(p1, p2)
 end
