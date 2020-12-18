@@ -26,3 +26,13 @@ function UTIL.ResumeCoroutine(bot, mem, co)
 
 	return true
 end
+
+-- Floors the coordinates of a vector
+function UTIL.FloorVector(vec)
+	return Vector(math.floor(vec[1]), math.floor(vec[2]), math.floor(vec[3]))
+end
+
+-- Round the coordinates of a vector
+function UTIL.RoundVector(vec)
+	return Vector(math.floor(vec[1] + 0.5), math.floor(vec[2] + 0.5), math.floor(vec[3] + 0.5))
+end

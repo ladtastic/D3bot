@@ -13,7 +13,7 @@ function NAV_MESH:New()
 	}
 
 	setmetatable(obj, self)
-	self.__this = self
+	self.__index = self
 	return obj
 end
 
@@ -28,8 +28,10 @@ end
 
 -- Will create a new edge with the given two points, or return an already existing edge.
 function NAV_MESH:FindOrCreateEdge(p1, p2)
-	local edge = NAV_MESH:FindEdge(p1, p2)
+	local edge = self:FindEdge(p1, p2)
 	if edge then return edge end
 
-	return NAV_EDGE:New(p1, p2)
+	local newEdge = NAV_EDGE:New(p1, p2)
+	table.insert(self.Edges, newEdge)
+	return newEdge
 end

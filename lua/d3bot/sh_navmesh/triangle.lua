@@ -12,6 +12,6 @@ function NAV_TRIANGLE:New(e1, e2, e3)
 	}
 
 	setmetatable(obj, self)
-	self.__this = self
+	self.__index = self
 	return obj
 end
