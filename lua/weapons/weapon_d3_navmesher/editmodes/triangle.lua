@@ -3,6 +3,7 @@ AddCSLuaFile()
 local D3bot = D3bot
 local EDIT_MODES = D3_NAVMESHER_EDIT_MODES
 
+-- Add edit mode to list
 EDIT_MODES.TriangleAddRemove = EDIT_MODES.TriangleAddRemove or {}
 local THIS_EDIT_MODE = EDIT_MODES.TriangleAddRemove
 
@@ -11,7 +12,7 @@ THIS_EDIT_MODE.Name = "Create & Remove triangles"
 
 -- Set and overwrite current edit mode of the given weapon.
 -- This will create an instance of the edit mode class, and store it in the weapon's EditMode field.
-function THIS_EDIT_MODE:ApplyToWeapon(wep)
+function THIS_EDIT_MODE:AssignToWeapon(wep)
 	local mode = {}
 
 	setmetatable(mode, self)
@@ -39,7 +40,7 @@ function THIS_EDIT_MODE:PrimaryAttack(wep)
 		D3bot.Navmesh:FindOrCreateTriangle3P(self.TempPoints[1], self.TempPoints[2], self.TempPoints[3])
 
 		-- Reset build mode and its state
-		THIS_EDIT_MODE:ApplyToWeapon(wep)
+		THIS_EDIT_MODE:AssignToWeapon(wep)
 	end
 
 	-- Coroutine for primary actions
@@ -65,7 +66,7 @@ end
 -- Reload button action.
 function THIS_EDIT_MODE:Reload(wep)
 	-- Reset build mode and its state
-	THIS_EDIT_MODE:ApplyToWeapon(wep)
+	THIS_EDIT_MODE:AssignToWeapon(wep)
 
 	return true
 end

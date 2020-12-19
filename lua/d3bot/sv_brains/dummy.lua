@@ -4,8 +4,8 @@ local BRAINS = D3bot.Brains
 local LOCOMOTION = D3bot.Locomotion
 
 -- Add new brain.
-BRAINS.General = BRAINS.General or {}
-local THIS_BRAIN = BRAINS.General
+BRAINS.Dummy = BRAINS.Dummy or {}
+local THIS_BRAIN = BRAINS.Dummy
 
 -- This will assign the brain to the given bot (and the corresponding mem).
 function THIS_BRAIN:AssignToBot(bot, mem)
@@ -22,15 +22,18 @@ end
 
 -- Think coroutine. Put all the important stuff in here.
 function THIS_BRAIN:Think_Coroutine(bot, mem)
+	--bot:Say("I had a stronk")
 
-	-- Walk in an arc for 3 seconds
-	LOCOMOTION.SinCosTest(bot, mem, 3)
+	-- Do dumb gesture/sequence
+	--LOCOMOTION.Gesture(bot, mem, "taunt_robot")
 
-	-- Walk in some random directino for 3 seconds
-	LOCOMOTION.RandomWalkTest(bot, mem, 3)
+	-- Jump several times
+	for i = 1, 2, 1 do
+		bot:EmitSound("vo/k_lab/kl_ahhhh.wav")
+		LOCOMOTION.JumpUp(bot, mem)
+	end
 
-	-- Wait 2 seconds
-	coroutine.wait(2)
+	coroutine.wait(math.random() * 10)
 
 	-- A new brain will be assigned automatically after here
 end

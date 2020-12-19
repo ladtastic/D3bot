@@ -30,6 +30,7 @@ end
 -- Server files
 if SERVER then
 	-- Include the gamemode specific brains
+	include("sv_brains/dummy.lua") -- Dummy brain that takes over the bot on error
 	include("sv_brains/" .. engine.ActiveGamemode() .. "/init.lua") -- ActiveGamemode returns the gamemode's folder name, so it will always be a valid path
 
 	-- Include general locomotion controllers

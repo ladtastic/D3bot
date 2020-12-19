@@ -6,5 +6,5 @@ local BRAINS = D3bot.Brains
 -- Assigns a suitable brain to the bot
 function D3bot.AssignBrain(bot, mem)
 	-- Assign default brain
-	BRAINS.General(bot, mem)
+	BRAINS.General:AssignToBot(bot, mem)
 end

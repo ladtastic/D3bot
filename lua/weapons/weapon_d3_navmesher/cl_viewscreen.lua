@@ -1,7 +1,7 @@
 -- Based on https://github.com/Facepunch/garrysmod/blob/master/garrysmod/gamemodes/sandbox/entities/weapons/gmod_tool/cl_viewscreen.lua
 
 local matScreen = Material("models/weapons/v_toolgun/screen")
-local txBackground = surface.GetTextureID("hunter/myplastic")
+local txBackground = surface.GetTextureID("models/weapons/v_toolgun/screen_bg")
 local TEX_SIZE = 256
 
 -- GetRenderTarget returns the texture if it exists, or creates it if it doesn't

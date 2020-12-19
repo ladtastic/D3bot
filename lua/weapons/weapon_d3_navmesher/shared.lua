@@ -86,5 +86,5 @@ function SWEP:ChangeEditMode(modeIdentifier)
 	local editMode = D3_NAVMESHER_EDIT_MODES[modeIdentifier]
 	if not editMode then return false end
 
-	return editMode:ApplyToWeapon(self)
+	return editMode:AssignToWeapon(self)
 end

@@ -21,10 +21,9 @@ local function ControlDistributor(bot, cUserCmd)
 	-- Run brain "think" callback. Ideally this will resume one or more coroutines, depending on how complex the brain is.
 	if mem.Brain then
 		if mem.Brain.Callback then
-			mem.Brain.Callback(bot, mem)
+			mem.Brain:Callback(bot, mem)
 		end
 	end
-	--mem.Brain = nil -- Reset brain for debug reasons
 
 	-- Check if there is a locomotion control callback
 	if mem.Locomotion == nil or mem.Locomotion.Callback == nil then
