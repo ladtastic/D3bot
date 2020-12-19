@@ -15,10 +15,6 @@ function LOCOMOTION.SinCosTest(bot, mem, duration)
 	end
 
 	-- Wait for x amount of time
-	--local stopTime = CurTime() + duration
-	--while CurTime() < stopTime do
-	--	coroutine.yield()
-	--end
 	coroutine.wait(duration)
 
 	-- Cleanup

@@ -37,7 +37,9 @@ function THIS_EDIT_MODE:PrimaryAttack(wep)
 	table.insert(self.TempPoints, trRes.HitPos)
 
 	if #self.TempPoints == 3 then
-		D3bot.Navmesh:FindOrCreateTriangle3P(self.TempPoints[1], self.TempPoints[2], self.TempPoints[3])
+		if D3bot.Navmesh then
+			D3bot.Navmesh:FindOrCreateTriangle3P(self.TempPoints[1], self.TempPoints[2], self.TempPoints[3])
+		end
 
 		-- Reset build mode and its state
 		THIS_EDIT_MODE:AssignToWeapon(wep)

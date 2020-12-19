@@ -17,26 +17,49 @@ D3bot.NAV_MESH = D3bot.NAV_MESH or {} -- NAV_MESH Class
 D3bot.NAV_EDGE = D3bot.NAV_EDGE or {} -- NAV_EDGE Class
 D3bot.NAV_TRIANGLE = D3bot.NAV_TRIANGLE or {} -- NAV_TRIANGLE Class
 
--- Shared files
+------------------------------------------------------
+--					Shared files					--
+------------------------------------------------------
 include("sh_util.lua")
 include("sh_navmesh/navmesh.lua")
 include("sh_navmesh/edge.lua")
 include("sh_navmesh/triangle.lua")
 
--- Client files
+-- Load any gamemode specific logic
+include("gamemodes/" .. engine.ActiveGamemode() .. "/sh_init.lua")
+
+------------------------------------------------------
+--					Client files					--
+------------------------------------------------------
 if CLIENT then
 end
 
--- Server files
+------------------------------------------------------
+--					Server files					--
+------------------------------------------------------
 if SERVER then
-	-- Include the gamemode specific brains
-	include("sv_brains/dummy.lua") -- Dummy brain that takes over the bot on error
-	include("sv_brains/" .. engine.ActiveGamemode() .. "/init.lua") -- ActiveGamemode returns the gamemode's folder name, so it will always be a valid path
+	-- Load brains
+	local filenames, _ = file.Find(D3bot.AddonRoot .. "sv_brains/*.lua", "LUA")
+	for _, filename in ipairs(filenames) do
+		include(D3bot.AddonRoot .. "sv_brains/" .. filename)
+	end
 
-	-- Include general locomotion controllers
+	-- Load gamemode specific brains
+	local filenames, _ = file.Find(D3bot.AddonRoot .. "gamemodes/" .. engine.ActiveGamemode() .. "/sv_brains/*.lua", "LUA")
+	for _, filename in ipairs(filenames) do
+		include(D3bot.AddonRoot .. "gamemodes/" .. engine.ActiveGamemode() .. "/sv_brains/" .. filename)
+	end
+
+	-- Load general locomotion controllers
 	local filenames, _ = file.Find(D3bot.AddonRoot .. "sv_locomotion/*.lua", "LUA")
 	for _, filename in ipairs(filenames) do
 		include(D3bot.AddonRoot .. "sv_locomotion/" .. filename)
+	end
+
+	-- Load gamemode specific locomotion controllers
+	local filenames, _ = file.Find(D3bot.AddonRoot .. "gamemodes/" .. engine.ActiveGamemode() .. "/sv_locomotion/*.lua", "LUA")
+	for _, filename in ipairs(filenames) do
+		include(D3bot.AddonRoot .. "gamemodes/" .. engine.ActiveGamemode() .. "/sv_locomotion/" .. filename)
 	end
 
 	-- Load bot naming script
@@ -45,5 +68,4 @@ if SERVER then
 	-- Other server side scripts
 	include("sv_ulx_fix.lua")
 	include("sv_control.lua")
-	include("sv_supervisor.lua")
 end
