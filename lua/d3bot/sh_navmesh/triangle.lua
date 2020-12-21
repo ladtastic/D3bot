@@ -1,19 +1,85 @@
 local D3bot = D3bot
 local NAV_TRIANGLE = D3bot.NAV_TRIANGLE
 
+------------------------------------------------------
+--						Static						--
+------------------------------------------------------
+
 -- Get new instance of a triangle object.
 -- This represents a triangle that is defined by 3 edges that are connected in a loop.
 -- It's possible to get invalid triangles, therefore this needs to be checked.
-function NAV_TRIANGLE:New(e1, e2, e3)
+function NAV_TRIANGLE:New(navmesh, id, e1, e2, e3)
 	local obj = {
+		Navmesh = navmesh,
+		ID = id or navmesh:GetUniqueID(), -- TODO: Convert id to integer if possible
 		Edges = {e1, e2, e3}
 	}
 
-	-- TODO: Selfcheck
-
 	setmetatable(obj, self)
 	self.__index = self
+
+	-- TODO: Selfcheck
+
+	-- Add object to the navmesh, or abort if there is already an element with the same ID
+	if navmesh.Triangles[obj.ID] then return end
+	navmesh.Triangles[obj.ID] = obj
+
+	-- Add triangle to edges
+	table.insert(e1.Triangles, obj)
+	table.insert(e2.Triangles, obj)
+	table.insert(e3.Triangles, obj)
+
 	return obj
+end
+
+-- Same as NAV_TRIANGLE:New(), but uses table t to restore a previous state that came from MarshalToTable().
+-- As it needs a navmesh to find the edges by their reference ID, this should only be called after all the edges have been fully loaded into the navmesh.
+function NAV_TRIANGLE:NewFromTable(navmesh, t)
+	local e1 = navmesh:FindEdgeByID(t.Edges[1])
+	local e2 = navmesh:FindEdgeByID(t.Edges[2])
+	local e3 = navmesh:FindEdgeByID(t.Edges[3])
+	
+	if not e1 or not e2 or not e3 then error("Couldn't find all edges by their reference") end
+
+	local obj = self:New(navmesh, t.ID, e1, e2, e3)
+
+	return obj
+end
+
+------------------------------------------------------
+--						Methods						--
+------------------------------------------------------
+
+-- Returns the object's ID, which is most likely a number object.
+-- It can be anything else, though.
+function NAV_TRIANGLE:GetID()
+	return self.ID
+end
+
+-- Returns a table that contains all important data of this object.
+function NAV_TRIANGLE:MarshalToTable()
+	local t = {
+		ID = self:GetID(),
+		Edges = {
+			self.Edges[1]:GetID(),
+			self.Edges[2]:GetID(),
+			self.Edges[3]:GetID()
+		}
+	}
+
+	return t
+end
+
+-- Deletes the triangle from the navmesh and makes sure that there is nothing left that references it.
+function NAV_TRIANGLE:Delete()
+	-- Delete the (one or two) triangles that use this edge
+	for _, edge in ipairs(self.Edges) do
+		table.RemoveByValue(edge.Triangles, self)
+		edge:GC()
+	end
+
+	self.Navmesh.Triangles[self.ID] = nil
+	self.Navmesh = nil
 end
 
 -- Returns wether the triangle consists out of the three given edges or not.

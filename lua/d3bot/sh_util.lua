@@ -56,3 +56,25 @@ function UTIL.IncludeDirectory(path, name, realm)
 		UTIL.IncludeRealm(path .. filename, realm)
 	end
 end
+
+-- Sorted version of pairs: This will iterate in ascending key order over any map/sparse array.
+function UTIL.kpairs(m)
+	-- Get keys of m
+	local keys = {}
+	for k in pairs(m) do
+		table.insert(keys, k)
+	end
+
+	-- Sort keys
+	table.sort(keys)
+
+	-- Return iterator
+	local i = 0
+	return function()
+		i = i + 1
+		local key = keys[i]
+		if key then
+			return key, m[key]
+		end
+	end
+end

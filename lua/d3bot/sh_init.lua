@@ -45,14 +45,24 @@ UTIL.IncludeRealm("sv_names/names.lua", UTIL.REALM_SERVER)
 UTIL.IncludeRealm("gamemodes/" .. engine.ActiveGamemode() .. "/sh_init.lua", UTIL.REALM_SHARED)
 
 -- Load brains (General and gamemode specific)
-D3bot.Util.IncludeDirectory(D3bot.AddonRoot .. "sv_brains/", "*.lua", UTIL.REALM_SERVER)
-D3bot.Util.IncludeDirectory(D3bot.AddonRoot .. "gamemodes/" .. engine.ActiveGamemode() .. "/sv_brains/", "*.lua", UTIL.REALM_SERVER)
+UTIL.IncludeDirectory(D3bot.AddonRoot .. "sv_brains/", "*.lua", UTIL.REALM_SERVER)
+UTIL.IncludeDirectory(D3bot.AddonRoot .. "gamemodes/" .. engine.ActiveGamemode() .. "/sv_brains/", "*.lua", UTIL.REALM_SERVER)
 
 -- Load general locomotion controllers (General and gamemode specific)
-D3bot.Util.IncludeDirectory(D3bot.AddonRoot .. "sv_locomotion/", "*.lua", UTIL.REALM_SERVER)
-D3bot.Util.IncludeDirectory(D3bot.AddonRoot .. "gamemodes/" .. engine.ActiveGamemode() .. "/sv_locomotion/", "*.lua", UTIL.REALM_SERVER)
+UTIL.IncludeDirectory(D3bot.AddonRoot .. "sv_locomotion/", "*.lua", UTIL.REALM_SERVER)
+UTIL.IncludeDirectory(D3bot.AddonRoot .. "gamemodes/" .. engine.ActiveGamemode() .. "/sv_locomotion/", "*.lua", UTIL.REALM_SERVER)
 
 -- Other server side scripts
 UTIL.IncludeRealm("sv_control.lua", UTIL.REALM_SERVER)
 UTIL.IncludeRealm("sh_navmesh/sv_network.lua", UTIL.REALM_SERVER)
 UTIL.IncludeRealm("sv_ulx_fix.lua", UTIL.REALM_SERVER)
+
+-- Test
+D3bot.Navmesh = D3bot.Navmesh or D3bot.NAV_MESH:New()
+local tab = D3bot.Navmesh:MarshalToTable()
+
+local json = util.TableToJSON(tab, true)
+local tab2 = util.JSONToTable(json)
+
+local nav2 = D3bot.NAV_MESH:NewFromTable(tab2)
+--print(json)

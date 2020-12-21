@@ -10,6 +10,10 @@ local THIS_EDIT_MODE = EDIT_MODES.TriangleAddRemove
 -- General edit mode info.
 THIS_EDIT_MODE.Name = "Create & Remove triangles"
 
+------------------------------------------------------
+--						Static						--
+------------------------------------------------------
+
 -- Set and overwrite current edit mode of the given weapon.
 -- This will create an instance of the edit mode class, and store it in the weapon's EditMode field.
 function THIS_EDIT_MODE:AssignToWeapon(wep)
@@ -17,10 +21,15 @@ function THIS_EDIT_MODE:AssignToWeapon(wep)
 
 	setmetatable(mode, self)
 	self.__index = self
+
 	wep.EditMode = mode
 
 	return true
 end
+
+------------------------------------------------------
+--						Methods						--
+------------------------------------------------------
 
 -- Left mouse button action.
 function THIS_EDIT_MODE:PrimaryAttack(wep)

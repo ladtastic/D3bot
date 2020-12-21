@@ -7,18 +7,27 @@ local LOCOMOTION = D3bot.Locomotion
 BRAINS.GENERAL = BRAINS.GENERAL or {}
 local THIS_BRAIN = BRAINS.GENERAL
 
+------------------------------------------------------
+--						Static						--
+------------------------------------------------------
+
 -- This will assign the brain to the given bot (and the corresponding mem).
 function THIS_BRAIN:AssignToBot(bot, mem)
 	local brain = {Bot = bot, Mem = mem}
 
+	setmetatable(brain, self)
+	self.__index = self
+
 	-- Add main handler
 	brain.MainCoroutine = coroutine.create(THIS_BRAIN.Think_Coroutine)
 
-	setmetatable(brain, self)
-	self.__index = self
 	mem.Brain = brain
 	return true
 end
+
+------------------------------------------------------
+--						Methods						--
+------------------------------------------------------
 
 -- Think coroutine. Put all the important stuff in here.
 function THIS_BRAIN:Think_Coroutine(bot, mem)
