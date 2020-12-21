@@ -1,5 +1,3 @@
-AddCSLuaFile()
-
 local D3bot = D3bot
 local NAV_MESH = D3bot.NAV_MESH
 local NAV_EDGE = D3bot.NAV_EDGE

@@ -1,5 +1,3 @@
-AddCSLuaFile()
-
 local D3bot = D3bot
 local NAV_TRIANGLE = D3bot.NAV_TRIANGLE
 

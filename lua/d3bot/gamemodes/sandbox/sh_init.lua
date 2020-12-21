@@ -1,19 +1,9 @@
-AddCSLuaFile()
+local D3bot = D3bot
+local UTIL = D3bot.Util
 
 ------------------------------------------------------
---					Shared files					--
+--						Includes					--
 ------------------------------------------------------
 
-------------------------------------------------------
---					Client files					--
-------------------------------------------------------
-if CLIENT then
-end
-
-------------------------------------------------------
---					Server files					--
-------------------------------------------------------
-if SERVER then
-	include("sv_brainassigner.lua")
-	include("sv_supervisor.lua")
-end
+UTIL.IncludeRealm("sv_brainassigner.lua", UTIL.REALM_SERVER)
+UTIL.IncludeRealm("sv_supervisor.lua", UTIL.REALM_SERVER)
