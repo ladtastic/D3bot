@@ -9,6 +9,7 @@ D3bot = D3bot or {}
 D3bot.Config = D3bot.Config or {} -- General configuration table
 D3bot.Util = D3bot.Util or {} -- Utility functions
 D3bot.NavPubSub = D3bot.NavPubSub or {} -- Navmesh pub/sub functions
+D3bot.NavEdit = D3bot.NavEdit or {} -- Functions to edit the main navmesh instance on the server. The functions are available on the client realm, too
 D3bot.Locomotion = D3bot.Locomotion or {} -- Locomotion handlers
 D3bot.Brains = D3bot.Brains or {} -- Brain handlers
 
@@ -22,6 +23,9 @@ D3bot.NAV_MESH = D3bot.NAV_MESH or {} -- NAV_MESH Class
 D3bot.NAV_EDGE = D3bot.NAV_EDGE or {} -- NAV_EDGE Class
 D3bot.NAV_TRIANGLE = D3bot.NAV_TRIANGLE or {} -- NAV_TRIANGLE Class
 
+-- D3bot variables, can't be initialized, but they are documented here
+-- D3bot.Navmesh --> The main navmesh instance that is used on both the server and client realm
+
 ------------------------------------------------------
 --						Includes					--
 ------------------------------------------------------
@@ -29,40 +33,29 @@ D3bot.NAV_TRIANGLE = D3bot.NAV_TRIANGLE or {} -- NAV_TRIANGLE Class
 -- General stuff
 include("sh_util.lua")
 local UTIL = D3bot.Util -- From here on UTIL.IncludeRealm can be used
+UTIL.IncludeRealm("sv_control.lua", UTIL.REALM_SERVER)
+UTIL.IncludeRealm("sv_ulx_fix.lua", UTIL.REALM_SERVER)
 
 -- Navmesh stuff
-UTIL.IncludeRealm("sh_navmesh/navmesh.lua", UTIL.REALM_SHARED)
-UTIL.IncludeRealm("sh_navmesh/edge.lua", UTIL.REALM_SHARED)
-UTIL.IncludeRealm("sh_navmesh/triangle.lua", UTIL.REALM_SHARED)
-UTIL.IncludeRealm("sh_navmesh/sh_network.lua", UTIL.REALM_SHARED)
-UTIL.IncludeRealm("sh_navmesh/sv_network.lua", UTIL.REALM_SERVER)
-UTIL.IncludeRealm("sh_navmesh/cl_network.lua", UTIL.REALM_CLIENT)
+UTIL.IncludeRealm("navmesh/sh_navmesh.lua", UTIL.REALM_SHARED)
+UTIL.IncludeRealm("navmesh/sh_edge.lua", UTIL.REALM_SHARED)
+UTIL.IncludeRealm("navmesh/sh_triangle.lua", UTIL.REALM_SHARED)
+UTIL.IncludeRealm("navmesh/sh_pubsub.lua", UTIL.REALM_SHARED)
+UTIL.IncludeRealm("navmesh/sh_edit.lua", UTIL.REALM_SHARED)
 
--- Load bot naming script
-UTIL.IncludeRealm("sv_names/names.lua", UTIL.REALM_SERVER)
+-- Load bot naming script (default, and any optional override)
+UTIL.IncludeRealm("names/sv_default.lua", UTIL.REALM_SERVER)
+if D3bot.Config.NameScript then
+	UTIL.IncludeRealm("names/sv_" .. D3bot.Config.NameScript .. ".lua", UTIL.REALM_SERVER)
+end
 
 -- Load any gamemode specific logic
 UTIL.IncludeRealm("gamemodes/" .. engine.ActiveGamemode() .. "/sh_init.lua", UTIL.REALM_SHARED)
 
 -- Load brains (General and gamemode specific)
-UTIL.IncludeDirectory(D3bot.AddonRoot .. "sv_brains/", "*.lua", UTIL.REALM_SERVER)
-UTIL.IncludeDirectory(D3bot.AddonRoot .. "gamemodes/" .. engine.ActiveGamemode() .. "/sv_brains/", "*.lua", UTIL.REALM_SERVER)
+UTIL.IncludeDirectory(D3bot.AddonRoot .. "brains/", "*.lua", UTIL.REALM_SERVER)
+UTIL.IncludeDirectory(D3bot.AddonRoot .. "gamemodes/" .. engine.ActiveGamemode() .. "/brains/", "*.lua", UTIL.REALM_SERVER)
 
 -- Load general locomotion controllers (General and gamemode specific)
-UTIL.IncludeDirectory(D3bot.AddonRoot .. "sv_locomotion/", "*.lua", UTIL.REALM_SERVER)
-UTIL.IncludeDirectory(D3bot.AddonRoot .. "gamemodes/" .. engine.ActiveGamemode() .. "/sv_locomotion/", "*.lua", UTIL.REALM_SERVER)
-
--- Other server side scripts
-UTIL.IncludeRealm("sv_control.lua", UTIL.REALM_SERVER)
-UTIL.IncludeRealm("sh_navmesh/sv_network.lua", UTIL.REALM_SERVER)
-UTIL.IncludeRealm("sv_ulx_fix.lua", UTIL.REALM_SERVER)
-
--- Test
-D3bot.Navmesh = D3bot.Navmesh or D3bot.NAV_MESH:New()
-local tab = D3bot.Navmesh:MarshalToTable()
-
-local json = util.TableToJSON(tab, true)
-local tab2 = util.JSONToTable(json)
-
-local nav2 = D3bot.NAV_MESH:NewFromTable(tab2)
---print(json)
+UTIL.IncludeDirectory(D3bot.AddonRoot .. "locomotion/", "*.lua", UTIL.REALM_SERVER)
+UTIL.IncludeDirectory(D3bot.AddonRoot .. "gamemodes/" .. engine.ActiveGamemode() .. "/locomotion/", "*.lua", UTIL.REALM_SERVER)

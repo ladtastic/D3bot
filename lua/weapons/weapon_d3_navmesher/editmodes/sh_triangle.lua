@@ -1,6 +1,7 @@
 AddCSLuaFile()
 
 local D3bot = D3bot
+local NAV_EDIT = D3bot.NavEdit
 local EDIT_MODES = D3_NAVMESHER_EDIT_MODES
 
 -- Add edit mode to list
@@ -34,6 +35,7 @@ end
 -- Left mouse button action.
 function THIS_EDIT_MODE:PrimaryAttack(wep)
 	if not IsFirstTimePredicted() then return true end
+	if not CLIENT then return true end
 
 	-- Get eye trace info
 	local trRes = wep.Owner:GetEyeTrace()
@@ -46,9 +48,8 @@ function THIS_EDIT_MODE:PrimaryAttack(wep)
 	table.insert(self.TempPoints, trRes.HitPos)
 
 	if #self.TempPoints == 3 then
-		if D3bot.Navmesh then
-			D3bot.Navmesh:FindOrCreateTriangle3P(self.TempPoints[1], self.TempPoints[2], self.TempPoints[3])
-		end
+		-- Edit server side navmesh
+		NAV_EDIT.CreateTriangle3P(LocalPlayer(), self.TempPoints[1], self.TempPoints[2], self.TempPoints[3])
 
 		-- Reset build mode and its state
 		THIS_EDIT_MODE:AssignToWeapon(wep)
@@ -86,7 +87,7 @@ end
 function THIS_EDIT_MODE:PostDrawViewModel(wep, vm)
 	cam.Start3D()
 
-	-- Draw navmesh
+	-- Draw client side navmesh
 	if D3bot and D3bot.Navmesh then
 		D3bot.Navmesh:Render3D()
 	end

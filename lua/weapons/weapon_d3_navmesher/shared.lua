@@ -31,7 +31,7 @@ SWEP.CanDeploy = true
 
 -- Load edit modes
 D3_NAVMESHER_EDIT_MODES = D3_NAVMESHER_EDIT_MODES or {}
-include("editmodes/triangle.lua")
+include("editmodes/sh_triangle.lua")
 
 function SWEP:Initialize()
 	self:ChangeEditMode("TriangleAddRemove")
