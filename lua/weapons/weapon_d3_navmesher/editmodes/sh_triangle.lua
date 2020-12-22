@@ -2,6 +2,7 @@ AddCSLuaFile()
 
 local D3bot = D3bot
 local NAV_EDIT = D3bot.NavEdit
+local NAV_MAIN = D3bot.NavMain
 local EDIT_MODES = D3_NAVMESHER_EDIT_MODES
 
 -- Add edit mode to list
@@ -88,8 +89,9 @@ function THIS_EDIT_MODE:PostDrawViewModel(wep, vm)
 	cam.Start3D()
 
 	-- Draw client side navmesh
-	if D3bot and D3bot.Navmesh then
-		D3bot.Navmesh:Render3D()
+	local navmesh = NAV_MAIN:GetNavmesh()
+	if navmesh then
+		navmesh:Render3D()
 	end
 
 	--[[ Test stuff

@@ -7,6 +7,7 @@ local NAV_TRIANGLE = D3bot.NAV_TRIANGLE
 
 -- Get new instance of a triangle object.
 -- This represents a triangle that is defined by 3 edges that are connected in a loop.
+-- If a triangle with the same id already exists, it will be overwritten.
 -- It's possible to get invalid triangles, therefore this needs to be checked.
 function NAV_TRIANGLE:New(navmesh, id, e1, e2, e3)
 	local obj = {
@@ -20,14 +21,22 @@ function NAV_TRIANGLE:New(navmesh, id, e1, e2, e3)
 
 	-- TODO: Selfcheck
 
-	-- Add object to the navmesh, or abort if there is already an element with the same ID
-	if navmesh.Triangles[obj.ID] then return end
+	-- Check if there was a previous element. If so, delete it first
+	local old = navmesh.Triangles[obj.ID]
+	if old then old:_Delete() end
+
+	-- Add object to the navmesh
 	navmesh.Triangles[obj.ID] = obj
 
-	-- Add triangle to edges
+	-- Add reference to this triangle to all edges
 	table.insert(e1.Triangles, obj)
 	table.insert(e2.Triangles, obj)
 	table.insert(e3.Triangles, obj)
+
+	-- Publish change event
+	if navmesh.PubSub then
+		navmesh.PubSub:SendTriangleToSubs(obj)
+	end
 
 	return obj
 end
@@ -67,11 +76,21 @@ function NAV_TRIANGLE:MarshalToTable()
 		}
 	}
 
-	return t
+	return t -- Make sure that any object returned here is a deep copy of its original
 end
 
 -- Deletes the triangle from the navmesh and makes sure that there is nothing left that references it.
 function NAV_TRIANGLE:Delete()
+	-- Publish change event
+	if self.Navmesh.PubSub then
+		self.Navmesh.PubSub:DeleteTriangleFromSubs(self:GetID())
+	end
+
+	return self:_Delete()
+end
+
+-- Internal method.
+function NAV_TRIANGLE:_Delete()
 	-- Delete the (one or two) triangles that use this edge
 	for _, edge in ipairs(self.Edges) do
 		table.RemoveByValue(edge.Triangles, self)

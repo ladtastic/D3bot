@@ -37,6 +37,55 @@ function SWEP:Initialize()
 	self:ChangeEditMode("TriangleAddRemove")
 end
 
+-- Server realm only
+function SWEP:Equip(ent)
+	local editMode = self.EditMode
+
+	if IsValid(ent) and ent:IsPlayer() then
+		D3bot.NavPubSub:SubscribePlayer(ent)
+	end
+
+	if not editMode then return true end
+	if not editMode.Equip then return true end
+
+	return editMode:Equip(self)
+end
+
+-- Server realm only
+function SWEP:OnDrop()
+	local editMode = self.EditMode
+
+	local owner = self.Owner
+	if IsValid(owner) and owner:IsPlayer() then
+		D3bot.NavPubSub:UnsubscribePlayer(owner)
+	end
+
+	if not editMode then return true end
+	if not editMode.OnDrop then return true end
+
+	return editMode:OnDrop(self)
+end
+
+function SWEP:OnRemove()
+	local editMode = self.EditMode
+
+	if SERVER then
+		local owner = self.Owner
+		if IsValid(owner) and owner:IsPlayer() then
+			D3bot.NavPubSub:UnsubscribePlayer(owner)
+		end
+	end
+
+	if not editMode then return true end
+	if not editMode.OnRemove then return true end
+
+	return editMode:OnRemove(self)
+end
+
+function SWEP:ShouldDropOnDie()
+	return false
+end
+
 function SWEP:Deploy()
 	local editMode = self.EditMode
 

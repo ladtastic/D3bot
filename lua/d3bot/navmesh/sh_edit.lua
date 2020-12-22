@@ -1,5 +1,9 @@
+-- All navmesh edit functions in here are available on the client and server realm.
+-- But regardless from which realm they are called, they will always edit the main navmesh on the server side.
+-- Basically client --> server communication.
+
 local D3bot = D3bot
-local NAV_MESH = D3bot.NAV_MESH
+local NAV_MAIN = D3bot.NavMain
 local NAV_EDIT = D3bot.NavEdit
 
 ------------------------------------------------------
@@ -9,12 +13,12 @@ local NAV_EDIT = D3bot.NavEdit
 -- Create a triangle in the main navmesh.
 function NAV_EDIT.CreateTriangle3P(ply, p1, p2, p3)
 	if SERVER then
-		if not ply:HasWeapon("weapon_d3_navmesher") then
-			return
-		end
-		D3bot.Navmesh = D3bot.Navmesh or NAV_MESH:New()
+		-- Only he who wields the weapon has the power
+		if not ply:HasWeapon("weapon_d3_navmesher") then return end
+		-- Get or create navmesh
+		local navmesh = NAV_MAIN:ForceNavmesh()
 
-		D3bot.Navmesh:FindOrCreateTriangle3P(p1, p2, p3)
+		navmesh:FindOrCreateTriangle3P(p1, p2, p3)
 
 	elseif CLIENT then
 		net.Start("D3bot_Nav_Edit_CreateTriangle3P")

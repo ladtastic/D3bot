@@ -14,7 +14,8 @@ function NAV_MESH:New()
 	local obj = {
 		Edges = {},
 		Triangles = {},
-		UniqueIDCounter = 1 -- TODO: Always start with the highest key that can be found
+		PubSub = nil,
+		UniqueIDCounter = 1
 	}
 
 	setmetatable(obj, self)
@@ -35,6 +36,11 @@ function NAV_MESH:NewFromTable(t)
 	-- Restore triangles
 	for _, triangleTable in ipairs(t.Triangles) do
 		NAV_TRIANGLE:NewFromTable(obj, triangleTable)
+	end
+
+	-- GC all free floating edges
+	for _, edge in pairs(obj.Edges) do
+		edge:GC()
 	end
 
 	return obj
@@ -66,14 +72,15 @@ end
 -- Returns a unique ID key that has not been used before.
 -- It can be used for new edges or triangles.
 function NAV_MESH:GetUniqueID()
-	-- Check if key is already in use, iteratively increase
 	local idKey = self.UniqueIDCounter
+
+	-- Check if key is already in use, iteratively increase
 	while self.Edges[idKey] or self.Triangles[idKey] do
-		self.UniqueIDCounter = self.UniqueIDCounter + 1
-		idKey = self.UniqueIDCounter
+		idKey = idKey + 1
+		self.UniqueIDCounter = idKey
 	end
 
-	return idKey
+	return self.UniqueIDCounter
 end
 
 -- Returns the edge with the given ID, or nil if doesn't exist.
@@ -97,6 +104,11 @@ function NAV_MESH:FindOrCreateEdge2P(p1, p2)
 
 	-- Create new edge
 	return NAV_EDGE:New(self, nil, p1, p2)
+end
+
+-- Returns the triangle with the given ID, or nil if doesn't exist.
+function NAV_MESH:FindTriangleByID(id)
+	return self.Triangles[id]
 end
 
 -- Will return the triangle that is built with the three given points, if there is one.
@@ -138,6 +150,17 @@ function NAV_MESH:FindOrCreateTriangle3E(e1, e2, e3)
 
 	-- Create new triangle
 	return NAV_TRIANGLE:New(self, nil, e1, e2, e3)
+end
+
+-- Set where to publish change events.
+-- Use nil to disable publishing.
+-- Make sure that there is only one navmesh that is linked with SubPub at a time.
+function NAV_MESH:SetPubSub(pubSub)
+	if SERVER then
+		if self.PubSub then self.PubSub:DeleteNavmeshFromSubs() end
+		self.PubSub = pubSub
+		if self.PubSub then self.PubSub:SendNavmeshToSubs(self) end
+	end
 end
 
 -- Draw the navmesh into a 3D rendering context.

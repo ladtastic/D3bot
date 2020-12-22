@@ -7,7 +7,8 @@ local NAV_EDGE = D3bot.NAV_EDGE
 ------------------------------------------------------
 
 -- Get new instance of an edge object with the two given points.
--- This represents an edge that at most can be shared by two triangles.
+-- This represents an edge that is defined with two points.
+-- If an edge with the same id already exists, it will be overwritten.
 -- The point coordinates will be rounded to a single engine unit.
 function NAV_EDGE:New(navmesh, id, p1, p2)
 	local obj = {
@@ -22,11 +23,30 @@ function NAV_EDGE:New(navmesh, id, p1, p2)
 
 	-- TODO: Selfcheck
 
-	
+	-- Check if there was a previous element. If so, change references to/from it
+	local old = navmesh.Edges[obj.ID]
+	if old then
+		obj.Triangles = old.Triangles
+		-- Iterate over linked triangles
+		for _, triangle in ipairs(obj.Triangles) do
+			-- Correct the edge references of these triangles
+			for i, edge in ipairs(triangle.Edges) do
+				if edge == old then
+					triangle.Edges[i] = obj
+				end
+			end
+		end
+		old.Triangles = {}
+		old:_Delete()
+	end
 
-	-- Add object to the navmesh, or abort if there is already an element with the same ID
-	if navmesh.Edges[obj.ID] then return end
+	-- Add object to the navmesh
 	navmesh.Edges[obj.ID] = obj
+
+	-- Publish change event
+	if navmesh.PubSub then
+		navmesh.PubSub:SendEdgeToSubs(obj)
+	end
 
 	return obj
 end
@@ -58,11 +78,21 @@ function NAV_EDGE:MarshalToTable()
 		}
 	}
 
-	return t
+	return t -- Make sure that any object returned here is a deep copy of its original
 end
 
 -- Deletes the edge from the navmesh and makes sure that there is nothing left that references it.
 function NAV_EDGE:Delete()
+	-- Publish change event
+	if self.Navmesh.PubSub then
+		self.Navmesh.PubSub:DeleteEdgeFromSubs(self:GetID())
+	end
+
+	return self:_Delete()
+end
+
+-- Internal method.
+function NAV_EDGE:_Delete()
 	-- Delete the (one or two) triangles that use this edge
 	for _, triangle in ipairs(self.Triangles) do
 		triangle:Delete()
