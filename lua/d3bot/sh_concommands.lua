@@ -4,7 +4,7 @@ local CONCOMMANDS = D3bot.ConCommands
 local NAV_FILE = D3bot.NavFile
 
 -- Give a player the navmeshing SWEP.
-CONCOMMANDS.Test = CONCOMMAND:New("d3bot_editmesh")
+CONCOMMANDS.EditMesh = CONCOMMAND:New("d3bot_editmesh")
 function CONCOMMANDS.Test:OnServer(ply, cmd, args, argStr)
 	if not ply:IsSuperAdmin() then return end
 
@@ -12,7 +12,7 @@ function CONCOMMANDS.Test:OnServer(ply, cmd, args, argStr)
 end
 
 -- Save the main navmesh to disk.
-CONCOMMANDS.Test = CONCOMMAND:New("d3bot_savemesh")
+CONCOMMANDS.SaveMesh = CONCOMMAND:New("d3bot_savemesh")
 function CONCOMMANDS.Test:OnServer(ply, cmd, args, argStr)
 	if not ply:IsSuperAdmin() then return end
 
@@ -20,7 +20,7 @@ function CONCOMMANDS.Test:OnServer(ply, cmd, args, argStr)
 end
 
 -- Load the main navmesh from disk.
-CONCOMMANDS.Test = CONCOMMAND:New("d3bot_loadmesh")
+CONCOMMANDS.LoadMesh = CONCOMMAND:New("d3bot_loadmesh")
 function CONCOMMANDS.Test:OnServer(ply, cmd, args, argStr)
 	if not ply:IsSuperAdmin() then return end
 
