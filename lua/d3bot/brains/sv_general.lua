@@ -19,7 +19,7 @@ function THIS_BRAIN:AssignToBot(bot, mem)
 	self.__index = self
 
 	-- Add main handler
-	brain.MainCoroutine = coroutine.create(THIS_BRAIN.Think_Coroutine)
+	brain.MainCoroutine = coroutine.create(function() brain:Think_Coroutine(bot, mem) end)
 
 	mem.Brain = brain
 	return true
@@ -47,7 +47,7 @@ end
 -- Think callback. Ideally this will resume coroutine(s).
 function THIS_BRAIN:Callback(bot, mem)
 	-- Resume coroutine, catch and print any error
-	local succ, msg = coroutine.resume(self.MainCoroutine, self, bot, mem)
+	local succ, msg = coroutine.resume(self.MainCoroutine)
 	if not succ then
 		-- Coroutine ended unexpectedly
 		print(string.format("%s %s of bot %s failed: %s", D3bot.PrintPrefix, self.MainCoroutine, bot:Nick(), msg))
