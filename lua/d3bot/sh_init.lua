@@ -9,6 +9,7 @@ D3bot = D3bot or {}
 D3bot.Version = {1, 0, 0} -- TODO: Create SemVer object or something
 D3bot.Config = D3bot.Config or {} -- General configuration table
 D3bot.Util = D3bot.Util or {} -- Utility functions
+D3bot.ConCommands = D3bot.ConCommands or {} -- List of commands that can be run from the console
 D3bot.NavMain = D3bot.NavMain or {} -- Container for the main navmesh instance for both the server and client
 D3bot.NavFile = D3bot.NavFile or {} -- Navmesh file functions
 D3bot.NavPubSub = D3bot.NavPubSub or {} -- Navmesh pub/sub functions
@@ -22,6 +23,7 @@ D3bot.HookPrefix = "D3bot_"
 D3bot.AddonRoot = "d3bot/"
 
 -- Init class namespaces
+D3bot.CONCOMMAND = D3bot.CONCOMMAND or {} -- Console command class, to replicate and parse client side commands
 D3bot.NAV_MESH = D3bot.NAV_MESH or {} -- NAV_MESH Class
 D3bot.NAV_EDGE = D3bot.NAV_EDGE or {} -- NAV_EDGE Class
 D3bot.NAV_TRIANGLE = D3bot.NAV_TRIANGLE or {} -- NAV_TRIANGLE Class
@@ -35,6 +37,8 @@ include("sh_util.lua")
 local UTIL = D3bot.Util -- From here on UTIL.IncludeRealm can be used
 UTIL.IncludeRealm("sv_control.lua", UTIL.REALM_SERVER)
 UTIL.IncludeRealm("sv_ulx_fix.lua", UTIL.REALM_SERVER)
+UTIL.IncludeRealm("sh_concommand.lua", UTIL.REALM_SHARED)
+UTIL.IncludeRealm("sh_concommands.lua", UTIL.REALM_SHARED)
 
 -- Navmesh stuff
 UTIL.IncludeRealm("navmesh/sh_main.lua", UTIL.REALM_SHARED)
