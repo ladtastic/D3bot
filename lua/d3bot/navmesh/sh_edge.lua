@@ -95,17 +95,17 @@ end
 function NAV_EDGE:_Delete()
 	-- Delete the (one or two) triangles that use this edge
 	for _, triangle in ipairs(self.Triangles) do
-		triangle:Delete()
+		triangle:_Delete()
 	end
 
 	self.Navmesh.Edges[self.ID] = nil
 	self.Navmesh = nil
 end
 
--- Deletes the edge, if there is nothing that references it.
-function NAV_EDGE:GC()
+-- Internal method: Deletes the edge, if there is nothing that references it.
+function NAV_EDGE:_GC()
 	if #self.Triangles == 0 then
-		self:Delete()
+		self:_Delete()
 	end
 end
 

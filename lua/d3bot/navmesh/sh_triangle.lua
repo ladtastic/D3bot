@@ -91,10 +91,11 @@ end
 
 -- Internal method.
 function NAV_TRIANGLE:_Delete()
-	-- Delete the (one or two) triangles that use this edge
+	-- Delete any reference to this triangle from edges
 	for _, edge in ipairs(self.Edges) do
 		table.RemoveByValue(edge.Triangles, self)
-		edge:GC()
+		-- Delete any "floating" edge
+		edge:_GC()
 	end
 
 	self.Navmesh.Triangles[self.ID] = nil

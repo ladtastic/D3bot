@@ -40,7 +40,7 @@ function NAV_MESH:NewFromTable(t)
 
 	-- GC all free floating edges
 	for _, edge in pairs(obj.Edges) do
-		edge:GC()
+		edge:_GC()
 	end
 
 	return obj
@@ -135,9 +135,9 @@ function NAV_MESH:FindOrCreateTriangle3P(p1, p2, p3)
 
 	-- If it failed to create a triangle, then garbage collect any "free floating" edge
 	if not triangle then
-		e1:GC()
-		e2:GC()
-		e3:GC()
+		e1:_GC()
+		e2:_GC()
+		e3:_GC()
 	end
 
 	return triangle
