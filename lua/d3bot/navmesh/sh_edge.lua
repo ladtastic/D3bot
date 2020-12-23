@@ -40,6 +40,11 @@ function NAV_EDGE:New(navmesh, id, p1, p2)
 		old:_Delete()
 	end
 
+	-- Invalidate cache of connected triangles
+	for _, triangle in ipairs(obj.Triangles) do
+		triangle:InvalidateCache()
+	end
+
 	-- Add object to the navmesh
 	navmesh.Edges[obj.ID] = obj
 

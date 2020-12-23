@@ -152,9 +152,9 @@ function NAV_MESH:FindOrCreateTriangle3E(e1, e2, e3)
 	return NAV_TRIANGLE:New(self, nil, e1, e2, e3)
 end
 
--- Set where to publish change events.
+-- Set where to publish change events to.
 -- Use nil to disable publishing.
--- Make sure that there is only one navmesh that is linked with SubPub at a time.
+-- Make sure that there is only one navmesh that is linked with a PubSub at a time.
 function NAV_MESH:SetPubSub(pubSub)
 	if SERVER then
 		if self.PubSub then self.PubSub:DeleteNavmeshFromSubs() end
@@ -171,6 +171,7 @@ function NAV_MESH:Render3D()
 	end
 
 	-- Draw triangles
+	render.SetColorMaterialIgnoreZ()
 	for _, triangle in pairs(self.Triangles) do
 		triangle:Render3D()
 	end

@@ -13,7 +13,8 @@ function NAV_TRIANGLE:New(navmesh, id, e1, e2, e3)
 	local obj = {
 		Navmesh = navmesh,
 		ID = id or navmesh:GetUniqueID(), -- TODO: Convert id to integer if possible
-		Edges = {e1, e2, e3}
+		Edges = {e1, e2, e3},
+		Cache = nil -- Contains cached values like the normal, the 3 corner points and neighbour triangles. Can be invalidated.
 	}
 
 	setmetatable(obj, self)
@@ -79,6 +80,54 @@ function NAV_TRIANGLE:MarshalToTable()
 	return t -- Make sure that any object returned here is a deep copy of its original
 end
 
+-- Get the cached values, if needed this will regenerate the cache.
+function NAV_TRIANGLE:GetCache()
+	local cache = self.Cache
+	if cache then return cache end
+
+	-- Regenerate cache
+	local cache = {}
+	self.Cache = cache
+
+	-- A signal that the cache contains correct or malformed data.
+	-- Changing this to false will not cause the cache to be rebuilt.
+	cache.IsValid = true
+
+	-- Get 3 corner points from the edges
+	local points = {}
+	for _, edge in ipairs(self.Edges) do
+		for _, newPoint in ipairs(edge.Points) do
+			local found = false
+			-- Check if point already is in the list
+			for _, point in ipairs(points) do
+				if point:IsEqualTol(newPoint, 0.5) then
+					found = true
+					break
+				end
+			end
+
+			if not found then
+				table.insert(points, newPoint)
+			end
+		end
+	end
+
+	-- Check the points for validity
+	if #points == 3 then
+		cache.CornerPoints = points
+	else
+		cache.IsValid = false
+	end
+	
+
+	return cache
+end
+
+-- Invalidate the cache, it will be regenerated on next use.
+function NAV_TRIANGLE:InvalidateCache()
+	self.Cache = nil
+end
+
 -- Deletes the triangle from the navmesh and makes sure that there is nothing left that references it.
 function NAV_TRIANGLE:Delete()
 	-- Publish change event
@@ -119,10 +168,11 @@ end
 
 -- Draw the edge into a 3D rendering context.
 function NAV_TRIANGLE:Render3D()
-	local e1, e2, e3 = self.Edges[1], self.Edges[2], self.Edges[3]
-	--local p1, p2, p3 = e1.Points[1], e2.Points[1], e3.Points[1]
+	local cache = self:GetCache()
+	local cornerPoints = cache.CornerPoints
 
-	-- TODO: Cache triangle points
-
-	--render.DrawQuad(e1, p2)
+	-- Draw triangle by misusing a quad.
+	if cornerPoints then
+		render.DrawQuad(cornerPoints[1], cornerPoints[2], cornerPoints[3], cornerPoints[2], Color(255,0,0,31))
+	end
 end
