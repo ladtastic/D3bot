@@ -78,3 +78,20 @@ function UTIL.kpairs(m)
 		end
 	end
 end
+
+-- Returns the closest point from the list points to a given point p with a radius r.
+-- If no point is found, nil will be returned.
+function UTIL.GetNearestPoint(points, p, r)
+	-- Stupid linear search for the closest point
+	local minDistSqr = (r and r * r) or math.huge
+	local resultPoint
+	for _, point in pairs(points) do -- Needs to be pairs, as it needs to support sparse arrays/maps
+		local distSqr = p:DistToSqr(point)
+		if minDistSqr > distSqr then
+			minDistSqr = distSqr
+			resultPoint = point
+		end
+	end
+
+	return resultPoint
+end

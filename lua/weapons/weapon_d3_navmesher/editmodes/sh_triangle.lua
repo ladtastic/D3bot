@@ -1,8 +1,10 @@
 AddCSLuaFile()
 
 local D3bot = D3bot
+local UTIL = D3bot.Util
 local NAV_EDIT = D3bot.NavEdit
 local NAV_MAIN = D3bot.NavMain
+local MAPGEOMETRY = D3bot.MapGeometry
 local EDIT_MODES = D3_NAVMESHER_EDIT_MODES
 
 -- Add edit mode to list
@@ -40,13 +42,19 @@ function THIS_EDIT_MODE:PrimaryAttack(wep)
 
 	-- Get eye trace info
 	local trRes = wep.Owner:GetEyeTrace()
-
 	if not trRes.Hit then return false end
+	local hitPos = trRes.HitPos
+
 	wep.Weapon:EmitSound("buttons/blip1.wav")
 
 	self.TempPoints = self.TempPoints or {}
 
-	table.insert(self.TempPoints, trRes.HitPos)
+	local navmesh = NAV_MAIN:GetNavmesh()
+	
+	local posGeometry = MAPGEOMETRY:GetNearestPoint(hitPos, 10)
+	local posNavmesh = navmesh and navmesh:GetNearestPoint(hitPos, 10)
+	local pos = UTIL.GetNearestPoint({posGeometry, posNavmesh}, hitPos) or hitPos
+	table.insert(self.TempPoints, pos)
 
 	if #self.TempPoints == 3 then
 		-- Edit server side navmesh
@@ -85,8 +93,19 @@ function THIS_EDIT_MODE:Reload(wep)
 end
 
 -- Client side drawing
-function THIS_EDIT_MODE:PostDrawViewModel(wep, vm)
+function THIS_EDIT_MODE:PreDrawViewModel(wep, vm)
 	cam.Start3D()
+
+	render.SetColorMaterial()
+
+	-- Draw current points
+	if self.TempPoints then
+		local oldPoint
+		for _, point in ipairs(self.TempPoints) do
+			render.DrawSphere(point, 10, 10, 10, Color(255, 255, 255, 31))
+			oldPoint = oldPoint
+		end
+	end
 
 	-- Draw client side navmesh
 	local navmesh = NAV_MAIN:GetNavmesh()
@@ -94,33 +113,21 @@ function THIS_EDIT_MODE:PostDrawViewModel(wep, vm)
 		navmesh:Render3D()
 	end
 
-	--[[ Test stuff
-
-	--print(vm)
-	local world = Entity(0)
-	local surfaces = world:GetBrushSurfaces()
-	for i, surf in ipairs(surfaces) do
-		--if i > 100 then
-		--	return
-		--end
-
-		local vertices = surf:GetVertices()
-		for j, vertex in ipairs(vertices) do
-			--if j > 100 then
-			--	return
-			--end
-
-			render.DrawLine(vertex, vertex + Vector(10, 10, 10))
-			--render.DrawSphere(vertex, 5, 3, 3, Color(255, 255, 255))
-		end
+	-- Draw trace hit with geometry snapping
+	local trRes = wep.Owner:GetEyeTrace()
+	if trRes.Hit then
+		local hitPos = trRes.HitPos
+		local posGeometry = MAPGEOMETRY:GetNearestPoint(hitPos, 10)
+		local posNavmesh = navmesh and navmesh:GetNearestPoint(hitPos, 10)
+		local pos = UTIL.GetNearestPoint({posGeometry, posNavmesh}, hitPos) or hitPos
+		render.DrawSphere(posNavmesh or pos, 10, 10, 10, Color(255, 255, 255, 31))
+		render.DrawSphere(pos, 1, 10, 10, Color(255, 255, 255, 127))
 	end
-	--print(surfaces)
-
-	--for i = 1, 10000, 1 do
-	--	render.DrawLine(Vector(math.random(0, 100), math.random(0, 100), math.random(0, 100)), Vector(math.random(0, 100), math.random(0, 100), math.random(0, 100)))
-	--end--]]
 
 	cam.End3D()
+
+	-- "Restore" IgnoreZ for the original rendering context
+	cam.IgnoreZ(true)
 end
 
 --function THIS_EDIT_MODE:DrawHUD(wep)

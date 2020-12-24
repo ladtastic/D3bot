@@ -83,6 +83,27 @@ function NAV_MESH:GetUniqueID()
 	return self.UniqueIDCounter
 end
 
+-- Returns the nearest triangle/edge corner to the given point p with a radius of r.
+-- If no point is found, nil will be returned.
+function NAV_MESH:GetNearestPoint(p, r)
+	-- Stupid linear search for the closest point
+	-- Also, it will go over points several times, as some edges share points
+	local minDistSqr = (r and r * r) or math.huge
+	local resultPoint
+	for _, edge in pairs(self.Edges) do
+		for _, point in ipairs(edge.Points) do
+			local distSqr = p:DistToSqr(point)
+			if minDistSqr > distSqr then
+				minDistSqr = distSqr
+				resultPoint = point
+			end
+		end
+	end
+
+	return resultPoint
+end
+
+
 -- Returns the edge with the given ID, or nil if doesn't exist.
 function NAV_MESH:FindEdgeByID(id)
 	return self.Edges[id]
