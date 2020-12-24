@@ -2,5 +2,9 @@
     "cSpell.words": [],
     "editor.formatOnSave": false,
     "lua.format.useTabs": true,
-    "lua.format.lineWidth": 240
+    "lua.format.lineWidth": 240,
+    "licenser.license": "GPLv3",
+    "licenser.projectName": "D3bot",
+    "licenser.author": "David Vogel",
+    "licenser.disableAutoHeaderInsertion": true
 }
