@@ -19,7 +19,7 @@ local D3bot = D3bot
 local LOCOMOTION = D3bot.Locomotion
 
 -- Add new locomotion controller
-function LOCOMOTION.JumpUp(bot, mem, gestureName)
+function LOCOMOTION.JumpUp(bot, mem)
 	-- Init
 	mem.Locomotion = {}
 
