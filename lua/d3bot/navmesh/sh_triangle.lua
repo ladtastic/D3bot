@@ -144,13 +144,13 @@ function NAV_TRIANGLE:GetCache()
 		cache.IsValid = false
 	end
 
-	-- Get neighbour triangles that are connected via edges.
+	-- Get neighbor triangles that are connected via edges.
 	-- The triangle indices correspond to the edge indices.
-	cache.NeighbourTriangles = {}
+	cache.NeighborTriangles = {}
 	for i, edge in ipairs(self.Edges) do
 		for _, triangle in ipairs(edge.Triangles) do
 			if triangle ~= self then
-				cache.NeighbourTriangles[i] = triangle
+				cache.NeighborTriangles[i] = triangle
 				break
 			end
 		end
@@ -233,17 +233,17 @@ function NAV_TRIANGLE:WindingOrderToEdge(edge)
 end
 
 -- Calculates and changes the triangle's new FlipNormal state.
--- This is determined by its neighbour triangles.
--- If the neighbours give a conflicting answer, the normal will be pointing upwards.
+-- This is determined by its neighbor triangles.
+-- If the neighbor give a conflicting answer, the normal will be pointing upwards.
 function NAV_TRIANGLE:RecalcFlipNormal()
 	local cache = self:GetCache()
 
 	local FlipCounter = 0
 
-	for k, triangle in pairs(cache.NeighbourTriangles) do
+	for k, triangle in pairs(cache.NeighborTriangles) do
 		local edge = self.Edges[k]
-		local selfWindingOrder, neighbourWindingOrder = self:WindingOrderToEdge(edge), triangle:WindingOrderToEdge(edge)
-		if selfWindingOrder == neighbourWindingOrder then
+		local selfWindingOrder, neighborWindingOrder = self:WindingOrderToEdge(edge), triangle:WindingOrderToEdge(edge)
+		if selfWindingOrder == neighborWindingOrder then
 			FlipCounter = FlipCounter + (triangle.FlipNormal and -1 or 1)
 		else
 			FlipCounter = FlipCounter + (triangle.FlipNormal and 1 or -1)
