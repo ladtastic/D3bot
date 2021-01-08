@@ -187,7 +187,13 @@ function NAV_MESH:FindOrCreateTriangle3E(e1, e2, e3)
 	if triangle then return triangle end
 
 	-- Create new triangle
-	return NAV_TRIANGLE:New(self, nil, e1, e2, e3)
+	local triangle = NAV_TRIANGLE:New(self, nil, e1, e2, e3, nil)
+	if not triangle then return triangle end
+
+	-- Determine normal flip state
+	triangle:UpdateFlipNormal()
+
+	return triangle
 end
 
 -- Set where to publish change events to.

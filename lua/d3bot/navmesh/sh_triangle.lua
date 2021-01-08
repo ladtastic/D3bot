@@ -26,11 +26,12 @@ local NAV_TRIANGLE = D3bot.NAV_TRIANGLE
 -- This represents a triangle that is defined by 3 edges that are connected in a loop.
 -- If a triangle with the same id already exists, it will be overwritten.
 -- It's possible to get invalid triangles, therefore this needs to be checked.
-function NAV_TRIANGLE:New(navmesh, id, e1, e2, e3)
+function NAV_TRIANGLE:New(navmesh, id, e1, e2, e3, flipNormal)
 	local obj = {
 		Navmesh = navmesh,
 		ID = id or navmesh:GetUniqueID(), -- TODO: Convert id to integer if possible
 		Edges = {e1, e2, e3},
+		FlipNormal = flipNormal,
 		Cache = nil -- Contains cached values like the normal, the 3 corner points and neighbour triangles. Can be invalidated.
 	}
 
@@ -39,17 +40,21 @@ function NAV_TRIANGLE:New(navmesh, id, e1, e2, e3)
 
 	-- TODO: Selfcheck
 
-	-- Check if there was a previous element. If so, delete it first
+	-- Add reference to this triangle to all edges
+	table.insert(e1.Triangles, obj)
+	table.insert(e2.Triangles, obj)
+	table.insert(e3.Triangles, obj)
+
+	-- Check if there was a previous element. If so, delete it
 	local old = navmesh.Triangles[obj.ID]
 	if old then old:_Delete() end
 
 	-- Add object to the navmesh
 	navmesh.Triangles[obj.ID] = obj
 
-	-- Add reference to this triangle to all edges
-	table.insert(e1.Triangles, obj)
-	table.insert(e2.Triangles, obj)
-	table.insert(e3.Triangles, obj)
+	-- Check if cache is valid, if not abort and delete
+	local cache = obj:GetCache()
+	if not cache.IsValid then obj:_Delete() return nil end
 
 	-- Publish change event
 	if navmesh.PubSub then
@@ -68,7 +73,7 @@ function NAV_TRIANGLE:NewFromTable(navmesh, t)
 	
 	if not e1 or not e2 or not e3 then error("Couldn't find all edges by their reference") end
 
-	local obj = self:New(navmesh, t.ID, e1, e2, e3)
+	local obj = self:New(navmesh, t.ID, e1, e2, e3, t.FlipNormal)
 
 	return obj
 end
@@ -91,7 +96,8 @@ function NAV_TRIANGLE:MarshalToTable()
 			self.Edges[1]:GetID(),
 			self.Edges[2]:GetID(),
 			self.Edges[3]:GetID()
-		}
+		},
+		FlipNormal = self.FlipNormal
 	}
 
 	return t -- Make sure that any object returned here is a deep copy of its original
@@ -117,7 +123,7 @@ function NAV_TRIANGLE:GetCache()
 			local found = false
 			-- Check if point already is in the list
 			for _, point in ipairs(points) do
-				if point:IsEqualTol(newPoint, 0.5) then
+				if point == newPoint then
 					found = true
 					break
 				end
@@ -135,7 +141,25 @@ function NAV_TRIANGLE:GetCache()
 	else
 		cache.IsValid = false
 	end
-	
+
+	-- Get neighbour triangles that are connected via edges.
+	-- The triangle indices correspond to the edge indices.
+	cache.NeighbourTriangles = {}
+	for i, edge in ipairs(self.Edges) do
+		for _, triangle in ipairs(edge.Triangles) do
+			if triangle ~= self then
+				cache.NeighbourTriangles[i] = triangle
+				break
+			end
+		end
+	end
+
+	-- Calculate normal
+	cache.Normal = (points[1] - points[2]):Cross(points[3] - points[1]):GetNormalized()
+	if self.FlipNormal then cache.Normal = cache.Normal * -1 end
+
+	-- Caclulate "centroid" center
+	cache.Centroid = (points[1] + points[2] + points[3]) / 3
 
 	return cache
 end
@@ -152,7 +176,7 @@ function NAV_TRIANGLE:Delete()
 		self.Navmesh.PubSub:DeleteTriangleFromSubs(self:GetID())
 	end
 
-	return self:_Delete()
+	self:_Delete()
 end
 
 -- Internal method.
@@ -183,13 +207,92 @@ function NAV_TRIANGLE:ConsistsOfEdges(e1, e2, e3)
 	return false
 end
 
+-- Returns the winding order/direction relative to the given edge.
+-- true: Winding direction is aligned with the edge.
+-- false: Winding direction is aligned against the edge.
+-- nil: Otherwise.
+function NAV_TRIANGLE:WindingOrderToEdge(edge)
+	local cache = self:GetCache()
+	if not cache.IsValid then return nil end
+
+	local p1, p2, p3 = cache.CornerPoints[1], cache.CornerPoints[2], cache.CornerPoints[3]
+
+	-- Aligned with edge
+	if p1 == edge.Points[1] and p2 == edge.Points[2] then return true end
+	if p2 == edge.Points[1] and p3 == edge.Points[2] then return true end
+	if p3 == edge.Points[1] and p1 == edge.Points[2] then return true end
+
+	-- Aligned against edge
+	if p1 == edge.Points[1] and p3 == edge.Points[2] then return false end
+	if p2 == edge.Points[1] and p1 == edge.Points[2] then return false end
+	if p3 == edge.Points[1] and p2 == edge.Points[2] then return false end
+
+	return nil
+end
+
+-- Calculates and changes the triangle's new FlipNormal state.
+-- This is determined by its neighbour triangles.
+-- If the neighbours give a conflicting answer, the normal will be pointing upwards.
+function NAV_TRIANGLE:UpdateFlipNormal()
+	local cache = self:GetCache()
+
+	local FlipCounter = 0
+
+	for k, triangle in pairs(cache.NeighbourTriangles) do
+		local edge = self.Edges[k]
+		local selfWindingOrder, neighbourWindingOrder = self:WindingOrderToEdge(edge), triangle:WindingOrderToEdge(edge)
+		if selfWindingOrder == neighbourWindingOrder then
+			FlipCounter = FlipCounter + (triangle.FlipNormal and -1 or 1)
+		else
+			FlipCounter = FlipCounter + (triangle.FlipNormal and 1 or -1)
+		end
+	end
+
+	if FlipCounter > 0 then
+		self:SetFlipNormal(true)
+	elseif FlipCounter < 0 then
+		self:SetFlipNormal(false)
+	else
+		if cache.Normal[3] < 0 then
+			self:SetFlipNormal(true)
+		else
+			self:SetFlipNormal(false)
+		end
+	end
+
+	print(self.FlipNormal)
+end
+
+-- Changes and publishes the FlipNormal state.
+function NAV_TRIANGLE:SetFlipNormal(state)
+	local navmesh = self.Navmesh
+
+	if state then
+		self.FlipNormal = true
+	else
+		self.FlipNormal = nil
+	end
+
+	-- Recalc normal and other stuff
+	self:InvalidateCache()
+
+	-- Publish change event
+	if navmesh and navmesh.PubSub then
+		navmesh.PubSub:SendTriangleToSubs(self)
+	end
+end
+
 -- Draw the edge into a 3D rendering context.
 function NAV_TRIANGLE:Render3D()
 	local cache = self:GetCache()
 	local cornerPoints = cache.CornerPoints
+	local normal, centroid = cache.Normal, cache.Centroid
 
 	-- Draw triangle by misusing a quad.
 	if cornerPoints then
 		render.DrawQuad(cornerPoints[1], cornerPoints[2], cornerPoints[3], cornerPoints[2], Color(255,0,0,31))
+	end
+	if centroid and normal then
+		render.DrawLine(centroid, centroid + normal * 10)
 	end
 end
