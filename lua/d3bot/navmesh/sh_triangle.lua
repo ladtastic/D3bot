@@ -33,7 +33,8 @@ function NAV_TRIANGLE:New(navmesh, id, e1, e2, e3, flipNormal)
 		ID = id or navmesh:GetUniqueID(), -- TODO: Convert id to integer if possible
 		Edges = {e1, e2, e3},
 		FlipNormal = flipNormal,
-		Cache = nil -- Contains cached values like the normal, the 3 corner points and neighbour triangles. Can be invalidated.
+		Cache = nil, -- Contains cached values like the normal, the 3 corner points and neighbor triangles. Can be invalidated.
+		UI = {} -- General structure for UI related properties like selection status
 	}
 
 	setmetatable(obj, self)
@@ -159,7 +160,7 @@ function NAV_TRIANGLE:GetCache()
 	cache.Normal = (points[1] - points[2]):Cross(points[3] - points[1]):GetNormalized()
 	if self.FlipNormal then cache.Normal = cache.Normal * -1 end
 
-	-- Caclulate "centroid" center
+	-- Calculate "centroid" center
 	cache.Centroid = (points[1] + points[2] + points[3]) / 3
 
 	return cache
@@ -282,7 +283,7 @@ function NAV_TRIANGLE:SetFlipNormal(state)
 end
 
 -- Returns the closest point to the given point p.
-function NAV_TRIANGLE:GetClosestPoint(p)
+function NAV_TRIANGLE:GetClosestPointToPoint(p)
 	local cache = self:GetCache()
 	if not cache.IsValid then return nil end
 
@@ -290,7 +291,7 @@ function NAV_TRIANGLE:GetClosestPoint(p)
 	local p1, p2, p3 = cache.CornerPoints[1], cache.CornerPoints[2], cache.CornerPoints[3]
 
 	-- Project the point p onto the plane
-	--local projected = p --+ normal:Cross(p1 - p) * normal
+	--local projected = p + normal:Cross(p1 - p) * normal
 
 	-- Get clamped barycentric coordinates
 	local u, v, w = UTIL.GetBarycentric3DClamped(p1, p2, p3, p)
@@ -299,17 +300,50 @@ function NAV_TRIANGLE:GetClosestPoint(p)
 	return p1 * u + p2 * v + p3 * w
 end
 
+-- Returns wether a ray from the given origin in the given direction dir intersects with the triangle.
+-- The result is either nil or the distance from the origin.
+-- The dir parameter must be normalized.
+function NAV_TRIANGLE:IntersectsRay(origin, dir)
+	local cache = self:GetCache()
+	if not cache.IsValid then return nil end
+
+	local normal = cache.Normal
+	local p1, p2, p3 = cache.CornerPoints[1], cache.CornerPoints[2], cache.CornerPoints[3]
+
+	-- Ignore all cases where the ray and the plane are parallel
+	local denominator = dir:Dot(normal)
+	if denominator == 0 then return nil end
+
+	-- Get intersection distance and point
+	local d = (p1 - origin):Dot(normal) / denominator
+	local point = origin + dir * d
+
+	-- Ignore if the element is behind the origin
+	if d <= 0 then return nil end
+
+	-- Check if intersection point is outside the triangle
+	local u, v, w = UTIL.GetBarycentric3D(p1, p2, p3, point)
+	if u < 0 or v < 0 or w < 0 then return nil end
+
+	return d
+end
+
 -- Draw the edge into a 3D rendering context.
 function NAV_TRIANGLE:Render3D()
 	local cache = self:GetCache()
+	local ui = self.UI
 	local cornerPoints = cache.CornerPoints
 	local normal, centroid = cache.Normal, cache.Centroid
 
 	-- Draw triangle by misusing a quad.
 	if cornerPoints then
-		render.DrawQuad(cornerPoints[1], cornerPoints[2], cornerPoints[3], cornerPoints[2], Color(255,0,0,31))
+		if ui.Highlighted then
+			render.DrawQuad(cornerPoints[1], cornerPoints[2], cornerPoints[3], cornerPoints[2], Color(255,0,0,127))
+		else
+			render.DrawQuad(cornerPoints[1], cornerPoints[2], cornerPoints[3], cornerPoints[2], Color(255,0,0,31))
+		end
 	end
 	if centroid and normal then
-		render.DrawLine(centroid, centroid + normal * 10)
+		render.DrawLine(centroid, centroid + normal * 10, Color(255,255,255,255), true)
 	end
 end

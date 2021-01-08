@@ -141,6 +141,65 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm)
 		pos = UTIL.RoundVector(pos)
 		render.DrawSphere(pos, 10, 10, 10, Color(255, 255, 255, 31))
 		render.DrawSphere(pos, 1, 10, 10, Color(255, 255, 255, 127))
+
+		-- Debug
+		--[[if navmesh then
+			for _, triangle in pairs(navmesh.Triangles) do
+				local p = triangle:GetClosestPointToPoint(pos)
+				--render.DrawSphere(p, 10, 10, 10, Color(0, 0, 255, 255))
+				local cache = triangle:GetCache()
+				render.DrawLine(cache.Centroid, p)
+				--break
+			end
+		end]]
+
+		--[[local eyePos = wep.Owner:EyePos()
+		local aimVec = wep.Owner:GetAimVector()
+
+		if navmesh then
+			for _, edge in pairs(navmesh.Edges) do
+				local p1, p2 = edge:GetClosestPointToLine(eyePos, aimVec)
+				render.DrawSphere(p1, 1, 10, 10, Color(0, 0, 255, 255))
+				--render.DrawSphere(p2, 1, 10, 10, Color(0, 255, 0, 255))
+				render.DrawLine(p1, p2)
+				--break
+			end
+		end]]
+
+		-- Highlighting. Separate for triangles and vectors, as both can be highlighted in this edit mode.
+		if navmesh then
+			local aimVec = wep.Owner:GetAimVector()
+			local minDist = trRes.Fraction * 32768 + 20 -- Default max dist of GetEyeTrace is 32768. Also allow to select elements inside geometry.
+			local minElement = nil
+
+			for _, edge in pairs(navmesh.Edges) do
+				edge.UI.Highlighted = nil
+				local dist = edge:IntersectsRay(trRes.StartPos, aimVec)
+				if dist and minDist > dist then
+					minDist = dist
+					minElement = edge
+				end
+			end
+			if minElement then
+				print(minElement)
+				minElement.UI.Highlighted = true
+			end
+
+			local minDist = trRes.Fraction * 32768 + 20 -- Default max dist of GetEyeTrace is 32768. Also allow to select elements inside geometry.
+			local minElement = nil
+			for _, triangle in pairs(navmesh.Triangles) do
+				triangle.UI.Highlighted = nil
+				local dist = triangle:IntersectsRay(trRes.StartPos, aimVec)
+				if dist and minDist > dist then
+					minDist = dist
+					minElement = triangle
+				end
+			end
+			if minElement then
+				print(minElement)
+				minElement.UI.Highlighted = true
+			end
+		end
 	end
 
 	cam.End3D()

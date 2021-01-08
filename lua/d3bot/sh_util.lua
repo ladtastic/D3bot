@@ -116,6 +116,8 @@ end
 -- Returns the barycentric coordinates of point p of the triangle defined by p1, p2 and p3.
 -- Point p will be projected onto the triangle plane automatically.
 function UTIL.GetBarycentric3D(p1, p2, p3, p)
+	-- See: https://gamedev.stackexchange.com/a/23745
+
 	local v1, v2, v3 = p2 - p1, p3 - p1, p - p1
 	local d11, d12, d22, d31, d32 = v1:Dot(v1), v1:Dot(v2), v2:Dot(v2), v3:Dot(v1), v3:Dot(v2)
 	local denom = d11 * d22 - d12 * d12
@@ -130,6 +132,8 @@ end
 -- This will clamp the coordinates in a way that the resulting u, v and w represent a point inside the triangle with the shortest distance to p.
 -- Point p will be projected onto the triangle plane automatically.
 function UTIL.GetBarycentric3DClamped(p1, p2, p3, p)
+	-- See: https://stackoverflow.com/a/37923949/14967192
+
 	local u, v, w = UTIL.GetBarycentric3D(p1, p2, p3, p)
 
 	-- The point is outside of the triangle at the edge between p2 and p3
