@@ -112,3 +112,45 @@ function UTIL.GetNearestPoint(points, p, r)
 
 	return resultPoint
 end
+
+-- Returns the barycentric coordinates of point p of the triangle defined by p1, p2 and p3.
+-- Point p will be projected onto the triangle plane automatically.
+function UTIL.GetBarycentric3D(p1, p2, p3, p)
+	local v1, v2, v3 = p2 - p1, p3 - p1, p - p1
+	local d11, d12, d22, d31, d32 = v1:Dot(v1), v1:Dot(v2), v2:Dot(v2), v3:Dot(v1), v3:Dot(v2)
+	local denom = d11 * d22 - d12 * d12
+	local v = (d22 * d31 - d12 * d32) / denom
+	local w = (d11 * d32 - d12 * d31) / denom
+	local u = 1 - v - w
+
+	return u, v, w
+end
+
+-- Returns the barycentric coordinates of point p of the triangle defined by p1, p2 and p3.
+-- This will clamp the coordinates in a way that the resulting u, v and w represent a point inside the triangle with the shortest distance to p.
+-- Point p will be projected onto the triangle plane automatically.
+function UTIL.GetBarycentric3DClamped(p1, p2, p3, p)
+	local u, v, w = UTIL.GetBarycentric3D(p1, p2, p3, p)
+
+	-- The point is outside of the triangle at the edge between p2 and p3
+	if u < 0 and u <= v and u <= w then
+		local t = (p - p2):Dot(p3 - p2) / (p3 - p2):Dot(p3 - p2)
+		t = math.Clamp(t, 0, 1)
+		return 0, 1 - t, t
+	end
+	-- The point is outside of the triangle at the edge between p1 and p3
+	if v < 0 and v <= u and v <= w then
+		local t = (p - p3):Dot(p1 - p3) / (p1 - p3):Dot(p1 - p3)
+		t = math.Clamp(t, 0, 1)
+		return t, 0, 1 - t
+	end
+	-- The point is outside of the triangle at the edge between p1 and p2
+	if w < 0 and w <= u and w <= v then
+		local t = (p - p1):Dot(p2 - p1) / (p2 - p1):Dot(p2 - p1)
+		t = math.Clamp(t, 0, 1)
+		return 1 - t, t, 0
+	end
+
+	-- Point is inside of the triangle
+	return u, v, w
+end

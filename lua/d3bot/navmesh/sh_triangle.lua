@@ -16,6 +16,7 @@
 -- along with D3bot.  If not, see <http://www.gnu.org/licenses/>.
 
 local D3bot = D3bot
+local UTIL = D3bot.Util
 local NAV_TRIANGLE = D3bot.NAV_TRIANGLE
 
 ------------------------------------------------------
@@ -233,7 +234,7 @@ end
 -- Calculates and changes the triangle's new FlipNormal state.
 -- This is determined by its neighbour triangles.
 -- If the neighbours give a conflicting answer, the normal will be pointing upwards.
-function NAV_TRIANGLE:UpdateFlipNormal()
+function NAV_TRIANGLE:RecalcFlipNormal()
 	local cache = self:GetCache()
 
 	local FlipCounter = 0
@@ -259,8 +260,6 @@ function NAV_TRIANGLE:UpdateFlipNormal()
 			self:SetFlipNormal(false)
 		end
 	end
-
-	print(self.FlipNormal)
 end
 
 -- Changes and publishes the FlipNormal state.
@@ -280,6 +279,24 @@ function NAV_TRIANGLE:SetFlipNormal(state)
 	if navmesh and navmesh.PubSub then
 		navmesh.PubSub:SendTriangleToSubs(self)
 	end
+end
+
+-- Returns the closest point to the given point p.
+function NAV_TRIANGLE:GetClosestPoint(p)
+	local cache = self:GetCache()
+	if not cache.IsValid then return nil end
+
+	local normal = cache.Normal
+	local p1, p2, p3 = cache.CornerPoints[1], cache.CornerPoints[2], cache.CornerPoints[3]
+
+	-- Project the point p onto the plane
+	--local projected = p --+ normal:Cross(p1 - p) * normal
+
+	-- Get clamped barycentric coordinates
+	local u, v, w = UTIL.GetBarycentric3DClamped(p1, p2, p3, p)
+
+	-- Transform barycentric back to cartesian
+	return p1 * u + p2 * v + p3 * w
 end
 
 -- Draw the edge into a 3D rendering context.
