@@ -71,6 +71,7 @@ function THIS_EDIT_MODE:PrimaryAttack(wep)
 	local posGeometry = MAPGEOMETRY:GetNearestPoint(hitPos, 10)
 	local posNavmesh = navmesh and navmesh:GetNearestPoint(hitPos, 10)
 	local pos = UTIL.GetNearestPoint({posGeometry, posNavmesh}, hitPos) or hitPos
+	pos = UTIL.RoundVector(pos)
 	table.insert(self.TempPoints, pos)
 
 	if #self.TempPoints == 3 then
@@ -137,7 +138,8 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm)
 		local posGeometry = MAPGEOMETRY:GetNearestPoint(hitPos, 10)
 		local posNavmesh = navmesh and navmesh:GetNearestPoint(hitPos, 10)
 		local pos = UTIL.GetNearestPoint({posGeometry, posNavmesh}, hitPos) or hitPos
-		render.DrawSphere(posNavmesh or pos, 10, 10, 10, Color(255, 255, 255, 31))
+		pos = UTIL.RoundVector(pos)
+		render.DrawSphere(pos, 10, 10, 10, Color(255, 255, 255, 31))
 		render.DrawSphere(pos, 1, 10, 10, Color(255, 255, 255, 127))
 	end
 
