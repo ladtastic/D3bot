@@ -194,7 +194,7 @@ function NAV_TRIANGLE:_Delete()
 	self.Navmesh = nil
 end
 
--- Returns wether the triangle consists out of the three given edges or not.
+-- Returns whether the triangle consists out of the three given edges or not.
 function NAV_TRIANGLE:ConsistsOfEdges(e1, e2, e3)
 	local se1, se2, se3 = self.Edges[1], self.Edges[2], self.Edges[3]
 	-- There is probably a nicer way to do this, but it doesn't need to be that fast.
@@ -300,7 +300,7 @@ function NAV_TRIANGLE:GetClosestPointToPoint(p)
 	return p1 * u + p2 * v + p3 * w
 end
 
--- Returns wether a ray from the given origin in the given direction dir intersects with the triangle.
+-- Returns whether a ray from the given origin in the given direction dir intersects with the triangle.
 -- The result is either nil or the distance from the origin.
 -- The dir parameter must be normalized.
 function NAV_TRIANGLE:IntersectsRay(origin, dir)

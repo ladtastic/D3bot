@@ -135,7 +135,7 @@ function NAV_EDGE:_GC()
 	end
 end
 
--- Returns wether the edge consists out of the two given points or not.
+-- Returns whether the edge consists out of the two given points or not.
 -- The point coordinates will be rounded to a single engine unit.
 function NAV_EDGE:ConsistsOfPoints(p1, p2)
 	p1, p2 = UTIL.RoundVector(p1), UTIL.RoundVector(p2)
@@ -169,7 +169,7 @@ function NAV_EDGE:GetClosestPointToLine(origin, dir)
 	return p1 + u * scClamped, origin + dir * tc
 end
 
--- Returns wether a ray from the given origin in the given direction dir intersects with the edge.
+-- Returns whether a ray from the given origin in the given direction dir intersects with the edge.
 -- The result is either nil or the distance from the origin.
 -- The dir parameter must be normalized.
 function NAV_EDGE:IntersectsRay(origin, dir)
