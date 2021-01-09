@@ -9,9 +9,16 @@
         "Selfcheck",
         "Vogel",
         "bitmasks",
+        "concommand",
+        "concommands",
+        "denyselect",
+        "gamemode",
+        "gamemodes",
+        "gmod's",
         "kpairs",
         "navmeshes",
-        "plys"
+        "plys",
+        "renderutil"
     ],
     "editor.formatOnSave": false,
     "lua.format.useTabs": true,

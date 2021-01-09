@@ -123,7 +123,7 @@ function NAV_TRIANGLE:GetCache()
 	for _, edge in ipairs(self.Edges) do
 		for _, newPoint in ipairs(edge.Points) do
 			local found = false
-			-- Check if point already is in the list
+			-- Check if point is already in the list
 			for _, point in ipairs(points) do
 				if point == newPoint then
 					found = true
@@ -141,6 +141,7 @@ function NAV_TRIANGLE:GetCache()
 	if #points == 3 then
 		cache.CornerPoints = points
 	else
+		print(string.format("%s Failed to generate cache for triangle %s: Expected edges to resolve into 3 points, but got %d", D3bot.PrintPrefix, self:GetID(), #points))
 		cache.IsValid = false
 	end
 
@@ -157,11 +158,17 @@ function NAV_TRIANGLE:GetCache()
 	end
 
 	-- Calculate normal
-	cache.Normal = (points[1] - points[2]):Cross(points[3] - points[1]):GetNormalized()
+	if cache.IsValid then
+		cache.Normal = (points[1] - points[2]):Cross(points[3] - points[1]):GetNormalized()
+	else
+		cache.Normal = Vector(0, 0, 1)
+	end
 	if self.FlipNormal then cache.Normal = cache.Normal * -1 end
 
 	-- Calculate "centroid" center
-	cache.Centroid = (points[1] + points[2] + points[3]) / 3
+	if cache.IsValid then
+		cache.Centroid = (points[1] + points[2] + points[3]) / 3
+	end
 
 	return cache
 end
@@ -342,13 +349,14 @@ function NAV_TRIANGLE:Render3D()
 		if ui.Highlighted then
 			ui.Highlighted = nil
 			cam.IgnoreZ(true)
-			render.DrawQuad(cornerPoints[1], cornerPoints[2], cornerPoints[3], cornerPoints[2], Color(255,0,0,127))
+			render.DrawQuad(cornerPoints[1], cornerPoints[2], cornerPoints[3], cornerPoints[2], Color(255, 0, 0, 127))
 			cam.IgnoreZ(false)
+
+			if centroid and normal then
+				render.DrawLine(centroid, centroid + normal * 30, Color(255, 255, 255, 255), true)
+			end
 		else
-			render.DrawQuad(cornerPoints[1] + tinyNormal, cornerPoints[2] + tinyNormal, cornerPoints[3] + tinyNormal, cornerPoints[2] + tinyNormal, Color(255,0,0,31))
+			render.DrawQuad(cornerPoints[1] + tinyNormal, cornerPoints[2] + tinyNormal, cornerPoints[3] + tinyNormal, cornerPoints[2] + tinyNormal, Color(255, 0, 0, 31))
 		end
-	end
-	if centroid and normal then
-		render.DrawLine(centroid, centroid + normal * 10, Color(255,255,255,255), true)
 	end
 end

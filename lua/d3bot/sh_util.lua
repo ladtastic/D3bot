@@ -163,7 +163,7 @@ end
 -- The entities in the supplied lists have to implement the IntersectsRay method.
 -- The result is either nil or the intersecting entity, and its distance from the origin as a fraction of dir length.
 -- This will not return anything behind the origin, or beyond the length of dir.
-function UTIL:GetClosestIntersectingWithRay(origin, dir, ...)
+function UTIL.GetClosestIntersectingWithRay(origin, dir, ...)
 	local lists = {...}
 	local minDist = 1
 	local minEntity = nil
@@ -182,10 +182,11 @@ function UTIL:GetClosestIntersectingWithRay(origin, dir, ...)
 end
 
 -- Returns pos snapped to the closest (in proximity range) snapping point of a given navmesh or map geometry.
--- This will always return a point, even if it is pos itself.
-function UTIL:GetSnappedPosition(navmesh, mapgeometry, pos, proximity)
+-- Additionally this will round the vector to one source engine unit.
+-- The result is a snapped point and a bool stating if the pos got snapped or not.
+function UTIL.GetSnappedPosition(navmesh, mapgeometry, pos, proximity)
 	local posGeometry = mapgeometry and mapgeometry:GetNearestPoint(pos, proximity)
 	local posNavmesh = navmesh and navmesh:GetNearestPoint(pos, proximity)
-	local pos = UTIL.GetNearestPoint({posGeometry, posNavmesh}, pos) or pos
-	return UTIL.RoundVector(pos)
+	local snapped = UTIL.GetNearestPoint({posGeometry, posNavmesh}, pos)
+	return UTIL.RoundVector(snapped or pos), snapped ~= nil
 end

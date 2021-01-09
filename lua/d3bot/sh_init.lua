@@ -26,6 +26,7 @@ D3bot = D3bot or {}
 D3bot.Version = {1, 0, 0} -- TODO: Create SemVer object or something
 D3bot.Config = D3bot.Config or {} -- General configuration table
 D3bot.Util = D3bot.Util or {} -- Utility functions
+D3bot.RenderUtil = D3bot.RenderUtil or {} -- Render helper/utility functions
 D3bot.MapGeometry = D3bot.MapGeometry or {} -- Functions for querying map geometry like corner points
 D3bot.ConCommands = D3bot.ConCommands or {} -- List of commands that can be run from the console
 D3bot.NavMain = D3bot.NavMain or {} -- Container for the main navmesh instance for both the server and client
@@ -58,6 +59,7 @@ UTIL.IncludeRealm("sv_ulx_fix.lua", UTIL.REALM_SERVER)
 UTIL.IncludeRealm("sh_concommand.lua", UTIL.REALM_SHARED)
 UTIL.IncludeRealm("sh_concommands.lua", UTIL.REALM_SHARED)
 UTIL.IncludeRealm("sh_mapgeometry.lua", UTIL.REALM_SHARED)
+UTIL.IncludeRealm("cl_renderutil.lua", UTIL.REALM_CLIENT)
 
 -- Navmesh stuff
 UTIL.IncludeRealm("navmesh/sh_main.lua", UTIL.REALM_SHARED)
@@ -81,6 +83,6 @@ UTIL.IncludeRealm("gamemodes/" .. engine.ActiveGamemode() .. "/sh_init.lua", UTI
 UTIL.IncludeDirectory(D3bot.AddonRoot .. "brains/", "*.lua", UTIL.REALM_SERVER)
 UTIL.IncludeDirectory(D3bot.AddonRoot .. "gamemodes/" .. engine.ActiveGamemode() .. "/brains/", "*.lua", UTIL.REALM_SERVER)
 
--- Load general locomotion controllers (General and gamemode specific)
+-- Load locomotion controllers (General and gamemode specific)
 UTIL.IncludeDirectory(D3bot.AddonRoot .. "locomotion/", "*.lua", UTIL.REALM_SERVER)
 UTIL.IncludeDirectory(D3bot.AddonRoot .. "gamemodes/" .. engine.ActiveGamemode() .. "/locomotion/", "*.lua", UTIL.REALM_SERVER)

@@ -19,6 +19,7 @@ AddCSLuaFile()
 
 local D3bot = D3bot
 local UTIL = D3bot.Util
+local RENDER_UTIL = D3bot.RenderUtil
 local NAV_EDIT = D3bot.NavEdit
 local NAV_MAIN = D3bot.NavMain
 local MAPGEOMETRY = D3bot.MapGeometry
@@ -78,10 +79,13 @@ function THIS_EDIT_MODE:PrimaryAttack(wep)
 	-- An edge entity that the player points on
 	local tracedEdge
 
-	-- Check if any edge can be selected, if so add the two edge points to the temp points list
-	if (3 - #self.TempPoints) >= 2 then
+	-- Get 3D cursor that snaps to either map geometry or navmesh points
+	local snappedPos, snapped = UTIL.GetSnappedPosition(navmesh, MAPGEOMETRY, trRes.HitPos, 10)
+
+	-- Check if any edge can be selected, if so add the two edge points to the temp points list.
+	if not snapped and (3 - #self.TempPoints) >= 2 then
 		-- Trace closest edge
-		tracedEdge = UTIL:GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Edges)
+		tracedEdge = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Edges)
 
 		if tracedEdge then
 			table.insert(self.TempPoints, tracedEdge.Points[1])
@@ -91,9 +95,6 @@ function THIS_EDIT_MODE:PrimaryAttack(wep)
 
 	-- If there is no traced edge, and there are still more points needed, get one
 	if not tracedEdge and trRes.Hit and (3 - #self.TempPoints) >= 1 then
-		-- Snap position to either map geometry or navmesh points
-		local snappedPos = UTIL:GetSnappedPosition(navmesh, MAPGEOMETRY, trRes.HitPos, 10)
-
 		table.insert(self.TempPoints, snappedPos)
 	end
 
@@ -132,7 +133,7 @@ function THIS_EDIT_MODE:SecondaryAttack(wep)
 	local aimOrigin = tr.start
 	local aimVec = trRes.HitPos - aimOrigin + trRes.Normal * 20 -- Add a bit more to allow for selection of entities inside geometry.
 
-	local tracedTriangle = UTIL:GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Triangles)
+	local tracedTriangle = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Triangles)
 	-- Set highlighted state of traced element
 	if tracedTriangle then
 		-- Edit server side navmesh
@@ -159,6 +160,9 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm)
 	local navmesh = NAV_MAIN:GetNavmesh()
 	if not navmesh then return end
 
+	-- Triangle points that are used to draw a ghost of the current triangle
+	local trianglePoints = table.Copy(self.TempPoints or {})
+	
 	-- Player eye trace
 	local tr = util.GetPlayerTrace(LocalPlayer())
 	local trRes = util.TraceLine(tr)
@@ -174,44 +178,52 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm)
 	-- An edge entity that the player points on
 	local tracedEdge
 
+	-- Get 3D cursor pos that snaps to either map geometry or navmesh points
+	local snappedPos, snapped = UTIL.GetSnappedPosition(navmesh, MAPGEOMETRY, trRes.HitPos, 10)
+
 	-- Highlighting of navmesh edges.
 	-- Check if any edge can be selected (based on the temp points needed), if so highlight it.
-	if not self.TempPoints or (3 - #self.TempPoints) >= 2 then
+	if not snapped and (3 - #trianglePoints) >= 2 then
 		-- Trace closest edge
-		tracedEdge = UTIL:GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Edges)
+		tracedEdge = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Edges)
 
 		-- Set highlighted state of traced element
 		if tracedEdge then
 			tracedEdge.UI.Highlighted = true
+			table.insert(trianglePoints, tracedEdge.Points[1])
+			table.insert(trianglePoints, tracedEdge.Points[2])
 		end
 	end
 
-	-- Highlighting of navmesh triangles.
-	local tracedTriangle = UTIL:GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Triangles)
+	-- Draw 3D cursor with geometry snapping
+	if not tracedEdge and trRes.Hit and (3 - #trianglePoints) >= 1 then
+		table.insert(trianglePoints, snappedPos)
+		RENDER_UTIL.Draw3DCursorPos(snappedPos, Color(255, 255, 255, 255), Color(0, 0, 0, 255))
+		--render.DrawSphere(snappedPos, 10, 10, 10, Color(255, 255, 255, 31))
+		--render.DrawSphere(snappedPos, 1, 10, 10, Color(255, 255, 255, 127))
+	end
+
+	-- Highlighting of navmesh triangles
+	local tracedTriangle = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Triangles)
 	-- Set highlighted state of traced element
 	if tracedTriangle then
 		tracedTriangle.UI.Highlighted = true
 	end
 
-	-- Draw eye trace hit with geometry snapping
-	if not tracedEdge and trRes.Hit and (not self.TempPoints or (3 - #self.TempPoints) >= 1) then
-		-- Snap position to either map geometry or navmesh points
-		local snappedPos = UTIL:GetSnappedPosition(navmesh, MAPGEOMETRY, trRes.HitPos, 10)
-
-		render.DrawSphere(snappedPos, 10, 10, 10, Color(255, 255, 255, 31))
-		render.DrawSphere(snappedPos, 1, 10, 10, Color(255, 255, 255, 127))
-	end
-
 	-- Draw client side navmesh
 	navmesh:Render3D()
 
-	-- Draw stored edit mode points/vectors
-	if self.TempPoints then
-		local oldPoint
-		for _, point in ipairs(self.TempPoints) do
-			render.DrawSphere(point, 10, 10, 10, Color(255, 255, 255, 31))
-			oldPoint = oldPoint
-		end
+	-- Draw ghost of triangle
+	for _, point in ipairs(trianglePoints) do
+		RENDER_UTIL.Draw3DCursorPos(point, Color(255, 255, 255, 255), Color(0, 0, 0, 255))
+		--render.DrawSphere(point, 10, 10, 10, Color(255, 255, 255, 31))
+	end
+	if #trianglePoints == 3 then
+		local p1, p2, p3 = trianglePoints[1], trianglePoints[2], trianglePoints[3]
+		render.DrawQuad(p1, p2, p3, p2, Color(255, 255, 255, 31))
+		render.DrawLine(p1, p2, Color(255, 255, 255, 255), false)
+		render.DrawLine(p2, p3, Color(255, 255, 255, 255), false)
+		render.DrawLine(p3, p1, Color(255, 255, 255, 255), false)
 	end
 
 	cam.End3D()
