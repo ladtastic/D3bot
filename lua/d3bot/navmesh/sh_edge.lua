@@ -205,8 +205,8 @@ function NAV_EDGE:IntersectsRay(origin, dir)
 	local distSqr = (res1 - res2):LengthSqr()
 	if distSqr > radiusSqr then return nil end
 
-	-- Subtract distance in sphere, to give the fake capsule its round shell
-	local d = tc - math.sqrt(radiusSqr - distSqr)
+	-- Subtract distance to sphere hull, to give the fake capsule its round shell
+	local d = tc - math.sqrt(radiusSqr - distSqr) / dir:Length()
 
 	-- Ignore if the element is beyond dir length
 	if d > 1 then return nil end
