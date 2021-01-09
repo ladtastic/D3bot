@@ -219,7 +219,7 @@ function NAV_MESH:Render3D()
 	end
 
 	-- Draw triangles
-	render.SetColorMaterialIgnoreZ()
+	render.SetColorMaterial()
 	for _, triangle in pairs(self.Triangles) do
 		triangle:Render3D()
 	end

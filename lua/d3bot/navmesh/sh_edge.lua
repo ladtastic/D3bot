@@ -221,7 +221,9 @@ function NAV_EDGE:Render3D()
 
 	if ui.Highlighted then
 		ui.Highlighted = nil
+		cam.IgnoreZ(true)
 		render.DrawBeam(p1, p2, self.DisplayRadius*2, 0, 1, Color(255,255,255,127))
+		cam.IgnoreZ(false)
 	else
 		render.DrawLine(p1, p2, Color(255,0,0,31), true)
 	end

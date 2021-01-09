@@ -335,14 +335,17 @@ function NAV_TRIANGLE:Render3D()
 	local ui = self.UI
 	local cornerPoints = cache.CornerPoints
 	local normal, centroid = cache.Normal, cache.Centroid
+	local tinyNormal = normal * 0.1
 
 	-- Draw triangle by misusing a quad.
 	if cornerPoints then
 		if ui.Highlighted then
 			ui.Highlighted = nil
+			cam.IgnoreZ(true)
 			render.DrawQuad(cornerPoints[1], cornerPoints[2], cornerPoints[3], cornerPoints[2], Color(255,0,0,127))
+			cam.IgnoreZ(false)
 		else
-			render.DrawQuad(cornerPoints[1], cornerPoints[2], cornerPoints[3], cornerPoints[2], Color(255,0,0,31))
+			render.DrawQuad(cornerPoints[1] + tinyNormal, cornerPoints[2] + tinyNormal, cornerPoints[3] + tinyNormal, cornerPoints[2] + tinyNormal, Color(255,0,0,31))
 		end
 	end
 	if centroid and normal then
