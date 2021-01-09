@@ -57,22 +57,45 @@ function THIS_EDIT_MODE:PrimaryAttack(wep)
 	if not IsFirstTimePredicted() then return true end
 	if not CLIENT then return true end
 
-	-- Get eye trace info
-	local trRes = wep.Owner:GetEyeTrace()
-	if not trRes.Hit then return false end
-	local hitPos = trRes.HitPos
+	-- If there is no navmesh, stop
+	local navmesh = NAV_MAIN:GetNavmesh()
+	if not navmesh then
+		wep.Weapon:EmitSound("buttons/button1.wav")
+		return true
+	end
 
-	wep.Weapon:EmitSound("buttons/blip1.wav")
-
+	-- Store points that are used to create triangles
 	self.TempPoints = self.TempPoints or {}
 
-	local navmesh = NAV_MAIN:GetNavmesh()
-	
-	local posGeometry = MAPGEOMETRY:GetNearestPoint(hitPos, 10)
-	local posNavmesh = navmesh and navmesh:GetNearestPoint(hitPos, 10)
-	local pos = UTIL.GetNearestPoint({posGeometry, posNavmesh}, hitPos) or hitPos
-	pos = UTIL.RoundVector(pos)
-	table.insert(self.TempPoints, pos)
+	-- Player eye trace
+	local tr = util.GetPlayerTrace(LocalPlayer())
+	local trRes = util.TraceLine(tr)
+
+	-- Define ray for navmesh entity tracing
+	local aimOrigin = tr.start
+	local aimVec = trRes.HitPos - aimOrigin + trRes.Normal * 20 -- Add a bit more to allow for selection of entities inside geometry.
+
+	-- An edge entity that the player points on
+	local tracedEdge
+
+	-- Check if any edge can be selected, if so add the two edge points to the temp points list
+	if (3 - #self.TempPoints) >= 2 then
+		-- Trace closest edge
+		tracedEdge = UTIL:GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Edges)
+
+		if tracedEdge then
+			table.insert(self.TempPoints, tracedEdge.Points[1])
+			table.insert(self.TempPoints, tracedEdge.Points[2])
+		end
+	end
+
+	-- If there is no traced edge, and there are still more points needed, get one
+	if not tracedEdge and trRes.Hit and (3 - #self.TempPoints) >= 1 then
+		-- Snap position to either map geometry or navmesh points
+		local snappedPos = UTIL:GetSnappedPosition(navmesh, MAPGEOMETRY, trRes.HitPos, 10)
+
+		table.insert(self.TempPoints, snappedPos)
+	end
 
 	if #self.TempPoints == 3 then
 		-- Edit server side navmesh
@@ -80,25 +103,46 @@ function THIS_EDIT_MODE:PrimaryAttack(wep)
 
 		-- Reset build mode and its state
 		THIS_EDIT_MODE:AssignToWeapon(wep)
+
+		wep.Weapon:EmitSound("buttons/blip2.wav")
+	else
+		wep.Weapon:EmitSound("buttons/blip1.wav")
 	end
-
-	-- Coroutine for primary actions
-	-- It's a bit overkill for just storing a few points, but it's more a proof of concept
-	--[[if self.PrimaryCR and coroutine.status(self.PrimaryCR) == "dead" then self.PrimaryCR = nil end
-	self.PrimaryCR = self.PrimaryCR or coroutine.create(function()
-		print("TestA")
-
-		coroutine.yield()
-
-		print("TestB")
-	end)
-	coroutine.resume(self.PrimaryCR)--]]
 
 	return true
 end
 
 -- Right mouse button action.
 function THIS_EDIT_MODE:SecondaryAttack(wep)
+	if not IsFirstTimePredicted() then return true end
+	if not CLIENT then return true end
+
+	-- If there is no navmesh, stop
+	local navmesh = NAV_MAIN:GetNavmesh()
+	if not navmesh then
+		wep.Weapon:EmitSound("buttons/button1.wav")
+		return true
+	end
+
+	-- Player eye trace
+	local tr = util.GetPlayerTrace(LocalPlayer())
+	local trRes = util.TraceLine(tr)
+
+	-- Define ray for navmesh entity tracing
+	local aimOrigin = tr.start
+	local aimVec = trRes.HitPos - aimOrigin + trRes.Normal * 20 -- Add a bit more to allow for selection of entities inside geometry.
+
+	local tracedTriangle = UTIL:GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Triangles)
+	-- Set highlighted state of traced element
+	if tracedTriangle then
+		-- Edit server side navmesh
+		NAV_EDIT.RemoveByID(LocalPlayer(), tracedTriangle:GetID())
+
+		wep.Weapon:EmitSound("buttons/blip2.wav")
+	else
+		wep.Weapon:EmitSound("common/wpn_denyselect.wav")
+	end
+
 	return true
 end
 
@@ -112,93 +156,61 @@ end
 
 -- Client side drawing
 function THIS_EDIT_MODE:PreDrawViewModel(wep, vm)
-	cam.Start3D()
+	local navmesh = NAV_MAIN:GetNavmesh()
+	if not navmesh then return end
 
+	-- Player eye trace
+	local tr = util.GetPlayerTrace(LocalPlayer())
+	local trRes = util.TraceLine(tr)
+
+	-- Define ray for navmesh entity tracing
+	local aimOrigin = tr.start
+	local aimVec = trRes.HitPos - aimOrigin + trRes.Normal * 20 -- Add a bit more to allow for selection of entities inside geometry.
+
+	-- Setup rendering context
+	cam.Start3D()
 	render.SetColorMaterial()
 
-	-- Draw current points
+	-- An edge entity that the player points on
+	local tracedEdge
+
+	-- Highlighting of navmesh edges.
+	-- Check if any edge can be selected (based on the temp points needed), if so highlight it.
+	if not self.TempPoints or (3 - #self.TempPoints) >= 2 then
+		-- Trace closest edge
+		tracedEdge = UTIL:GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Edges)
+
+		-- Set highlighted state of traced element
+		if tracedEdge then
+			tracedEdge.UI.Highlighted = true
+		end
+	end
+
+	-- Highlighting of navmesh triangles.
+	local tracedTriangle = UTIL:GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Triangles)
+	-- Set highlighted state of traced element
+	if tracedTriangle then
+		tracedTriangle.UI.Highlighted = true
+	end
+
+	-- Draw eye trace hit with geometry snapping
+	if not tracedEdge and trRes.Hit and (not self.TempPoints or (3 - #self.TempPoints) >= 1) then
+		-- Snap position to either map geometry or navmesh points
+		local snappedPos = UTIL:GetSnappedPosition(navmesh, MAPGEOMETRY, trRes.HitPos, 10)
+
+		render.DrawSphere(snappedPos, 10, 10, 10, Color(255, 255, 255, 31))
+		render.DrawSphere(snappedPos, 1, 10, 10, Color(255, 255, 255, 127))
+	end
+
+	-- Draw client side navmesh
+	navmesh:Render3D()
+
+	-- Draw stored edit mode points/vectors
 	if self.TempPoints then
 		local oldPoint
 		for _, point in ipairs(self.TempPoints) do
 			render.DrawSphere(point, 10, 10, 10, Color(255, 255, 255, 31))
 			oldPoint = oldPoint
-		end
-	end
-
-	-- Draw client side navmesh
-	local navmesh = NAV_MAIN:GetNavmesh()
-	if navmesh then
-		navmesh:Render3D()
-	end
-
-	-- Draw trace hit with geometry snapping
-	local trRes = wep.Owner:GetEyeTrace()
-	if trRes.Hit then
-		local hitPos = trRes.HitPos
-		local posGeometry = MAPGEOMETRY:GetNearestPoint(hitPos, 10)
-		local posNavmesh = navmesh and navmesh:GetNearestPoint(hitPos, 10)
-		local pos = UTIL.GetNearestPoint({posGeometry, posNavmesh}, hitPos) or hitPos
-		pos = UTIL.RoundVector(pos)
-		render.DrawSphere(pos, 10, 10, 10, Color(255, 255, 255, 31))
-		render.DrawSphere(pos, 1, 10, 10, Color(255, 255, 255, 127))
-
-		-- Debug
-		--[[if navmesh then
-			for _, triangle in pairs(navmesh.Triangles) do
-				local p = triangle:GetClosestPointToPoint(pos)
-				--render.DrawSphere(p, 10, 10, 10, Color(0, 0, 255, 255))
-				local cache = triangle:GetCache()
-				render.DrawLine(cache.Centroid, p)
-				--break
-			end
-		end]]
-
-		--[[local eyePos = wep.Owner:EyePos()
-		local aimVec = wep.Owner:GetAimVector()
-
-		if navmesh then
-			for _, edge in pairs(navmesh.Edges) do
-				local p1, p2 = edge:GetClosestPointToLine(eyePos, aimVec)
-				render.DrawSphere(p1, 1, 10, 10, Color(0, 0, 255, 255))
-				--render.DrawSphere(p2, 1, 10, 10, Color(0, 255, 0, 255))
-				render.DrawLine(p1, p2)
-				--break
-			end
-		end]]
-
-		-- Highlighting. Separate for triangles and vectors, as both can be highlighted in this edit mode.
-		if navmesh then
-			local aimVec = wep.Owner:GetAimVector()
-			local minDist = trRes.Fraction * 32768 + 20 -- Default max dist of GetEyeTrace is 32768. Also allow to select elements inside geometry.
-			local minElement = nil
-
-			for _, edge in pairs(navmesh.Edges) do
-				edge.UI.Highlighted = nil
-				local dist = edge:IntersectsRay(trRes.StartPos, aimVec)
-				if dist and minDist > dist then
-					minDist = dist
-					minElement = edge
-				end
-			end
-			if minElement then
-				print(minElement)
-				minElement.UI.Highlighted = true
-			end
-
-			local minDist = trRes.Fraction * 32768 + 20 -- Default max dist of GetEyeTrace is 32768. Also allow to select elements inside geometry.
-			local minElement = nil
-			for _, triangle in pairs(navmesh.Triangles) do
-				triangle.UI.Highlighted = nil
-				local dist = triangle:IntersectsRay(trRes.StartPos, aimVec)
-				if dist and minDist > dist then
-					minDist = dist
-					minElement = triangle
-				end
-			end
-			if minElement then
-				print(minElement)
-				minElement.UI.Highlighted = true
-			end
 		end
 	end
 

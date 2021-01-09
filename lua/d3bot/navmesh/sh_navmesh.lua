@@ -120,6 +120,10 @@ function NAV_MESH:GetNearestPoint(p, r)
 	return resultPoint
 end
 
+-- Returns any entity with the given ID, or nil if doesn't exist.
+function NAV_MESH:FindByID(id)
+	return self.Edges[id] or self.Triangles[id]
+end
 
 -- Returns the edge with the given ID, or nil if doesn't exist.
 function NAV_MESH:FindEdgeByID(id)

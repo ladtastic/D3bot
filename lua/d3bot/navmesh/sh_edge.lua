@@ -24,7 +24,7 @@ local NAV_EDGE = D3bot.NAV_EDGE
 ------------------------------------------------------
 
 -- Radius of the edge used for drawing and mouse click tracing.
-NAV_EDGE.DisplayRadius = 10
+NAV_EDGE.DisplayRadius = 5
 
 -- Get new instance of an edge object with the two given points.
 -- This represents an edge that is defined with two points.
@@ -170,13 +170,13 @@ function NAV_EDGE:GetClosestPointToLine(origin, dir)
 end
 
 -- Returns whether a ray from the given origin in the given direction dir intersects with the edge.
--- The result is either nil or the distance from the origin.
--- The dir parameter must be normalized.
+-- The result is either nil or the distance from the origin as a fraction of dir length.
+-- This will not return anything behind the origin, or beyond the length of dir.
 function NAV_EDGE:IntersectsRay(origin, dir)
 	-- See: http://geomalgorithms.com/a07-_distance.html
 
 	-- Approximate capsule shaped edge by checking if the smallest distance between the ray and segment is < edge radius.
-	-- Also, subtract some fake depth determined by the radius.
+	-- Also, subtract some amount ( √(radius² - dist²) ) from the calculated dist to give it some "volume".
 	-- That should be good enough.
 
 	local p1, p2 = self.Points[1], self.Points[2]
@@ -191,6 +191,7 @@ function NAV_EDGE:IntersectsRay(origin, dir)
 	local sc = (b*e - c*d) / denominator -- Position on the edge (self) between p1 and p2 and beyond
 	local tc = (a*e - b*d) / denominator -- Position on the given line between origin and (origin + dir) and beyond
 
+	-- Ignore if the element is behind the origin
 	if tc <= 0 then return nil end
 
 	-- Clamp
@@ -205,7 +206,12 @@ function NAV_EDGE:IntersectsRay(origin, dir)
 	if distSqr > radiusSqr then return nil end
 
 	-- Subtract distance in sphere, to give the fake capsule its round shell
-	return tc - math.sqrt(radiusSqr - distSqr)
+	local d = tc - math.sqrt(radiusSqr - distSqr)
+
+	-- Ignore if the element is beyond dir length
+	if d > 1 then return nil end
+
+	return d
 end
 
 -- Draw the edge into a 3D rendering context.
@@ -214,6 +220,7 @@ function NAV_EDGE:Render3D()
 	local p1, p2 = self.Points[1], self.Points[2]
 
 	if ui.Highlighted then
+		ui.Highlighted = nil
 		render.DrawBeam(p1, p2, self.DisplayRadius*2, 0, 1, Color(255,255,255,127))
 	else
 		render.DrawLine(p1, p2, Color(255,0,0,31), true)

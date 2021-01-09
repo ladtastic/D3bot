@@ -301,8 +301,8 @@ function NAV_TRIANGLE:GetClosestPointToPoint(p)
 end
 
 -- Returns whether a ray from the given origin in the given direction dir intersects with the triangle.
--- The result is either nil or the distance from the origin.
--- The dir parameter must be normalized.
+-- The result is either nil or the distance from the origin as a fraction of dir length.
+-- This will not return anything behind the origin, or beyond the length of dir.
 function NAV_TRIANGLE:IntersectsRay(origin, dir)
 	local cache = self:GetCache()
 	if not cache.IsValid then return nil end
@@ -318,8 +318,9 @@ function NAV_TRIANGLE:IntersectsRay(origin, dir)
 	local d = (p1 - origin):Dot(normal) / denominator
 	local point = origin + dir * d
 
-	-- Ignore if the element is behind the origin
+	-- Ignore if the element is behind the origin or beyond dir length
 	if d <= 0 then return nil end
+	if d > 1 then return nil end
 
 	-- Check if intersection point is outside the triangle
 	local u, v, w = UTIL.GetBarycentric3D(p1, p2, p3, point)
@@ -338,6 +339,7 @@ function NAV_TRIANGLE:Render3D()
 	-- Draw triangle by misusing a quad.
 	if cornerPoints then
 		if ui.Highlighted then
+			ui.Highlighted = nil
 			render.DrawQuad(cornerPoints[1], cornerPoints[2], cornerPoints[3], cornerPoints[2], Color(255,0,0,127))
 		else
 			render.DrawQuad(cornerPoints[1], cornerPoints[2], cornerPoints[3], cornerPoints[2], Color(255,0,0,31))

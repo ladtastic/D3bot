@@ -104,7 +104,7 @@ if SERVER then
 		if not self.Subscribers then return end
 
 		net.Start("D3bot_Nav_PubSub_EdgeDelete")
-		net.WriteTable(id)
+		net.WriteTable({id})
 		net.Send(self.Subscribers)
 	end
 	util.AddNetworkString("D3bot_Nav_PubSub_EdgeDelete")
@@ -124,7 +124,7 @@ if SERVER then
 		if not self.Subscribers then return end
 
 		net.Start("D3bot_Nav_PubSub_TriangleDelete")
-		net.WriteTable(id)
+		net.WriteTable({id})
 		net.Send(self.Subscribers)
 	end
 	util.AddNetworkString("D3bot_Nav_PubSub_TriangleDelete")
@@ -160,7 +160,8 @@ if CLIENT then
 	net.Receive("D3bot_Nav_PubSub_EdgeDelete",
 		function(len)
 			local navmesh = NAV_MAIN:GetNavmesh()
-			local edge = navmesh:FindEdgeByID(net.ReadTable())
+			local id = unpack(net.ReadTable())
+			local edge = navmesh:FindEdgeByID(id)
 			if edge then edge:Delete() end
 		end
 	)
@@ -175,7 +176,8 @@ if CLIENT then
 	net.Receive("D3bot_Nav_PubSub_TriangleDelete",
 		function(len)
 			local navmesh = NAV_MAIN:GetNavmesh()
-			local triangle = navmesh:FindTriangleByID(net.ReadTable())
+			local id = unpack(net.ReadTable())
+			local triangle = navmesh:FindTriangleByID(id)
 			if triangle then triangle:Delete() end
 		end
 	)

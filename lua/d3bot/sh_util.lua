@@ -158,3 +158,34 @@ function UTIL.GetBarycentric3DClamped(p1, p2, p3, p)
 	-- Point is inside of the triangle
 	return u, v, w
 end
+
+-- Returns the closest entity from lists of entities that intersects with a ray from the given origin in the given direction dir.
+-- The entities in the supplied lists have to implement the IntersectsRay method.
+-- The result is either nil or the intersecting entity, and its distance from the origin as a fraction of dir length.
+-- This will not return anything behind the origin, or beyond the length of dir.
+function UTIL:GetClosestIntersectingWithRay(origin, dir, ...)
+	local lists = {...}
+	local minDist = 1
+	local minEntity = nil
+
+	for _, list in ipairs(lists) do
+		for _, entity in pairs(list) do
+			local dist = entity:IntersectsRay(origin, dir)
+			if dist and minDist > dist then
+				minDist = dist
+				minEntity = entity
+			end
+		end
+	end
+
+	return minEntity, minDist
+end
+
+-- Returns pos snapped to the closest (in proximity range) snapping point of a given navmesh or map geometry.
+-- This will always return a point, even if it is pos itself.
+function UTIL:GetSnappedPosition(navmesh, mapgeometry, pos, proximity)
+	local posGeometry = mapgeometry and mapgeometry:GetNearestPoint(pos, proximity)
+	local posNavmesh = navmesh and navmesh:GetNearestPoint(pos, proximity)
+	local pos = UTIL.GetNearestPoint({posGeometry, posNavmesh}, pos) or pos
+	return UTIL.RoundVector(pos)
+end

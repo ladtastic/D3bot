@@ -55,3 +55,31 @@ if SERVER then
 		end
 	)
 end
+
+-- Remove element by id.
+function NAV_EDIT.RemoveByID(ply, id)
+	if SERVER then
+		-- Only he who wields the weapon has the power
+		if not ply:HasWeapon("weapon_d3_navmesher") then return end
+		-- Get or create navmesh
+		local navmesh = NAV_MAIN:ForceNavmesh()
+
+		local entity = navmesh:FindByID(id)
+		entity:Delete()
+
+	elseif CLIENT then
+		net.Start("D3bot_Nav_Edit_RemoveByID")
+		net.WriteTable({id})
+		net.SendToServer()
+	end
+end
+
+if SERVER then
+	util.AddNetworkString("D3bot_Nav_Edit_RemoveByID")
+	net.Receive("D3bot_Nav_Edit_RemoveByID",
+		function(len, ply)
+			local id = unpack(net.ReadTable())
+			NAV_EDIT.RemoveByID(ply, id)
+		end
+	)
+end
