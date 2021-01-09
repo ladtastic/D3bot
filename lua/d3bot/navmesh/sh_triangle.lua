@@ -335,7 +335,7 @@ function NAV_TRIANGLE:Render3D()
 	local ui = self.UI
 	local cornerPoints = cache.CornerPoints
 	local normal, centroid = cache.Normal, cache.Centroid
-	local tinyNormal = normal * 0.1
+	local tinyNormal = normal * 0.3
 
 	-- Draw triangle by misusing a quad.
 	if cornerPoints then
