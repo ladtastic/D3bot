@@ -17,6 +17,7 @@
 
 local D3bot = D3bot
 local UTIL = D3bot.Util
+local ERROR = D3bot.ERROR
 local NAV_TRIANGLE = D3bot.NAV_TRIANGLE
 
 ------------------------------------------------------
@@ -25,6 +26,9 @@ local NAV_TRIANGLE = D3bot.NAV_TRIANGLE
 
 -- Make all methods and properties of the class available to its objects.
 NAV_TRIANGLE.__index = NAV_TRIANGLE
+
+-- Min height of any triangle.
+NAV_TRIANGLE.MinHeight = 10
 
 -- Get new instance of a triangle object.
 -- This represents a triangle that is defined by 3 edges that are connected in a loop.
@@ -44,8 +48,16 @@ function NAV_TRIANGLE:New(navmesh, id, e1, e2, e3, flipNormal)
 	setmetatable(obj, self)
 
 	-- Check if the edges form a triangle shape
-	local isTriangle, trianglePoints = UTIL.EdgesToTrianglePoints(obj.Edges)
-	if not isTriangle then return nil end
+	local trianglePoints, err = UTIL.EdgesToTrianglePoints(obj.Edges)
+	if err then
+		return nil, err
+	end
+
+	-- Check the resulting triangle's min height
+	local h1, h2, h3 = UTIL.GetTriangleHeights(trianglePoints[1], trianglePoints[2], trianglePoints[3])
+	if math.min(h1, h2, h3) < self.MinHeight then
+		return nil, ERROR:New("The triangle's smallest height is below allowed min. height (%s < %s)", math.min(h1, h2, h3), self.MinHeight)
+	end
 
 	-- Add reference to this triangle to all edges
 	table.insert(e1.Triangles, obj)
@@ -63,7 +75,7 @@ function NAV_TRIANGLE:New(navmesh, id, e1, e2, e3, flipNormal)
 	for _, edge in ipairs(obj.Edges) do
 		if #edge.Triangles > 2 then
 			obj:_Delete()
-			return nil
+			return nil, ERROR:New("There are already %d triangles connected to %s", #edge.Triangles, edge)
 		end
 	end
 
@@ -71,7 +83,7 @@ function NAV_TRIANGLE:New(navmesh, id, e1, e2, e3, flipNormal)
 	local cache = obj:GetCache()
 	if not cache.IsValid then
 		obj:_Delete()
-		return nil
+		return nil, ERROR:New("Failed to generate valid cache")
 	end
 
 	-- Publish change event
@@ -79,7 +91,7 @@ function NAV_TRIANGLE:New(navmesh, id, e1, e2, e3, flipNormal)
 		navmesh.PubSub:SendTriangleToSubs(obj)
 	end
 
-	return obj
+	return obj, nil
 end
 
 -- Same as NAV_TRIANGLE:New(), but uses table t to restore a previous state that came from MarshalToTable().
@@ -88,12 +100,12 @@ function NAV_TRIANGLE:NewFromTable(navmesh, t)
 	local e1 = navmesh:FindEdgeByID(t.Edges[1])
 	local e2 = navmesh:FindEdgeByID(t.Edges[2])
 	local e3 = navmesh:FindEdgeByID(t.Edges[3])
-	
-	if not e1 or not e2 or not e3 then error("Couldn't find all edges by their reference") end
 
-	local obj = self:New(navmesh, t.ID, e1, e2, e3, t.FlipNormal)
+	if not e1 or not e2 or not e3 then return nil, ERROR:New("Couldn't find all edges by their reference") end
 
-	return obj
+	local obj, err = self:New(navmesh, t.ID, e1, e2, e3, t.FlipNormal)
+
+	return obj, err
 end
 
 ------------------------------------------------------
@@ -135,13 +147,12 @@ function NAV_TRIANGLE:GetCache()
 	cache.IsValid = true
 
 	-- Get 3 corner points from the edges and check for validity
-	local isTriangle, points = UTIL.EdgesToTrianglePoints(self.Edges)
-	if isTriangle then
-		cache.CornerPoints = points
-	else
-		print(string.format("%s Failed to generate cache for triangle %s: Expected edges to resolve into 3 points, but got %d", D3bot.PrintPrefix, self:GetID(), #points))
+	local points, err = UTIL.EdgesToTrianglePoints(self.Edges)
+	if err then
+		print(string.format("%s Failed to generate valid cache for triangle %s: %s", D3bot.PrintPrefix, self, err))
 		cache.IsValid = false
 	end
+	cache.CornerPoints = points
 
 	-- Get neighbor triangles that are connected via edges.
 	-- The triangle indices correspond to the edge indices.
@@ -360,4 +371,9 @@ function NAV_TRIANGLE:Render3D()
 			render.DrawQuad(cornerPoints[1] + tinyNormal, cornerPoints[2] + tinyNormal, cornerPoints[3] + tinyNormal, cornerPoints[2] + tinyNormal, Color(255, 0, 0, 31))
 		end
 	end
+end
+
+-- Define metamethod for string conversion.
+function NAV_TRIANGLE:__tostring()
+	return string.format("{Triangle %s}", self:GetID())
 end

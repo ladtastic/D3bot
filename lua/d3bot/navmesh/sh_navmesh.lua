@@ -17,6 +17,7 @@
 
 local D3bot = D3bot
 local UTIL = D3bot.Util
+local ERROR = D3bot.ERROR
 local NAV_MESH = D3bot.NAV_MESH
 local NAV_EDGE = D3bot.NAV_EDGE
 local NAV_TRIANGLE = D3bot.NAV_TRIANGLE
@@ -41,7 +42,7 @@ function NAV_MESH:New()
 	-- Instantiate
 	setmetatable(obj, self)
 
-	return obj
+	return obj, nil
 end
 
 -- Same as NAV_MESH:New(), but uses table t to restore a previous state that came from MarshalToTable().
@@ -50,15 +51,17 @@ function NAV_MESH:NewFromTable(t)
 
 	-- Restore edges
 	for _, edgeTable in ipairs(t.Edges) do
-		NAV_EDGE:NewFromTable(obj, edgeTable)
+		local _, err = NAV_EDGE:NewFromTable(obj, edgeTable)
+		if err then print(string.format("%s Failed to restore edge %s: %s", D3bot.PrintPrefix, edgeTable.ID, err)) end
 	end
 
 	-- Restore triangles
 	for _, triangleTable in ipairs(t.Triangles) do
-		NAV_TRIANGLE:NewFromTable(obj, triangleTable)
+		local _, err = NAV_TRIANGLE:NewFromTable(obj, triangleTable)
+		if err then print(string.format("%s Failed to restore triangle %s: %s", D3bot.PrintPrefix, triangleTable.ID, err)) end
 	end
 
-	return obj
+	return obj, nil
 end
 
 ------------------------------------------------------
@@ -140,15 +143,15 @@ end
 -- Will return the edge that is built with the two given points, if there is one.
 function NAV_MESH:FindEdge2P(p1, p2)
 	for _, edge in pairs(self.Edges) do
-		if edge:ConsistsOfPoints(p1, p2) then return edge end
+		if edge:ConsistsOfPoints(p1, p2) then return edge, nil end
 	end
 
-	return
+	return nil, ERROR:New("No edge found with the given points %s, %s", p1, p2)
 end
 
 -- Will create a new edge with the given two points, or return an already existing edge.
 function NAV_MESH:FindOrCreateEdge2P(p1, p2)
-	local edge = self:FindEdge2P(p1, p2)
+	local edge, err = self:FindEdge2P(p1, p2)
 	if edge then return edge end
 
 	-- Create new edge
@@ -162,42 +165,52 @@ end
 
 -- Will return the triangle that is built with the three given points, if there is one.
 function NAV_MESH:FindTriangle3P(p1, p2, p3)
-	local e1, e2, e3 = self:FindEdge2P(p1, p2), self:FindEdge2P(p2, p3), self:FindEdge2P(p3, p1)
+	local e1, err = self:FindEdge2P(p1, p2)
+	if err then return nil, err end
+	local e1, err = self:FindEdge2P(p2, p3)
+	if err then return nil, err end
+	local e1, err = self:FindEdge2P(p3, p1)
+	if err then return nil, err end
 
-	return self:FindTriangle3E(e1, e2, e3)
+	local triangle, err = self:FindTriangle3E(e1, e2, e3)
+	return triangle, err
 end
 
 -- Will return the triangle that is built with the three given edges, if there is one.
 function NAV_MESH:FindTriangle3E(e1, e2, e3)
 	for _, triangle in pairs(self.Triangles) do
-		if triangle:ConsistsOfEdges(e1, e2, e3) then return triangle end
+		if triangle:ConsistsOfEdges(e1, e2, e3) then return triangle, nil end
 	end
 
-	return
+	return nil, ERROR:New("No triangle found with the given edges %s, %s, %s", e1, e2, e3)
 end
 
 -- Will create a new triangle with the given three points, or return an already existing triangle.
 function NAV_MESH:FindOrCreateTriangle3P(p1, p2, p3)
-	local e1, e2, e3 = self:FindOrCreateEdge2P(p1, p2), self:FindOrCreateEdge2P(p2, p3), self:FindOrCreateEdge2P(p3, p1)
+	local e1, err = self:FindOrCreateEdge2P(p1, p2)
+	if err then return nil, err end
+	local e2, err = self:FindOrCreateEdge2P(p2, p3)
+	if err then return nil, err end
+	local e3, err = self:FindOrCreateEdge2P(p3, p1)
+	if err then return nil, err end
 
-	local triangle = self:FindOrCreateTriangle3E(e1, e2, e3)
-
-	return triangle
+	local triangle, err = self:FindOrCreateTriangle3E(e1, e2, e3)
+	return triangle, err
 end
 
 -- Will create a new triangle with the given three edges, or return an already existing triangle.
 function NAV_MESH:FindOrCreateTriangle3E(e1, e2, e3)
 	local triangle = self:FindTriangle3E(e1, e2, e3)
-	if triangle then return triangle end
+	if triangle then return triangle, nil end
 
 	-- Create new triangle
-	local triangle = NAV_TRIANGLE:New(self, nil, e1, e2, e3, nil)
-	if not triangle then return triangle end
+	local triangle, err = NAV_TRIANGLE:New(self, nil, e1, e2, e3, nil)
+	if err then return nil, err end
 
 	-- Determine FlipNormal state
 	triangle:RecalcFlipNormal()
 
-	return triangle
+	return triangle, nil
 end
 
 -- Set where to publish change events to.

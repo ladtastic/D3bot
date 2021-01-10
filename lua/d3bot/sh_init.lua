@@ -42,6 +42,7 @@ D3bot.HookPrefix = "D3bot_"
 D3bot.AddonRoot = "d3bot/"
 
 -- Init class namespaces
+D3bot.ERROR = D3bot.ERROR or {} -- Error handling/signalling class
 D3bot.CONCOMMAND = D3bot.CONCOMMAND or {} -- Console command class, to replicate and parse client side commands
 D3bot.NAV_MESH = D3bot.NAV_MESH or {} -- NAV_MESH Class
 D3bot.NAV_EDGE = D3bot.NAV_EDGE or {} -- NAV_EDGE Class
@@ -54,6 +55,7 @@ D3bot.NAV_TRIANGLE = D3bot.NAV_TRIANGLE or {} -- NAV_TRIANGLE Class
 -- General stuff
 include("sh_util.lua")
 local UTIL = D3bot.Util -- From here on UTIL.IncludeRealm can be used
+UTIL.IncludeRealm("sh_error.lua", UTIL.REALM_SHARED)
 UTIL.IncludeRealm("sv_control.lua", UTIL.REALM_SERVER)
 UTIL.IncludeRealm("sv_ulx_fix.lua", UTIL.REALM_SERVER)
 UTIL.IncludeRealm("sh_concommand.lua", UTIL.REALM_SHARED)

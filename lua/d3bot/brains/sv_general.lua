@@ -71,7 +71,7 @@ function THIS_BRAIN:Callback(bot, mem)
 	if not succ then
 		-- Coroutine ended unexpectedly
 		print(string.format("%s %s of bot %s failed: %s", D3bot.PrintPrefix, self.MainCoroutine, bot:Nick(), msg))
-		-- Assign ON_ERROR brain that does some stupid animations to prevent the errornous brain to be assigned again immediately (Spam prevention)
+		-- Assign ON_ERROR brain that does some stupid animations to prevent the erroneous brain to be assigned again immediately (Spam prevention)
 		BRAINS.ON_ERROR:AssignToBot(bot, mem)
 		return false
 	end

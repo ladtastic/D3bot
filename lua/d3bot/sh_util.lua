@@ -19,6 +19,7 @@ AddCSLuaFile()
 
 local D3bot = D3bot
 local UTIL = D3bot.Util
+local ERROR = D3bot.ERROR
 
 -- Get a map with all currently used usernames (ply:Nick() of all players).
 function UTIL.GetUsernamesMap()
@@ -159,6 +160,15 @@ function UTIL.GetBarycentric3DClamped(p1, p2, p3, p)
 	return u, v, w
 end
 
+-- Returns the 3 heights of the triangle defined by 3 points.
+-- A height is the shortest distance from a triangle corner to its opposite edge.
+function UTIL.GetTriangleHeights(p1, p2, p3)
+	local e1, e2, e3 = p2-p3, p1-p3, p1-p2
+	local parallelArea = e1:Cross(e2):Length()
+
+	return parallelArea / e1:Length(), parallelArea / e2:Length(), parallelArea / e3:Length()
+end
+
 -- Returns the closest entity from lists of entities that intersects with a ray from the given origin in the given direction dir.
 -- The entities in the supplied lists have to implement the IntersectsRay method.
 -- The result is either nil or the intersecting entity, and its distance from the origin as a fraction of dir length.
@@ -215,13 +225,13 @@ function UTIL.EdgesToPoints(edges)
 	return points
 end
 
--- Takes an array (not map/table) with edges and returns whether they form a valid triangle or not.
+-- Takes an array (not map/table) with edges and returns 3 points that form a triangle, or an error if it's impossible.
 -- This will also return the points as array in a predictable order.
 function UTIL.EdgesToTrianglePoints(edges)
-	if #edges ~= 3 then return false, nil end
+	if #edges ~= 3 then return nil, ERROR:New("There is an unexpected amount of edges. Want %d, got %d", 3, #edges) end
 
 	local points = UTIL.EdgesToPoints(edges)
-	if #points ~= 3 then return false, nil end
+	if #points ~= 3 then return nil, ERROR:New("There is an unexpected amount of points. Want %d, got %d", 3, #points) end
 
-	return true, points
+	return points, nil
 end

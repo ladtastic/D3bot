@@ -35,7 +35,10 @@ function NAV_EDIT.CreateTriangle3P(ply, p1, p2, p3)
 		-- Get or create navmesh
 		local navmesh = NAV_MAIN:ForceNavmesh()
 
-		navmesh:FindOrCreateTriangle3P(p1, p2, p3)
+		local _, err = navmesh:FindOrCreateTriangle3P(p1, p2, p3)
+		if err then ply:ChatPrint(string.format("%s Failed to create triangle: %s", D3bot.PrintPrefix, err)) end
+
+		-- Try to garbage collect entities
 		navmesh:_GC()
 
 	elseif CLIENT then

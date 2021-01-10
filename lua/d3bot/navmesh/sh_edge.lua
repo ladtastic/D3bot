@@ -17,6 +17,7 @@
 
 local D3bot = D3bot
 local UTIL = D3bot.Util
+local ERROR = D3bot.ERROR
 local NAV_EDGE = D3bot.NAV_EDGE
 
 ------------------------------------------------------
@@ -30,7 +31,7 @@ NAV_EDGE.__index = NAV_EDGE
 NAV_EDGE.DisplayRadius = 5
 
 -- Min length of any edge.
-NAV_EDGE.MinLength = 5
+NAV_EDGE.MinLength = 10
 
 -- Get new instance of an edge object with the two given points.
 -- This represents an edge that is defined with two points.
@@ -49,7 +50,10 @@ function NAV_EDGE:New(navmesh, id, p1, p2)
 	setmetatable(obj, self)
 
 	-- Make sure that length is >= self.MinLength
-	if (p2-p1):Length() < self.MinLength then return nil end
+	local length = (p2-p1):Length()
+	if length < self.MinLength then
+		return nil, ERROR:New("The edge is shorter than the allowed min. length (%s < %s)", length, self.MinLength)
+	end
 
 	-- Check if there was a previous element. If so, change references to/from it
 	local old = navmesh.Edges[obj.ID]
@@ -81,14 +85,13 @@ function NAV_EDGE:New(navmesh, id, p1, p2)
 		navmesh.PubSub:SendEdgeToSubs(obj)
 	end
 
-	return obj
+	return obj, nil
 end
 
 -- Same as NAV_EDGE:New(), but uses table t to restore a previous state that came from MarshalToTable().
 function NAV_EDGE:NewFromTable(navmesh, t)
-	local obj = self:New(navmesh, t.ID, t.Points[1], t.Points[2])
-
-	return obj
+	local obj, err = self:New(navmesh, t.ID, t.Points[1], t.Points[2])
+	return obj, err
 end
 
 ------------------------------------------------------
@@ -236,4 +239,9 @@ function NAV_EDGE:Render3D()
 		--render.DrawLine(p1, p2, Color(255, 255, 255, 16), false)
 		render.DrawLine(p1, p2, Color(255, 0, 0, 255), true)
 	end
+end
+
+-- Define metamethod for string conversion.
+function NAV_EDGE:__tostring()
+	return string.format("{Edge %s}", self:GetID())
 end

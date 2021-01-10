@@ -217,8 +217,9 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm)
 	navmesh:Render3D()
 
 	-- Draw ghost of triangle
+	render.SetColorMaterialIgnoreZ()
 	for _, point in ipairs(trianglePoints) do
-		RENDER_UTIL.Draw3DCursorPos(point, Color(255, 255, 255, 255), Color(0, 0, 0, 255))
+		RENDER_UTIL.Draw3DCursorPos(point, 2, Color(255, 255, 255, 255), Color(0, 0, 0, 255))
 		--render.DrawSphere(point, 10, 10, 10, Color(255, 255, 255, 31))
 	end
 	if #trianglePoints == 3 then

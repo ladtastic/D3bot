@@ -19,6 +19,7 @@
 -- Basically server --> client communication.
 
 local D3bot = D3bot
+local ERROR = D3bot.ERROR
 local NAV_PUBSUB = D3bot.NavPubSub
 local NAV_MAIN = D3bot.NavMain
 local NAV_MESH = D3bot.NAV_MESH
@@ -153,7 +154,8 @@ if CLIENT then
 	net.Receive("D3bot_Nav_PubSub_Edge",
 		function(len)
 			local navmesh = NAV_MAIN:GetNavmesh()
-			NAV_EDGE:NewFromTable(navmesh, net.ReadTable())
+			local _, err = NAV_EDGE:NewFromTable(navmesh, net.ReadTable())
+			if err then print(string.format("%s Failed to recreate edge that the server sent: %s", D3bot.PrintPrefix, err)) end
 		end
 	)
 
@@ -169,7 +171,8 @@ if CLIENT then
 	net.Receive("D3bot_Nav_PubSub_Triangle",
 		function(len)
 			local navmesh = NAV_MAIN:GetNavmesh()
-			NAV_TRIANGLE:NewFromTable(navmesh, net.ReadTable())
+			local _, err = NAV_TRIANGLE:NewFromTable(navmesh, net.ReadTable())
+			if err then print(string.format("%s Failed to recreate triangle that the server sent: %s", D3bot.PrintPrefix, err)) end
 		end
 	)
 

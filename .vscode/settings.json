@@ -1,6 +1,7 @@
 {
     "cSpell.words": [
         "MAPGEOMETRY",
+        "Metamethod",
         "NAVMESHER",
         "Navmesh",
         "Navmeshing",
@@ -8,6 +9,7 @@
         "SWEP",
         "Selfcheck",
         "Vogel",
+        "ahhhh",
         "bitmasks",
         "concommand",
         "concommands",
@@ -18,7 +20,9 @@
         "kpairs",
         "navmeshes",
         "plys",
-        "renderutil"
+        "renderutil",
+        "stronk",
+        "succ"
     ],
     "editor.formatOnSave": false,
     "lua.format.useTabs": true,

@@ -61,11 +61,12 @@ end
 
 -- Draws a spinning 3D cursor at given position.
 -- This is basically 6 arrows pointing inwards.
-function RENDER_UTIL.Draw3DCursorPos(pos, colorA, colorB)
+function RENDER_UTIL.Draw3DCursorPos(pos, size, colorA, colorB)
 	local omega = CurTime() * math.pi * 2 * 0.5
 
 	local mat = Matrix()
 	mat:Translate(pos)
+	mat:Scale(Vector(size, size, size))
 	mat:Rotate(Angle(math.sin(omega*0.8)*180, math.sin(omega*0.7)*180, math.sin(omega*0.6)*180))
 
 	cam.PushModelMatrix(mat, true)
