@@ -23,6 +23,9 @@ local NAV_EDGE = D3bot.NAV_EDGE
 --						Static						--
 ------------------------------------------------------
 
+-- Make all methods and properties of the class available to its objects.
+NAV_EDGE.__index = NAV_EDGE
+
 -- Radius of the edge used for drawing and mouse click tracing.
 NAV_EDGE.DisplayRadius = 5
 
@@ -39,8 +42,8 @@ function NAV_EDGE:New(navmesh, id, p1, p2)
 		UI = {} -- General structure for UI related properties like selection status
 	}
 
+	-- Instantiate
 	setmetatable(obj, self)
-	self.__index = self
 
 	-- TODO: Selfcheck
 

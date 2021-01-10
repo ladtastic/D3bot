@@ -25,6 +25,9 @@ local NAV_TRIANGLE = D3bot.NAV_TRIANGLE
 --						Static						--
 ------------------------------------------------------
 
+-- Make all methods and properties of the class available to its objects.
+NAV_MESH.__index = NAV_MESH
+
 -- Get new instance of a navmesh container object.
 -- This contains edges and triangles of a navmesh and provides methods for locating and path finding.
 function NAV_MESH:New()
@@ -35,8 +38,8 @@ function NAV_MESH:New()
 		UniqueIDCounter = 1
 	}
 
+	-- Instantiate
 	setmetatable(obj, self)
-	self.__index = self
 
 	return obj
 end

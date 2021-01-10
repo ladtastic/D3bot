@@ -28,12 +28,15 @@ local THIS_BRAIN = BRAINS.GENERAL
 --						Static						--
 ------------------------------------------------------
 
+-- Make all methods and properties of the class available to its objects.
+THIS_BRAIN.__index = THIS_BRAIN
+
 -- This will assign the brain to the given bot (and the corresponding mem).
 function THIS_BRAIN:AssignToBot(bot, mem)
 	local brain = {Bot = bot, Mem = mem}
 
+	-- Instantiate
 	setmetatable(brain, self)
-	self.__index = self
 
 	-- Add main handler
 	brain.MainCoroutine = coroutine.create(function() brain:Think_Coroutine(bot, mem) end)

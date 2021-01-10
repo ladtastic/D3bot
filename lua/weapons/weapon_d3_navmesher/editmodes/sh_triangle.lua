@@ -36,13 +36,16 @@ THIS_EDIT_MODE.Name = "Create & Remove triangles"
 --						Static						--
 ------------------------------------------------------
 
+-- Make all methods and properties of the class available to its objects.
+THIS_EDIT_MODE.__index = THIS_EDIT_MODE
+
 -- Set and overwrite current edit mode of the given weapon.
 -- This will create an instance of the edit mode class, and store it in the weapon's EditMode field.
 function THIS_EDIT_MODE:AssignToWeapon(wep)
 	local mode = {}
 
+	-- Instantiate
 	setmetatable(mode, self)
-	self.__index = self
 
 	wep.EditMode = mode
 

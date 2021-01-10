@@ -22,6 +22,9 @@ local CONCOMMAND = D3bot.CONCOMMAND
 --						Static						--
 ------------------------------------------------------
 
+-- Make all methods and properties of the class available to its objects.
+CONCOMMAND.__index = CONCOMMAND
+
 -- Get new instance of a concommand object.
 -- You have to add your own OnServer and OnClient methods to your concommand.
 function CONCOMMAND:New(name)
@@ -30,8 +33,8 @@ function CONCOMMAND:New(name)
 		NameServer = "sv_" .. name
 	}
 
+	-- Instantiate
 	setmetatable(obj, self)
-	self.__index = self
 
 	-- Add concommands to client and server. The server one has a different name.
 	if CLIENT then

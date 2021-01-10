@@ -23,6 +23,9 @@ local NAV_TRIANGLE = D3bot.NAV_TRIANGLE
 --						Static						--
 ------------------------------------------------------
 
+-- Make all methods and properties of the class available to its objects.
+NAV_TRIANGLE.__index = NAV_TRIANGLE
+
 -- Get new instance of a triangle object.
 -- This represents a triangle that is defined by 3 edges that are connected in a loop.
 -- If a triangle with the same id already exists, it will be overwritten.
@@ -37,8 +40,8 @@ function NAV_TRIANGLE:New(navmesh, id, e1, e2, e3, flipNormal)
 		UI = {} -- General structure for UI related properties like selection status
 	}
 
+	-- Instantiate
 	setmetatable(obj, self)
-	self.__index = self
 
 	-- TODO: Selfcheck
 
