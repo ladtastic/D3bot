@@ -29,6 +29,9 @@ NAV_EDGE.__index = NAV_EDGE
 -- Radius of the edge used for drawing and mouse click tracing.
 NAV_EDGE.DisplayRadius = 5
 
+-- Min length of any edge.
+NAV_EDGE.MinLength = 5
+
 -- Get new instance of an edge object with the two given points.
 -- This represents an edge that is defined with two points.
 -- If an edge with the same id already exists, it will be overwritten.
@@ -45,7 +48,8 @@ function NAV_EDGE:New(navmesh, id, p1, p2)
 	-- Instantiate
 	setmetatable(obj, self)
 
-	-- TODO: Selfcheck
+	-- Make sure that length is >= self.MinLength
+	if (p2-p1):Length() < self.MinLength then return nil end
 
 	-- Check if there was a previous element. If so, change references to/from it
 	local old = navmesh.Edges[obj.ID]
@@ -132,9 +136,10 @@ function NAV_EDGE:_Delete()
 end
 
 -- Internal method: Deletes the edge, if there is nothing that references it.
+-- Only call GC from the server side and let it sync the result to all clients.
 function NAV_EDGE:_GC()
 	if #self.Triangles == 0 then
-		self:_Delete()
+		self:Delete()
 	end
 end
 

@@ -61,6 +61,7 @@ function NAV_FILE.LoadMainNavmesh()
 		local t = util.JSONToTable(tJSON)
 		local navmesh = NAV_MESH:NewFromTable(t)
 		if navmesh then
+			navmesh:_GC()
 			NAV_MAIN:SetNavmesh(navmesh)
 		end
 	else

@@ -36,6 +36,7 @@ function NAV_EDIT.CreateTriangle3P(ply, p1, p2, p3)
 		local navmesh = NAV_MAIN:ForceNavmesh()
 
 		navmesh:FindOrCreateTriangle3P(p1, p2, p3)
+		navmesh:_GC()
 
 	elseif CLIENT then
 		net.Start("D3bot_Nav_Edit_CreateTriangle3P")
@@ -66,6 +67,7 @@ function NAV_EDIT.RemoveByID(ply, id)
 
 		local entity = navmesh:FindByID(id)
 		entity:Delete()
+		navmesh:_GC()
 
 	elseif CLIENT then
 		net.Start("D3bot_Nav_Edit_RemoveByID")

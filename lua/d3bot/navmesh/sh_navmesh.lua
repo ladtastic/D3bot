@@ -58,11 +58,6 @@ function NAV_MESH:NewFromTable(t)
 		NAV_TRIANGLE:NewFromTable(obj, triangleTable)
 	end
 
-	-- GC all free floating edges
-	for _, edge in pairs(obj.Edges) do
-		edge:_GC()
-	end
-
 	return obj
 end
 
@@ -101,6 +96,15 @@ function NAV_MESH:GetUniqueID()
 	end
 
 	return self.UniqueIDCounter
+end
+
+-- Internal method: Deletes all elements that are not needed anymore.
+-- Only call GC from the server side and let it sync the result to all clients.
+function NAV_MESH:_GC()
+	-- Try to GC all free floating edges
+	for _, edge in pairs(self.Edges) do
+		edge:_GC()
+	end
 end
 
 -- Returns the nearest triangle/edge corner to the given point p with a radius of r.
@@ -177,13 +181,6 @@ function NAV_MESH:FindOrCreateTriangle3P(p1, p2, p3)
 	local e1, e2, e3 = self:FindOrCreateEdge2P(p1, p2), self:FindOrCreateEdge2P(p2, p3), self:FindOrCreateEdge2P(p3, p1)
 
 	local triangle = self:FindOrCreateTriangle3E(e1, e2, e3)
-
-	-- If it failed to create a triangle, then garbage collect any "free floating" edge
-	if not triangle then
-		e1:_GC()
-		e2:_GC()
-		e3:_GC()
-	end
 
 	return triangle
 end

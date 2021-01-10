@@ -190,3 +190,38 @@ function UTIL.GetSnappedPosition(navmesh, mapgeometry, pos, proximity)
 	local snapped = UTIL.GetNearestPoint({posGeometry, posNavmesh}, pos)
 	return UTIL.RoundVector(snapped or pos), snapped ~= nil
 end
+
+-- Takes an array (not map/table) with edges and returns its unique points.
+-- This will always return the points in a predictable order.
+function UTIL.EdgesToPoints(edges)
+	local points = {}
+	for _, edge in ipairs(edges) do
+		for _, newPoint in ipairs(edge.Points) do
+			local found = false
+			-- Check if point is already in the list
+			for _, point in ipairs(points) do
+				if point == newPoint then
+					found = true
+					break
+				end
+			end
+
+			if not found then
+				table.insert(points, newPoint)
+			end
+		end
+	end
+
+	return points
+end
+
+-- Takes an array (not map/table) with edges and returns whether they form a valid triangle or not.
+-- This will also return the points as array in a predictable order.
+function UTIL.EdgesToTrianglePoints(edges)
+	if #edges ~= 3 then return false, nil end
+
+	local points = UTIL.EdgesToPoints(edges)
+	if #points ~= 3 then return false, nil end
+
+	return true, points
+end

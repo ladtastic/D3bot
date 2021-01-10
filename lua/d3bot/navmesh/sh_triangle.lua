@@ -43,7 +43,9 @@ function NAV_TRIANGLE:New(navmesh, id, e1, e2, e3, flipNormal)
 	-- Instantiate
 	setmetatable(obj, self)
 
-	-- TODO: Selfcheck
+	-- Check if the edges form a triangle shape
+	local isTriangle, trianglePoints = UTIL.EdgesToTrianglePoints(obj.Edges)
+	if not isTriangle then return nil end
 
 	-- Add reference to this triangle to all edges
 	table.insert(e1.Triangles, obj)
@@ -57,9 +59,20 @@ function NAV_TRIANGLE:New(navmesh, id, e1, e2, e3, flipNormal)
 	-- Add object to the navmesh
 	navmesh.Triangles[obj.ID] = obj
 
+	-- Check if there are at most 2 triangles connected to each edge
+	for _, edge in ipairs(obj.Edges) do
+		if #edge.Triangles > 2 then
+			obj:_Delete()
+			return nil
+		end
+	end
+
 	-- Check if cache is valid, if not abort and delete
 	local cache = obj:GetCache()
-	if not cache.IsValid then obj:_Delete() return nil end
+	if not cache.IsValid then
+		obj:_Delete()
+		return nil
+	end
 
 	-- Publish change event
 	if navmesh.PubSub then
@@ -121,27 +134,9 @@ function NAV_TRIANGLE:GetCache()
 	-- Changing this to false will not cause the cache to be rebuilt.
 	cache.IsValid = true
 
-	-- Get 3 corner points from the edges
-	local points = {}
-	for _, edge in ipairs(self.Edges) do
-		for _, newPoint in ipairs(edge.Points) do
-			local found = false
-			-- Check if point is already in the list
-			for _, point in ipairs(points) do
-				if point == newPoint then
-					found = true
-					break
-				end
-			end
-
-			if not found then
-				table.insert(points, newPoint)
-			end
-		end
-	end
-
-	-- Check the points for validity
-	if #points == 3 then
+	-- Get 3 corner points from the edges and check for validity
+	local isTriangle, points = UTIL.EdgesToTrianglePoints(self.Edges)
+	if isTriangle then
 		cache.CornerPoints = points
 	else
 		print(string.format("%s Failed to generate cache for triangle %s: Expected edges to resolve into 3 points, but got %d", D3bot.PrintPrefix, self:GetID(), #points))
@@ -196,12 +191,15 @@ function NAV_TRIANGLE:_Delete()
 	-- Delete any reference to this triangle from edges
 	for _, edge in ipairs(self.Edges) do
 		table.RemoveByValue(edge.Triangles, self)
-		-- Delete any "floating" edge
-		edge:_GC()
+		-- Invalidate cache of the (other) connected triangles
+		for _, triangle in ipairs(edge.Triangles) do
+			triangle:InvalidateCache()
+		end
 	end
 
-	self.Navmesh.Triangles[self.ID] = nil
+	local navmesh = self.Navmesh
 	self.Navmesh = nil
+	navmesh.Triangles[self.ID] = nil
 end
 
 -- Returns whether the triangle consists out of the three given edges or not.
