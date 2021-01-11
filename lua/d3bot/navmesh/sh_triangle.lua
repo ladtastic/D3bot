@@ -270,14 +270,15 @@ function NAV_TRIANGLE:RecalcFlipNormal()
 	end
 
 	if FlipCounter > 0 then
+		-- Most neighbor triangles are flipped in this direction
 		self:SetFlipNormal(true)
 	elseif FlipCounter < 0 then
+		-- Most neighbor triangles are flipped in the other direction
 		self:SetFlipNormal(false)
 	else
+		-- Neighbor triangle normals are indecisive: Assume upwards is more likely to be correct
 		if cache.Normal[3] < 0 then
-			self:SetFlipNormal(true)
-		else
-			self:SetFlipNormal(false)
+			self:SetFlipNormal(not self.FlipNormal)
 		end
 	end
 end
