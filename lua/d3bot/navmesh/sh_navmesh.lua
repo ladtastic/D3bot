@@ -227,6 +227,7 @@ end
 -- Draw the navmesh into a 3D rendering context.
 function NAV_MESH:Render3D()
 	-- Draw edges
+	render.SetColorMaterial()
 	for _, edge in pairs(self.Edges) do
 		edge:Render3D()
 	end

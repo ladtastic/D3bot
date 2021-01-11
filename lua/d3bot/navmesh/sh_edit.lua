@@ -60,6 +60,10 @@ if SERVER then
 	)
 end
 
+------------------------------------------------------
+--						RemoveByID					--
+------------------------------------------------------
+
 -- Remove element by id.
 function NAV_EDIT.RemoveByID(ply, id)
 	if SERVER then
@@ -85,6 +89,72 @@ if SERVER then
 		function(len, ply)
 			local id = unpack(net.ReadTable())
 			NAV_EDIT.RemoveByID(ply, id)
+		end
+	)
+end
+
+------------------------------------------------------
+--					SetFlipNormalByID				--
+------------------------------------------------------
+
+-- Flip normal of triangle.
+function NAV_EDIT.SetFlipNormalByID(ply, id, state)
+	if SERVER then
+		-- Only he who wields the weapon has the power
+		if not ply:HasWeapon("weapon_d3_navmesher") then return end
+		-- Get or create navmesh
+		local navmesh = NAV_MAIN:ForceNavmesh()
+
+		local triangle = navmesh:FindTriangleByID(id)
+		triangle:SetFlipNormal(state)
+
+	elseif CLIENT then
+		net.Start("D3bot_Nav_Edit_SetFlipNormalByID")
+		net.WriteTable({id})
+		net.WriteBool(state)
+		net.SendToServer()
+	end
+end
+
+if SERVER then
+	util.AddNetworkString("D3bot_Nav_Edit_SetFlipNormalByID")
+	net.Receive("D3bot_Nav_Edit_SetFlipNormalByID",
+		function(len, ply)
+			local id = unpack(net.ReadTable())
+			local state = net.ReadBool()
+			NAV_EDIT.SetFlipNormalByID(ply, id, state)
+		end
+	)
+end
+
+------------------------------------------------------
+--					RecalcFlipNormalByID			--
+------------------------------------------------------
+
+-- Flip normal of triangle.
+function NAV_EDIT.RecalcFlipNormalByID(ply, id)
+	if SERVER then
+		-- Only he who wields the weapon has the power
+		if not ply:HasWeapon("weapon_d3_navmesher") then return end
+		-- Get or create navmesh
+		local navmesh = NAV_MAIN:ForceNavmesh()
+
+		local triangle = navmesh:FindTriangleByID(id)
+		triangle:RecalcFlipNormal()
+
+	elseif CLIENT then
+		net.Start("D3bot_Nav_Edit_RecalcFlipNormalByID")
+		net.WriteTable({id})
+		net.SendToServer()
+	end
+end
+
+if SERVER then
+	util.AddNetworkString("D3bot_Nav_Edit_RecalcFlipNormalByID")
+	net.Receive("D3bot_Nav_Edit_RecalcFlipNormalByID",
+		function(len, ply)
+			local id = unpack(net.ReadTable())
+			NAV_EDIT.RecalcFlipNormalByID(ply, id)
 		end
 	)
 end
