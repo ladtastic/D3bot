@@ -23,7 +23,7 @@ local NAV_EDGE = D3bot.NAV_EDGE
 local NAV_TRIANGLE = D3bot.NAV_TRIANGLE
 
 ------------------------------------------------------
---						Static						--
+--		Static
 ------------------------------------------------------
 
 -- Make all methods and properties of the class available to its objects.
@@ -65,7 +65,7 @@ function NAV_MESH:NewFromTable(t)
 end
 
 ------------------------------------------------------
---						Methods						--
+--		Methods
 ------------------------------------------------------
 
 -- Returns a table that contains all important data of this object.

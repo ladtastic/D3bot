@@ -33,7 +33,7 @@ EDIT_MODES.TriangleAddRemove = EDIT_MODES.TriangleAddRemove or {}
 local THIS_EDIT_MODE = EDIT_MODES.TriangleAddRemove
 
 ------------------------------------------------------
---						Static						--
+--		Static
 ------------------------------------------------------
 
 -- Make all methods and properties of the class available to its objects.
@@ -56,7 +56,7 @@ function THIS_EDIT_MODE:AssignToWeapon(wep)
 end
 
 ------------------------------------------------------
---						Methods						--
+--		Methods
 ------------------------------------------------------
 
 -- Left mouse button action.

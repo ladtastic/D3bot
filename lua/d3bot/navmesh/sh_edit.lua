@@ -24,7 +24,7 @@ local NAV_MAIN = D3bot.NavMain
 local NAV_EDIT = D3bot.NavEdit
 
 ------------------------------------------------------
---				CreateTriangle3P					--
+--		CreateTriangle3P
 ------------------------------------------------------
 
 -- Create a triangle in the main navmesh.
@@ -61,7 +61,7 @@ if SERVER then
 end
 
 ------------------------------------------------------
---						RemoveByID					--
+--		RemoveByID
 ------------------------------------------------------
 
 -- Remove element by id.
@@ -94,7 +94,7 @@ if SERVER then
 end
 
 ------------------------------------------------------
---					SetFlipNormalByID				--
+--		SetFlipNormalByID
 ------------------------------------------------------
 
 -- Flip normal of triangle.
@@ -128,7 +128,7 @@ if SERVER then
 end
 
 ------------------------------------------------------
---					RecalcFlipNormalByID			--
+--		RecalcFlipNormalByID
 ------------------------------------------------------
 
 -- Flip normal of triangle.

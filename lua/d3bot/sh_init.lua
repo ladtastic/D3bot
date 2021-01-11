@@ -18,7 +18,7 @@
 AddCSLuaFile()
 
 ------------------------------------------------------
---						Init						--
+--		Init
 ------------------------------------------------------
 
 -- Init namespaces
@@ -56,7 +56,7 @@ D3bot.NAV_EDGE = D3bot.NAV_EDGE or {} -- NAV_EDGE Class
 D3bot.NAV_TRIANGLE = D3bot.NAV_TRIANGLE or {} -- NAV_TRIANGLE Class
 
 ------------------------------------------------------
---						Includes					--
+--		Includes
 ------------------------------------------------------
 
 -- General stuff

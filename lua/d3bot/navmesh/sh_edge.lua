@@ -21,7 +21,7 @@ local ERROR = D3bot.ERROR
 local NAV_EDGE = D3bot.NAV_EDGE
 
 ------------------------------------------------------
---						Static						--
+--		Static
 ------------------------------------------------------
 
 -- Make all methods and properties of the class available to its objects.
@@ -95,7 +95,7 @@ function NAV_EDGE:NewFromTable(navmesh, t)
 end
 
 ------------------------------------------------------
---						Methods						--
+--		Methods
 ------------------------------------------------------
 
 -- Returns the object's ID, which is most likely a number object.

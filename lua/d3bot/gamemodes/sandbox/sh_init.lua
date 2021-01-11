@@ -19,7 +19,7 @@ local D3bot = D3bot
 local UTIL = D3bot.Util
 
 ------------------------------------------------------
---						Includes					--
+--		Includes
 ------------------------------------------------------
 
 UTIL.IncludeRealm("sv_brainassigner.lua", UTIL.REALM_SERVER)

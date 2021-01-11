@@ -19,7 +19,7 @@ local D3bot = D3bot
 local CONCOMMAND = D3bot.CONCOMMAND
 
 ------------------------------------------------------
---						Static						--
+--		Static
 ------------------------------------------------------
 
 -- Make all methods and properties of the class available to its objects.
@@ -48,7 +48,7 @@ function CONCOMMAND:New(name)
 end
 
 ------------------------------------------------------
---						Methods						--
+--		Methods
 ------------------------------------------------------
 
 -- Internal method: Callback that is called when the concommand is run.

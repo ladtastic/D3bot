@@ -21,7 +21,7 @@ local ERROR = D3bot.ERROR
 local NAV_TRIANGLE = D3bot.NAV_TRIANGLE
 
 ------------------------------------------------------
---						Static						--
+--		Static
 ------------------------------------------------------
 
 -- Make all methods and properties of the class available to its objects.
@@ -109,7 +109,7 @@ function NAV_TRIANGLE:NewFromTable(navmesh, t)
 end
 
 ------------------------------------------------------
---						Methods						--
+--		Methods
 ------------------------------------------------------
 
 -- Returns the object's ID, which is most likely a number object.

@@ -25,7 +25,7 @@ BRAINS.GENERAL = BRAINS.GENERAL or {}
 local THIS_BRAIN = BRAINS.GENERAL
 
 ------------------------------------------------------
---						Static						--
+--		Static
 ------------------------------------------------------
 
 -- Make all methods and properties of the class available to its objects.
@@ -46,7 +46,7 @@ function THIS_BRAIN:AssignToBot(bot, mem)
 end
 
 ------------------------------------------------------
---						Methods						--
+--		Methods
 ------------------------------------------------------
 
 -- Think coroutine. Put all the important stuff in here.

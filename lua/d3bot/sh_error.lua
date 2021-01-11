@@ -21,7 +21,7 @@ local D3bot = D3bot
 local ERROR = D3bot.ERROR
 
 ------------------------------------------------------
---						Static						--
+--		Static
 ------------------------------------------------------
 
 -- Make all methods and properties of the class available to its objects.
@@ -43,7 +43,7 @@ function ERROR:New(format, ...)
 end
 
 ------------------------------------------------------
---						Methods						--
+--		Methods
 ------------------------------------------------------
 
 -- Return the error message as string.

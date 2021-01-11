@@ -25,7 +25,7 @@ BRAINS.ON_ERROR = BRAINS.ON_ERROR or {}
 local THIS_BRAIN = BRAINS.ON_ERROR
 
 ------------------------------------------------------
---						Static						--
+--		Static
 ------------------------------------------------------
 
 -- Make all methods and properties of the class available to its objects.
@@ -46,7 +46,7 @@ function THIS_BRAIN:AssignToBot(bot, mem)
 end
 
 ------------------------------------------------------
---						Methods						--
+--		Methods
 ------------------------------------------------------
 
 -- Think coroutine. Put all the important stuff in here.

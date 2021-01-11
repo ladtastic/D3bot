@@ -39,7 +39,7 @@ function PANEL:Init()
 	--propertySheet:AddSheet("Help", dPanel, nil, false, false, "test3")
 
 	------------------------------------------------------
-	--					Main tab content				--
+	--		Main tab content
 	------------------------------------------------------
 
 	local dScrollPanel = vgui.Create("DScrollPanel")
