@@ -36,9 +36,16 @@ D3bot.NavEdit = D3bot.NavEdit or {} -- Functions to edit the main navmesh instan
 D3bot.Locomotion = D3bot.Locomotion or {} -- Locomotion handlers
 D3bot.Brains = D3bot.Brains or {} -- Brain handlers
 
+-- SWEP and UI namespaces
+D3bot.NavSWEP = D3bot.NavSWEP or {} -- Navmeshing SWEP stuff, this is not the SWEP table itself
+D3bot.NavSWEP.EditModes = D3bot.NavSWEP.EditModes or {} -- List of navmeshing edit modes
+D3bot.NavSWEP.UI = D3bot.NavSWEP.UI or {} -- General SWEP UI stuff
+D3bot.NavSWEP.UI.ReloadMenu = D3bot.NavSWEP.UI.ReloadMenu or {} -- RELOAD menu stuff
+
 -- Init default values
 D3bot.PrintPrefix = "D3bot:"
 D3bot.HookPrefix = "D3bot_"
+D3bot.VGUIPrefix = "D3bot_"
 D3bot.AddonRoot = "d3bot/"
 
 -- Init class namespaces

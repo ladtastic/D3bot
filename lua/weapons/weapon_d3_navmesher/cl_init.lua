@@ -17,6 +17,9 @@
 
 include("shared.lua")
 include("cl_viewscreen.lua")
+include("vgui/cl_panel_navmeshing_options.lua")
+include("vgui/cl_panel_reload_menu.lua")
+include("vgui/cl_ui_reload_menu.lua")
 
 function SWEP:PreDrawViewModel(vm) -- ZS doesn't call this with the weapon and ply parameters
 	local editMode = self.EditMode

@@ -17,5 +17,8 @@
 
 AddCSLuaFile("cl_init.lua")
 AddCSLuaFile("cl_viewscreen.lua")
+AddCSLuaFile("vgui/cl_panel_navmeshing_options.lua")
+AddCSLuaFile("vgui/cl_panel_reload_menu.lua")
+AddCSLuaFile("vgui/cl_ui_reload_menu.lua")
 
 include("shared.lua")

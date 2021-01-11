@@ -23,14 +23,14 @@ local RENDER_UTIL = D3bot.RenderUtil
 local NAV_EDIT = D3bot.NavEdit
 local NAV_MAIN = D3bot.NavMain
 local MAPGEOMETRY = D3bot.MapGeometry
-local EDIT_MODES = D3_NAVMESHER_EDIT_MODES
+
+local NAV_SWEP = D3bot.NavSWEP
+local EDIT_MODES = NAV_SWEP.EditModes
+local UI = NAV_SWEP.UI
 
 -- Add edit mode to list
 EDIT_MODES.TriangleAddRemove = EDIT_MODES.TriangleAddRemove or {}
 local THIS_EDIT_MODE = EDIT_MODES.TriangleAddRemove
-
--- General edit mode info.
-THIS_EDIT_MODE.Name = "Create & Remove triangles"
 
 ------------------------------------------------------
 --						Static						--
@@ -38,6 +38,9 @@ THIS_EDIT_MODE.Name = "Create & Remove triangles"
 
 -- Make all methods and properties of the class available to its objects.
 THIS_EDIT_MODE.__index = THIS_EDIT_MODE
+
+-- General edit mode info.
+THIS_EDIT_MODE.Name = "Create & Remove triangles"
 
 -- Set and overwrite current edit mode of the given weapon.
 -- This will create an instance of the edit mode class, and store it in the weapon's EditMode field.
@@ -153,7 +156,7 @@ end
 -- Reload button action.
 function THIS_EDIT_MODE:Reload(wep)
 	-- Reset build mode and its state
-	THIS_EDIT_MODE:AssignToWeapon(wep)
+	--THIS_EDIT_MODE:AssignToWeapon(wep)
 
 	return true
 end
@@ -217,13 +220,16 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm)
 	navmesh:Render3D()
 
 	-- Draw ghost of triangle
-	render.SetColorMaterialIgnoreZ()
 	for _, point in ipairs(trianglePoints) do
+		render.SetColorMaterialIgnoreZ()
+		RENDER_UTIL.Draw3DCursorPos(point, 2, Color(255, 255, 255, 31), Color(0, 0, 0, 31))
+		render.SetColorMaterial()
 		RENDER_UTIL.Draw3DCursorPos(point, 2, Color(255, 255, 255, 255), Color(0, 0, 0, 255))
 		--render.DrawSphere(point, 10, 10, 10, Color(255, 255, 255, 31))
 	end
 	if #trianglePoints == 3 then
 		local p1, p2, p3 = trianglePoints[1], trianglePoints[2], trianglePoints[3]
+		render.SetColorMaterial()
 		render.DrawQuad(p1, p2, p3, p2, Color(255, 255, 255, 31))
 		render.DrawLine(p1, p2, Color(255, 255, 255, 255), false)
 		render.DrawLine(p2, p3, Color(255, 255, 255, 255), false)

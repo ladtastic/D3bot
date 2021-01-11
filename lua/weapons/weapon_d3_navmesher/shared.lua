@@ -15,6 +15,12 @@
 -- You should have received a copy of the GNU General Public License
 -- along with D3bot.  If not, see <http://www.gnu.org/licenses/>.
 
+local D3bot = D3bot
+local NAV_SWEP = D3bot.NavSWEP
+local EDIT_MODES = NAV_SWEP.EditModes
+local UI = NAV_SWEP.UI
+local RELOAD_MENU = UI.ReloadMenu
+
 AddCSLuaFile()
 
 SWEP.PrintName = "D3navmesher"
@@ -47,7 +53,6 @@ SWEP.CanHolster = true
 SWEP.CanDeploy = true
 
 -- Load edit modes
-D3_NAVMESHER_EDIT_MODES = D3_NAVMESHER_EDIT_MODES or {}
 include("editmodes/sh_triangle.lua")
 
 function SWEP:Initialize()
@@ -86,6 +91,12 @@ end
 function SWEP:OnRemove()
 	local editMode = self.EditMode
 
+	-- Hide UI
+	if CLIENT then
+		RELOAD_MENU:Close()
+	end
+
+	-- Unsubscribe from navmesh PubSub
 	if SERVER then
 		local owner = self.Owner
 		if IsValid(owner) and owner:IsPlayer() then
@@ -115,6 +126,11 @@ end
 function SWEP:Holster()
 	local editMode = self.EditMode
 
+	-- Hide UI when holstering
+	if CLIENT then
+		RELOAD_MENU:Close()
+	end
+
 	if not editMode then return true end
 	if not editMode.Holster then return true end
 
@@ -142,6 +158,11 @@ end
 function SWEP:Reload()
 	local editMode = self.EditMode
 
+	-- Show navmeshing window on reload
+	if CLIENT and self.Owner:KeyPressed(IN_RELOAD) then
+		RELOAD_MENU:Open()
+	end
+
 	if not editMode then return true end
 	if not editMode.Reload then return true end
 
@@ -149,7 +170,7 @@ function SWEP:Reload()
 end
 
 function SWEP:ChangeEditMode(modeIdentifier)
-	local editMode = D3_NAVMESHER_EDIT_MODES[modeIdentifier]
+	local editMode = EDIT_MODES[modeIdentifier]
 	if not editMode then return false end
 
 	return editMode:AssignToWeapon(self)
