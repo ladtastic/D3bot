@@ -33,42 +33,6 @@ function RELOAD_MENU:Create()
 		self.PanelInstance = nil
 		return
 	end
-
-	--[[local dFrame = vgui.Create("DFrame")
-	dFrame:MakePopup()
-	dFrame:SetWorldClicker(true)
-	--dFrame:SetMouseInputEnabled(true)
-	dFrame:SetCookieName(D3bot.VGUIPrefix .. "ReloadMenu")
-	local frameX, frameY, frameWidth, frameHeight = dFrame:GetCookieNumber("x", 50), dFrame:GetCookieNumber("y", 50), dFrame:GetCookieNumber("width", 300), dFrame:GetCookieNumber("height", 400)
-	dFrame:SetSkin("Default")
-	dFrame:SetPos(frameX, frameY)
-	dFrame:SetSize(frameWidth, frameHeight)
-	dFrame:SetTitle("D3bot navmeshing options")
-	dFrame:SetVisible(true)
-	dFrame:SetSizable(true)
-	dFrame:SetDraggable(true)
-	dFrame:ShowCloseButton(true)
-	--dFrame:MakePopup()
-	self.ReloadMenu = dFrame
-
-	-- Store window position every now and then
-	timer.Remove(D3bot.HookPrefix .. "MeshingWindowTimer")
-	timer.Create(
-		D3bot.HookPrefix .. "MeshingWindowTimer",
-		10,
-		0,
-		function()
-			if not IsValid(dFrame) then
-				timer.Remove(D3bot.HookPrefix .. "MeshingWindowTimer")
-				return
-			end
-			local x, y, width, height = dFrame:GetBounds()
-			dFrame:SetCookie("x", tostring(x))
-			dFrame:SetCookie("y", tostring(y))
-			dFrame:SetCookie("width", tostring(width))
-			dFrame:SetCookie("height", tostring(height))
-		end
-	)]]
 end
 
 function RELOAD_MENU:Open()
@@ -121,4 +85,5 @@ concommand.Add("+d3bot_menu_reload", function() RELOAD_MENU:Open() end, nil, "Op
 concommand.Add("-d3bot_menu_reload", function() if (input.IsKeyTrapping()) then return end RELOAD_MENU:Close() end, nil, "Closes the D3bot reload menu", FCVAR_DONTRECORD)
 
 -- For debugging: Recreate panel every time the file loads
+-- TODO: Don't call RELOAD_MENU:Create from here
 RELOAD_MENU:Create()

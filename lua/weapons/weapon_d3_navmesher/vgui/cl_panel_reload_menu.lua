@@ -26,8 +26,10 @@ function PANEL:Init()
 	self:SetWorldClicker(true)
 	self:SetVisible(false)
 
+	-- Create navmeshing options window
 	local dNavmeshingOptions = vgui.Create(D3bot.VGUIPrefix .. "NavmeshingOptions", self)
 	self.dNavmeshingOptions = dNavmeshingOptions
+
 end
 
 function PANEL:Open()

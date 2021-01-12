@@ -30,7 +30,17 @@ function PANEL:Init()
 	self:SetSizable(true)
 	self:SetDraggable(true)
 	self:ShowCloseButton(false)
-	self:SetSize(300, 400)
+	self:SetMinimumSize(200, 300)
+
+	-- Restore its previous size and pos
+	self:SetCookieName(D3bot.VGUIPrefix .. "NavmeshingOptions")
+	local x, y, width, height = self:GetCookieNumber("x", 100), self:GetCookieNumber("y", 100), self:GetCookieNumber("width", 300), self:GetCookieNumber("height", 400)
+	self:SetPos(x, y)
+	self:SetSize(width, height)
+
+	------------------------------------------------------
+	--		Tabs
+	------------------------------------------------------
 
 	local propertySheet = vgui.Create("DPropertySheet", self)
 	propertySheet:Dock(FILL)
@@ -85,6 +95,25 @@ function PANEL:Init()
 			end
 		end
 	end
+end
+
+function PANEL:OnMouseReleased()
+	-- Store current window position
+	local x, y = self:GetPos()
+	self:SetCookie("x", tostring(x))
+	self:SetCookie("y", tostring(y))
+
+	-- Call method of base class, if it exists
+	if self.BaseClass.OnMouseReleased then return self.BaseClass.OnMouseReleased(self) end
+end
+
+function PANEL:OnSizeChanged(newWidth, newHeight)
+	-- Store current window size
+	self:SetCookie("width", tostring(newWidth))
+	self:SetCookie("height", tostring(newHeight))
+
+	-- Call method of base class, if it exists
+	if self.BaseClass.OnSizeChanged then return self.BaseClass.OnSizeChanged(self) end
 end
 
 vgui.Register(D3bot.VGUIPrefix .. "NavmeshingOptions", PANEL, "DFrame")
