@@ -71,6 +71,7 @@ function THIS_EDIT_MODE:PrimaryAttack(wep)
 	if not CLIENT then return true end
 
 	-- If there is no navmesh, stop
+	-- TODO: Make it possible to place triangles without a valid navmesh.
 	local navmesh = NAV_MAIN:GetNavmesh()
 	if not navmesh then
 		wep.Weapon:EmitSound("buttons/button1.wav")
