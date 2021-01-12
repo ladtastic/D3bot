@@ -35,9 +35,11 @@ end
 function PANEL:Open()
 	self:SetVisible(true)
 	gui.EnableScreenClicker(true)
+	RestoreCursorPosition()
 end
 
 function PANEL:Close()
+	RememberCursorPosition()
 	self:SetVisible(false)
 	gui.EnableScreenClicker(false)
 end
