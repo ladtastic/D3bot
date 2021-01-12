@@ -29,9 +29,11 @@ local NAV_SWEP = D3bot.NavSWEP
 local EDIT_MODES = NAV_SWEP.EditModes
 local UI = NAV_SWEP.UI
 
+local key = "TriangleAddRemove"
+
 -- Add edit mode to list
-EDIT_MODES.TriangleAddRemove = EDIT_MODES.TriangleAddRemove or {}
-local THIS_EDIT_MODE = EDIT_MODES.TriangleAddRemove
+EDIT_MODES[key] = EDIT_MODES[key] or {}
+local THIS_EDIT_MODE = EDIT_MODES[key]
 
 ------------------------------------------------------
 --		Static
@@ -40,8 +42,11 @@ local THIS_EDIT_MODE = EDIT_MODES.TriangleAddRemove
 -- Make all methods and properties of the class available to its objects.
 THIS_EDIT_MODE.__index = THIS_EDIT_MODE
 
--- General edit mode info.
-THIS_EDIT_MODE.Name = "Create & Remove triangles"
+-- Key of the edit mode. Must be the same as is used as entry in EDIT_MODES.
+THIS_EDIT_MODE.Key = key
+
+-- Name that is shown to the user.
+THIS_EDIT_MODE.Name = "Create & remove triangles"
 
 -- Set and overwrite current edit mode of the given weapon.
 -- This will create an instance of the edit mode class, and store it in the weapon's EditMode field.

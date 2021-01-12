@@ -26,11 +26,14 @@ local CONCOMMAND = D3bot.CONCOMMAND
 CONCOMMAND.__index = CONCOMMAND
 
 -- Get new instance of a concommand object.
--- You have to add your own OnServer and OnClient methods to your concommand.
-function CONCOMMAND:New(name)
+-- You have to add your own OnServer, OnClient or OnShared methods to your concommand object.
+function CONCOMMAND:New(name, autocomplete, helpText, flags)
 	local obj = {
 		Name = name,
-		NameServer = "sv_" .. name
+		NameServer = "sv_" .. name,
+		Autocomplete = autocomplete,
+		HelpText = helpText,
+		Flags = flags
 	}
 
 	-- Instantiate
@@ -38,10 +41,10 @@ function CONCOMMAND:New(name)
 
 	-- Add concommands to client and server. The server one has a different name.
 	if CLIENT then
-		concommand.Add(obj.Name, function(ply, cmd, args, argStr) obj:_Callback(ply, cmd, args, argStr) end)
+		concommand.Add(obj.Name, function(ply, cmd, args, argStr) obj:_Callback(ply, cmd, args, argStr) end, autocomplete, helpText, flags)
 	end
 	if SERVER then
-		concommand.Add(obj.NameServer, function(ply, cmd, args, argStr) obj:_Callback(ply, cmd, args, argStr) end)
+		concommand.Add(obj.NameServer, function(ply, cmd, args, argStr) obj:_Callback(ply, cmd, args, argStr) end, autocomplete, helpText, flags)
 	end
 
 	return obj
@@ -60,10 +63,23 @@ function CONCOMMAND:_Callback(ply, cmd, args, argStr)
 	if CLIENT and self.OnClient then
 		self:OnClient(ply, cmd, args, argStr)
 	end
+	if self.OnShared then
+		self:OnShared(ply, cmd, args, argStr)
+	end
 
 	-- Replicate concommand in server realm
 	if CLIENT then
 		-- Ignore ply, and call the server side concommand
 		Entity(1):ConCommand(self.NameServer .. " " .. argStr)
 	end
+end
+
+-- Returns the name of the concommand.
+function CONCOMMAND:GetName()
+	return self.Name
+end
+
+-- Returns the help text of the concommand.
+function CONCOMMAND:GetHelpText()
+	return self.HelpText or ""
 end

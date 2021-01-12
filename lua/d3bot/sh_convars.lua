@@ -18,6 +18,6 @@
 local D3bot = D3bot
 local CONVARS = D3bot.Convars
 
-CONVARS.NavmeshZCulling = CreateClientConVar("d3bot_navmesh_zculling", 1, true, true, "Hide navmesh entities that are obscured by map geometry or map entities. Also, this will make these entities selectable.")
+CONVARS.NavmeshZCulling = CreateClientConVar("d3bot_navmesh_zculling", 1, true, true, "Hide navmesh entities that are obscured by map geometry or map entities.")
 
 CONVARS.SWEPHitWater = CreateClientConVar("d3bot_swep_hit_water", 1, true, true, "Enables the SWEP to place its 3D cursor on water surfaces.")

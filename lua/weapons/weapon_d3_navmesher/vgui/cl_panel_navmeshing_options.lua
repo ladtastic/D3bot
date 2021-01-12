@@ -20,6 +20,7 @@
 local D3bot = D3bot
 local CONVARS = D3bot.Convars
 local UTIL = D3bot.Util
+local CONCOMMANDS = D3bot.ConCommands
 
 local NAV_SWEP = D3bot.NavSWEP
 local EDIT_MODES = NAV_SWEP.EditModes
@@ -57,11 +58,19 @@ function PANEL:Init()
 	propertySheet:AddSheet("EditMode", dScrollPanel, nil, false, false, "Editmode related settings")
 	dScrollPanel:Dock(FILL)
 
+	local dButton = vgui.Create("DButton", dScrollPanel)
+	dButton:SetText("Reset edit mode")
+	dButton:DockMargin(5, 5, 5, 0)
+	dButton:Dock(TOP)
+	dButton:SetConsoleCommand(CONCOMMANDS.EditModeReset:GetName())
+	dButton:SetTooltip(CONCOMMANDS.EditModeReset:GetHelpText())
+
 	local list = vgui.Create("DListView", dScrollPanel)
 	list:SetMultiSelect(false)
 	list:SetSize(nil, 100)
+	list:DockMargin(5, 5, 5, 0)
 	list:Dock(TOP)
-	list:AddColumn("EditMode")
+	list:AddColumn("Name")
 	-- Fill with edit modes sorted by their name
 	for _, editMode in UTIL.kpairs(EDIT_MODES) do
 		list:AddLine(editMode.Name)
@@ -73,11 +82,7 @@ function PANEL:Init()
 		for _, editMode in UTIL.kpairs(EDIT_MODES) do
 			i = i + 1
 			if i == index then
-				-- Apply edit mode to the players navmeshing SWEP
-				local wep = LocalPlayer():GetWeapon("weapon_d3_navmesher")
-				if IsValid(wep) then
-					editMode:AssignToWeapon(wep)
-				end
+				LocalPlayer():ConCommand(CONCOMMANDS.EditMode:GetName() .. " " .. editMode.Key)
 				break
 			end
 		end

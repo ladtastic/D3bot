@@ -176,3 +176,11 @@ function SWEP:ChangeEditMode(modeIdentifier)
 
 	return editMode:AssignToWeapon(self)
 end
+
+function SWEP:ResetEditMode()
+	local editMode = self.EditMode
+	editMode = EDIT_MODES[editMode.Key]
+	if not editMode then return false end
+
+	return editMode:AssignToWeapon(self)
+end
