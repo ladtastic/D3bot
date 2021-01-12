@@ -18,6 +18,7 @@
 AddCSLuaFile()
 
 local D3bot = D3bot
+local CONVARS = D3bot.Convars
 local UTIL = D3bot.Util
 local RENDER_UTIL = D3bot.RenderUtil
 local NAV_EDIT = D3bot.NavEdit
@@ -75,9 +76,13 @@ function THIS_EDIT_MODE:PrimaryAttack(wep)
 	local tr = util.GetPlayerTrace(LocalPlayer())
 	local trRes = util.TraceLine(tr)
 
-	-- Define ray for navmesh entity tracing
+	-- Define ray for navmesh entity tracing.
+	-- Act differently based on if z-culling is enabled or not.
 	local aimOrigin = tr.start
-	local aimVec = trRes.HitPos - aimOrigin + trRes.Normal * 20 -- Add a bit more to allow for selection of entities inside geometry.
+	local aimVec = trRes.Normal * 32000
+	if CONVARS.NavmeshZCulling:GetBool() then
+		aimVec = trRes.HitPos - aimOrigin + trRes.Normal * 20 -- Add a bit more to allow for selection of entities inside geometry.
+	end
 
 	-- Trace triangle
 	local tracedTriangle = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Triangles)
@@ -109,9 +114,13 @@ function THIS_EDIT_MODE:SecondaryAttack(wep)
 	local tr = util.GetPlayerTrace(LocalPlayer())
 	local trRes = util.TraceLine(tr)
 
-	-- Define ray for navmesh entity tracing
+	-- Define ray for navmesh entity tracing.
+	-- Act differently based on if z-culling is enabled or not.
 	local aimOrigin = tr.start
-	local aimVec = trRes.HitPos - aimOrigin + trRes.Normal * 20 -- Add a bit more to allow for selection of entities inside geometry.
+	local aimVec = trRes.Normal * 32000
+	if CONVARS.NavmeshZCulling:GetBool() then
+		aimVec = trRes.HitPos - aimOrigin + trRes.Normal * 20 -- Add a bit more to allow for selection of entities inside geometry.
+	end
 
 	-- Trace triangle
 	local tracedTriangle = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Triangles)
@@ -141,9 +150,13 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm)
 	local tr = util.GetPlayerTrace(LocalPlayer())
 	local trRes = util.TraceLine(tr)
 
-	-- Define ray for navmesh entity tracing
+	-- Define ray for navmesh entity tracing.
+	-- Act differently based on if z-culling is enabled or not.
 	local aimOrigin = tr.start
-	local aimVec = trRes.HitPos - aimOrigin + trRes.Normal * 20 -- Add a bit more to allow for selection of entities inside geometry.
+	local aimVec = trRes.Normal * 32000
+	if CONVARS.NavmeshZCulling:GetBool() then
+		aimVec = trRes.HitPos - aimOrigin + trRes.Normal * 20 -- Add a bit more to allow for selection of entities inside geometry.
+	end
 
 	-- Highlighting of navmesh triangles
 	local tracedTriangle = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Triangles)

@@ -25,6 +25,7 @@ AddCSLuaFile()
 D3bot = D3bot or {}
 D3bot.Version = {1, 0, 0} -- TODO: Create SemVer object or something
 D3bot.Config = D3bot.Config or {} -- General configuration table
+D3bot.Convars = D3bot.Convars or {} -- List of console variables
 D3bot.Util = D3bot.Util or {} -- Utility functions
 D3bot.RenderUtil = D3bot.RenderUtil or {} -- Render helper/utility functions
 D3bot.MapGeometry = D3bot.MapGeometry or {} -- Functions for querying map geometry like corner points
@@ -63,6 +64,7 @@ D3bot.NAV_TRIANGLE = D3bot.NAV_TRIANGLE or {} -- NAV_TRIANGLE Class
 include("sh_util.lua")
 local UTIL = D3bot.Util -- From here on UTIL.IncludeRealm can be used
 UTIL.IncludeRealm("sh_error.lua", UTIL.REALM_SHARED)
+UTIL.IncludeRealm("sh_convars.lua", UTIL.REALM_SHARED)
 UTIL.IncludeRealm("sv_control.lua", UTIL.REALM_SERVER)
 UTIL.IncludeRealm("sv_ulx_fix.lua", UTIL.REALM_SERVER)
 UTIL.IncludeRealm("sh_concommand.lua", UTIL.REALM_SHARED)

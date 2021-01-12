@@ -16,6 +16,7 @@
 -- along with D3bot.  If not, see <http://www.gnu.org/licenses/>.
 
 local D3bot = D3bot
+local CONVARS = D3bot.Convars
 local UTIL = D3bot.Util
 local ERROR = D3bot.ERROR
 local NAV_MESH = D3bot.NAV_MESH
@@ -227,13 +228,13 @@ end
 -- Draw the navmesh into a 3D rendering context.
 function NAV_MESH:Render3D()
 	-- Draw edges
-	render.SetColorMaterial()
+	if CONVARS.NavmeshZCulling:GetBool() then render.SetColorMaterial()	else render.SetColorMaterialIgnoreZ() end
 	for _, edge in pairs(self.Edges) do
 		edge:Render3D()
 	end
 
 	-- Draw triangles
-	render.SetColorMaterial()
+	if CONVARS.NavmeshZCulling:GetBool() then render.SetColorMaterial()	else render.SetColorMaterialIgnoreZ() end
 	for _, triangle in pairs(self.Triangles) do
 		triangle:Render3D()
 	end

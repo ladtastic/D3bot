@@ -15,6 +15,8 @@
 -- You should have received a copy of the GNU General Public License
 -- along with D3bot.  If not, see <http://www.gnu.org/licenses/>.
 
+-- List of concommands that are available on client (With autocompletion) and can run stuff on the server side.
+
 local D3bot = D3bot
 local CONCOMMAND = D3bot.CONCOMMAND
 local CONCOMMANDS = D3bot.ConCommands

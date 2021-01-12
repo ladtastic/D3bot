@@ -1,7 +1,9 @@
 {
     "cSpell.words": [
+        "Convars",
         "DONTRECORD",
         "Draggable",
+        "Editmode",
         "FCVAR",
         "Helvetica",
         "MAPGEOMETRY",
@@ -37,7 +39,8 @@
         "texwide",
         "toolgun",
         "toolmode",
-        "viewscreen"
+        "viewscreen",
+        "zculling"
     ],
     "editor.formatOnSave": false,
     "lua.format.useTabs": true,

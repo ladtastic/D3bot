@@ -18,6 +18,7 @@
 -- Window/Frame with the most important navmeshing settings.
 
 local D3bot = D3bot
+local CONVARS = D3bot.Convars
 local UTIL = D3bot.Util
 
 local NAV_SWEP = D3bot.NavSWEP
@@ -49,26 +50,12 @@ function PANEL:Init()
 	--propertySheet:AddSheet("Help", dPanel, nil, false, false, "test3")
 
 	------------------------------------------------------
-	--		Main tab content
+	--		EditMode tab content
 	------------------------------------------------------
 
 	local dScrollPanel = vgui.Create("DScrollPanel")
-	propertySheet:AddSheet("Main", dScrollPanel, nil, false, false, "Contains general navmesh settings")
+	propertySheet:AddSheet("EditMode", dScrollPanel, nil, false, false, "Editmode related settings")
 	dScrollPanel:Dock(FILL)
-
-	--[[local item = vgui.Create("DCheckBoxLabel", dScrollPanel)
-	item:Dock(TOP)
-	item:DockMargin(5, 5, 5, 5)
-	item:SetTextColor(Color(0, 0, 0))
-	item:SetText("Enable")
-	item:SetConVar("d3bot_navmeshing_enabled")
-
-	local item = vgui.Create("DCheckBoxLabel", dScrollPanel)
-	item:Dock(TOP)
-	item:DockMargin(5, 5, 5, 5)
-	item:SetTextColor(Color(0, 0, 0))
-	item:SetText("Cycle mode with RELOAD")
-	item:SetConVar("d3bot_navmeshing_reloadmodecycle")]]
 
 	local list = vgui.Create("DListView", dScrollPanel)
 	list:SetMultiSelect(false)
@@ -95,6 +82,21 @@ function PANEL:Init()
 			end
 		end
 	end
+
+	------------------------------------------------------
+	--		Drawing tab content
+	------------------------------------------------------
+
+	local dScrollPanel = vgui.Create("DScrollPanel")
+	propertySheet:AddSheet("Drawing", dScrollPanel, nil, false, false, "Navmesh drawing and interactivity settings")
+	dScrollPanel:Dock(FILL)
+
+	local item = vgui.Create("DCheckBoxLabel", dScrollPanel)
+	item:Dock(TOP)
+	item:DockMargin(5, 5, 5, 5)
+	item:SetText("Z-Culling")
+	item:SetConVar(CONVARS.NavmeshZCulling:GetName())
+	item:SetTooltip(CONVARS.NavmeshZCulling:GetHelpText())
 end
 
 function PANEL:OnMouseReleased()
