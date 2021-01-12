@@ -16,6 +16,7 @@
 -- along with D3bot.  If not, see <http://www.gnu.org/licenses/>.
 
 local D3bot = D3bot
+local ERROR = D3bot.ERROR
 local NAV_SWEP = D3bot.NavSWEP
 local EDIT_MODES = NAV_SWEP.EditModes
 local UI = NAV_SWEP.UI
@@ -57,6 +58,7 @@ include("editmodes/sh_triangle.lua")
 include("editmodes/sh_flip_normal.lua")
 
 function SWEP:Initialize()
+	-- Starting edit mode
 	self:ChangeEditMode("TriangleAddRemove")
 end
 
@@ -170,11 +172,11 @@ function SWEP:Reload()
 	return editMode:Reload(self)
 end
 
-function SWEP:ChangeEditMode(modeIdentifier)
-	local editMode = EDIT_MODES[modeIdentifier]
-	if not editMode then return false end
+function SWEP:ChangeEditMode(modeKey)
+	local editMode = EDIT_MODES[modeKey]
+	if not editMode then return nil, ERROR:New("There is no edit mode %q", modeKey) end
 
-	return editMode:AssignToWeapon(self)
+	return editMode:AssignToWeapon(self), nil
 end
 
 function SWEP:ResetEditMode()

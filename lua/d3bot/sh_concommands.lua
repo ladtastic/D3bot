@@ -51,7 +51,8 @@ CONCOMMANDS.EditMode = CONCOMMAND:New("d3bot_editmode", nil, "Changes your SWEP'
 function CONCOMMANDS.EditMode:OnShared(ply, cmd, args, argStr)
 	local wep = ply:GetWeapon("weapon_d3_navmesher")
 	if IsValid(wep) then
-		wep:ChangeEditMode(argStr)
+		local editMode, err = wep:ChangeEditMode(argStr)
+		if CLIENT and err then ply:ChatPrint(string.format("%s Failed to change edit mode: %s", D3bot.PrintPrefix, err)) end
 	end
 end
 
