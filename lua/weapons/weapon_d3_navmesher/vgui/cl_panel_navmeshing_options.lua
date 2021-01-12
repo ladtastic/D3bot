@@ -84,11 +84,11 @@ function PANEL:Init()
 	end
 
 	------------------------------------------------------
-	--		Drawing tab content
+	--		Drawing & Interaction tab content
 	------------------------------------------------------
 
 	local dScrollPanel = vgui.Create("DScrollPanel")
-	propertySheet:AddSheet("Drawing", dScrollPanel, nil, false, false, "Navmesh drawing and interactivity settings")
+	propertySheet:AddSheet("Drawing & Interaction", dScrollPanel, nil, false, false, "Navmesh drawing and interactivity settings")
 	dScrollPanel:Dock(FILL)
 
 	local item = vgui.Create("DCheckBoxLabel", dScrollPanel)
@@ -97,6 +97,13 @@ function PANEL:Init()
 	item:SetText("Z-Culling")
 	item:SetConVar(CONVARS.NavmeshZCulling:GetName())
 	item:SetTooltip(CONVARS.NavmeshZCulling:GetHelpText())
+
+	local item = vgui.Create("DCheckBoxLabel", dScrollPanel)
+	item:Dock(TOP)
+	item:DockMargin(5, 5, 5, 5)
+	item:SetText("3D cursor hits water")
+	item:SetConVar(CONVARS.SWEPHitWater:GetName())
+	item:SetTooltip(CONVARS.SWEPHitWater:GetHelpText())
 end
 
 function PANEL:OnMouseReleased()

@@ -238,13 +238,28 @@ function UTIL.EdgesToTrianglePoints(edges)
 end
 
 -- Helper function for SWEPs that does a line trace on the given player.
--- It returns the tr table, the result of the trace trRes and a ray (origin, direction) that can be used for navmesh entity tracing.
+-- It returns the trace table tr, the result of the trace trRes and a ray (origin, direction) that can be used for navmesh entity tracing.
 -- The result depends on the client's convars.
 -- This works best in the client realm, don't expect the same result in the server realm.
 function UTIL.SWEPLineTrace(ply)
-	-- Player eye trace
+	local shouldHitWater = CONVARS.SWEPHitWater:GetBool()
+
+	-- Get normal player eye trace
 	local tr = util.GetPlayerTrace(ply)
+
+	-- Add water to trace mask
+	if shouldHitWater then
+		tr.mask = tr.mask or MASK_SOLID + MASK_WATER
+	end
+
+	-- Trace, duh
 	local trRes = util.TraceLine(tr)
+
+	-- Edge case for water traces: Redo trace without water mask, if trace starts inside a sold/water brush.
+	if shouldHitWater and trRes.StartSolid then
+		tr.mask = tr.mask - MASK_WATER
+		trRes = util.TraceLine(tr)
+	end
 
 	-- Define ray for navmesh entity tracing.
 	-- Act differently based on if z-culling is enabled or not.
