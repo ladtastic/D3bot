@@ -109,6 +109,20 @@ function PANEL:Init()
 	item:SetText("3D cursor hits water")
 	item:SetConVar(CONVARS.SWEPHitWater:GetName())
 	item:SetTooltip(CONVARS.SWEPHitWater:GetHelpText())
+
+	local item = vgui.Create("DCheckBoxLabel", dScrollPanel)
+	item:Dock(TOP)
+	item:DockMargin(5, 5, 5, 5)
+	item:SetText("Snap 3D cursor to map geometry")
+	item:SetConVar(CONVARS.SWEPSnapToMapGeometry:GetName())
+	item:SetTooltip(CONVARS.SWEPSnapToMapGeometry:GetHelpText())
+
+	local item = vgui.Create("DCheckBoxLabel", dScrollPanel)
+	item:Dock(TOP)
+	item:DockMargin(5, 5, 5, 5)
+	item:SetText("Snap 3D cursor to navmesh")
+	item:SetConVar(CONVARS.SWEPSnapToNavmeshGeometry:GetName())
+	item:SetTooltip(CONVARS.SWEPSnapToNavmeshGeometry:GetHelpText())
 end
 
 function PANEL:OnMouseReleased()

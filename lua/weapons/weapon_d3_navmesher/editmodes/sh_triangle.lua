@@ -87,7 +87,9 @@ function THIS_EDIT_MODE:PrimaryAttack(wep)
 	local tracedEdge
 
 	-- Get 3D cursor that snaps to either map geometry or navmesh points
-	local snappedPos, snapped = UTIL.GetSnappedPosition(navmesh, MAPGEOMETRY, trRes.HitPos, 10)
+	local snapToMap = CONVARS.SWEPSnapToMapGeometry:GetBool()
+	local snapToNav = CONVARS.SWEPSnapToNavmeshGeometry:GetBool()
+	local snappedPos, snapped = UTIL.GetSnappedPosition(snapToNav and navmesh or nil, snapToMap and MAPGEOMETRY or nil, trRes.HitPos, 10)
 
 	-- Check if any edge can be selected, if so add the two edge points to the temp points list.
 	if not snapped and (3 - #self.TempPoints) >= 2 then
@@ -176,7 +178,9 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm)
 	local tracedEdge
 
 	-- Get 3D cursor pos that snaps to either map geometry or navmesh points
-	local snappedPos, snapped = UTIL.GetSnappedPosition(navmesh, MAPGEOMETRY, trRes.HitPos, 10)
+	local snapToMap = CONVARS.SWEPSnapToMapGeometry:GetBool()
+	local snapToNav = CONVARS.SWEPSnapToNavmeshGeometry:GetBool()
+	local snappedPos, snapped = UTIL.GetSnappedPosition(snapToNav and navmesh or nil, snapToMap and MAPGEOMETRY or nil, trRes.HitPos, 10)
 
 	-- Highlighting of navmesh edges.
 	-- Check if any edge can be selected (based on the temp points needed), if so highlight it.

@@ -21,3 +21,6 @@ local CONVARS = D3bot.Convars
 CONVARS.NavmeshZCulling = CreateClientConVar("d3bot_navmesh_zculling", 1, true, true, "Hide navmesh entities that are obscured by map geometry or map entities.")
 
 CONVARS.SWEPHitWater = CreateClientConVar("d3bot_swep_hit_water", 1, true, true, "Enables the SWEP to place its 3D cursor on water surfaces.")
+
+CONVARS.SWEPSnapToMapGeometry = CreateClientConVar("d3bot_snap_mapgeometry", 1, true, true, "Enables snapping to map geometry (corners) for the 3D cursor.")
+CONVARS.SWEPSnapToNavmeshGeometry = CreateClientConVar("d3bot_snap_navgeometry", 1, true, true, "Enables snapping to navmesh geometry (edge points or triangle corners) for the 3D cursor.")

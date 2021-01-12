@@ -33,6 +33,7 @@
         "gmod's",
         "kpairs",
         "loadmesh",
+        "navgeometry",
         "navmeshes",
         "plys",
         "reloadmodecycle",
