@@ -75,17 +75,8 @@ function THIS_EDIT_MODE:PrimaryAttack(wep)
 	-- Store points that are used to create triangles
 	self.TempPoints = self.TempPoints or {}
 
-	-- Player eye trace
-	local tr = util.GetPlayerTrace(LocalPlayer())
-	local trRes = util.TraceLine(tr)
-
-	-- Define ray for navmesh entity tracing.
-	-- Act differently based on if z-culling is enabled or not.
-	local aimOrigin = tr.start
-	local aimVec = trRes.Normal * 32000
-	if CONVARS.NavmeshZCulling:GetBool() then
-		aimVec = trRes.HitPos - aimOrigin + trRes.Normal * 20 -- Add a bit more to allow for selection of entities inside geometry.
-	end
+	-- Get map line trace result and navmesh tracing ray
+	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())
 
 	-- An edge entity that the player points on
 	local tracedEdge
@@ -136,17 +127,8 @@ function THIS_EDIT_MODE:SecondaryAttack(wep)
 		return true
 	end
 
-	-- Player eye trace
-	local tr = util.GetPlayerTrace(LocalPlayer())
-	local trRes = util.TraceLine(tr)
-
-	-- Define ray for navmesh entity tracing.
-	-- Act differently based on if z-culling is enabled or not.
-	local aimOrigin = tr.start
-	local aimVec = trRes.Normal * 32000
-	if CONVARS.NavmeshZCulling:GetBool() then
-		aimVec = trRes.HitPos - aimOrigin + trRes.Normal * 20 -- Add a bit more to allow for selection of entities inside geometry.
-	end
+	-- Get map line trace result and navmesh tracing ray
+	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())
 
 	local tracedTriangle = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Triangles)
 	-- Set highlighted state of traced element
@@ -178,17 +160,8 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm)
 	-- Triangle points that are used to draw a ghost of the current triangle
 	local trianglePoints = table.Copy(self.TempPoints or {})
 	
-	-- Player eye trace
-	local tr = util.GetPlayerTrace(LocalPlayer())
-	local trRes = util.TraceLine(tr)
-
-	-- Define ray for navmesh entity tracing.
-	-- Act differently based on if z-culling is enabled or not.
-	local aimOrigin = tr.start
-	local aimVec = trRes.Normal * 32000
-	if CONVARS.NavmeshZCulling:GetBool() then
-		aimVec = trRes.HitPos - aimOrigin + trRes.Normal * 20 -- Add a bit more to allow for selection of entities inside geometry.
-	end
+	-- Get map line trace result and navmesh tracing ray
+	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())
 
 	-- Setup rendering context
 	cam.Start3D()

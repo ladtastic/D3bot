@@ -18,6 +18,7 @@
 AddCSLuaFile()
 
 local D3bot = D3bot
+local CONVARS = D3bot.Convars
 local UTIL = D3bot.Util
 local ERROR = D3bot.ERROR
 
@@ -234,4 +235,24 @@ function UTIL.EdgesToTrianglePoints(edges)
 	if #points ~= 3 then return nil, ERROR:New("There is an unexpected amount of points. Want %d, got %d", 3, #points) end
 
 	return points, nil
+end
+
+-- Helper function for SWEPs that does a line trace on the given player.
+-- It returns the tr table, the result of the trace trRes and a ray (origin, direction) that can be used for navmesh entity tracing.
+-- The result depends on the client's convars.
+-- This works best in the client realm, don't expect the same result in the server realm.
+function UTIL.SWEPLineTrace(ply)
+	-- Player eye trace
+	local tr = util.GetPlayerTrace(ply)
+	local trRes = util.TraceLine(tr)
+
+	-- Define ray for navmesh entity tracing.
+	-- Act differently based on if z-culling is enabled or not.
+	local navAimOrigin = tr.start
+	local navAimVec = trRes.Normal * 32000
+	if CONVARS.NavmeshZCulling:GetBool() then
+		navAimVec = trRes.HitPos - navAimOrigin + trRes.Normal * 20 -- Add a bit more to allow for selection of entities inside geometry.
+	end
+
+	return tr, trRes, navAimOrigin, navAimVec
 end
