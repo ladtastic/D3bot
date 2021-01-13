@@ -16,6 +16,7 @@
 -- along with D3bot.  If not, see <http://www.gnu.org/licenses/>.
 
 local D3bot = D3bot
+local CONVARS = D3bot.Convars
 local ERROR = D3bot.ERROR
 local NAV_SWEP = D3bot.NavSWEP
 local EDIT_MODES = NAV_SWEP.EditModes
@@ -160,11 +161,6 @@ end
 
 function SWEP:Reload()
 	local editMode = self.EditMode
-
-	-- Show navmeshing window on reload
-	if CLIENT and self.Owner:KeyPressed(IN_RELOAD) then
-		RELOAD_MENU:Open()
-	end
 
 	if not editMode then return true end
 	if not editMode.Reload then return true end

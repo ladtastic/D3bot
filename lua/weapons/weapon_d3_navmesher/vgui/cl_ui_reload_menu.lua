@@ -16,6 +16,7 @@
 -- along with D3bot.  If not, see <http://www.gnu.org/licenses/>.
 
 local D3bot = D3bot
+local CONVARS = D3bot.Convars
 local NAV_SWEP = D3bot.NavSWEP
 local UI = NAV_SWEP.UI
 local RELOAD_MENU = UI.ReloadMenu
@@ -70,6 +71,11 @@ local reloadMenuOpener = function()
 	-- Only open menu if the player has the SWEP in his hand
 	local wep = LocalPlayer():GetActiveWeapon()
 	if not IsValid(wep) or not wep:GetClass() == "weapon_d3_navmesher" then return end
+
+	-- Reset edit mode every time the player reloads the SWEP
+	if LocalPlayer():KeyPressed(IN_RELOAD) and CONVARS.SWEPResetOnReloadKey:GetBool() then
+		wep:ResetEditMode()
+	end
 
 	-- Spam open or close calls
 	if LocalPlayer():KeyDown(IN_RELOAD) then

@@ -24,3 +24,5 @@ CONVARS.SWEPHitWater = CreateClientConVar("d3bot_swep_hit_water", 1, true, true,
 
 CONVARS.SWEPSnapToMapGeometry = CreateClientConVar("d3bot_snap_mapgeometry", 1, true, true, "Enables snapping to map geometry (corners) for the 3D cursor.")
 CONVARS.SWEPSnapToNavmeshGeometry = CreateClientConVar("d3bot_snap_navgeometry", 1, true, true, "Enables snapping to navmesh geometry (edge points or triangle corners) for the 3D cursor.")
+
+CONVARS.SWEPResetOnReloadKey = CreateClientConVar("d3bot_swep_reset_on_reload", 1, true, true, "Resets the SWEP's edit mode every time the player reloads the SWEP (Uses the reload menu).")

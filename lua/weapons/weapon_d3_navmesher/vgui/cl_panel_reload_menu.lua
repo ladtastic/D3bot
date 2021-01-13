@@ -40,8 +40,8 @@ end
 
 function PANEL:Close()
 	RememberCursorPosition()
-	self:SetVisible(false)
 	gui.EnableScreenClicker(false)
+	self:SetVisible(false)
 end
 
 vgui.Register(D3bot.VGUIPrefix .. "ReloadMenu", PANEL, "EditablePanel")
