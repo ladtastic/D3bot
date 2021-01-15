@@ -70,7 +70,7 @@ end
 local reloadMenuOpener = function()
 	-- Only open menu if the player has the SWEP in his hand
 	local wep = LocalPlayer():GetActiveWeapon()
-	if not IsValid(wep) or not wep:GetClass() == "weapon_d3_navmesher" then return end
+	if not IsValid(wep) or wep:GetClass() ~= "weapon_d3_navmesher" then return end
 
 	-- Reset edit mode every time the player reloads the SWEP
 	if LocalPlayer():KeyPressed(IN_RELOAD) and CONVARS.SWEPResetOnReloadKey:GetBool() then

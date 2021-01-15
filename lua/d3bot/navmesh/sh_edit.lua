@@ -73,7 +73,9 @@ function NAV_EDIT.RemoveByID(ply, id)
 		local navmesh = NAV_MAIN:ForceNavmesh()
 
 		local entity = navmesh:FindByID(id)
-		entity:Delete()
+		if entity then
+			entity:Delete()
+		end
 		navmesh:_GC()
 
 	elseif CLIENT then
@@ -106,7 +108,9 @@ function NAV_EDIT.SetFlipNormalByID(ply, id, state)
 		local navmesh = NAV_MAIN:ForceNavmesh()
 
 		local triangle = navmesh:FindTriangleByID(id)
-		triangle:SetFlipNormal(state)
+		if triangle then
+			triangle:SetFlipNormal(state)
+		end
 
 	elseif CLIENT then
 		net.Start("D3bot_Nav_Edit_SetFlipNormalByID")
@@ -140,7 +144,9 @@ function NAV_EDIT.RecalcFlipNormalByID(ply, id)
 		local navmesh = NAV_MAIN:ForceNavmesh()
 
 		local triangle = navmesh:FindTriangleByID(id)
-		triangle:RecalcFlipNormal()
+		if triangle then
+			triangle:RecalcFlipNormal()
+		end
 
 	elseif CLIENT then
 		net.Start("D3bot_Nav_Edit_RecalcFlipNormalByID")
