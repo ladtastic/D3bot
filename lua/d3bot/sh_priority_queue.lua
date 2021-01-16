@@ -18,6 +18,12 @@
 local D3bot = D3bot
 local PRIORITY_QUEUE = D3bot.PRIORITY_QUEUE
 
+-- Some optimization stuff
+local table_RemoveByValue = table.RemoveByValue
+local table_insert = table.insert
+local table_remove = table.remove
+local ipairs = ipairs
+
 ------------------------------------------------------
 --		Static
 ------------------------------------------------------
@@ -50,35 +56,37 @@ end
 -- Overwriting is a slow operation, so it's better to prevent this if possible.
 -- You must make sure that the priority value doesn't change for any element stored inside the queue, otherwise you will get wrong results.
 function PRIORITY_QUEUE:Enqueue(elem)
-	local priValue = self.PriValFunc(elem)
+	local priValueFunc = self.PriValFunc
+	local priValue = priValueFunc(elem)
+	local list = self.List
 
 	-- Check if element already exists
 	if self.Map[elem] then
 		-- Stupid linear search.
 		-- Alternatively it's possible to just return here and ignore the new element, this will slightly change the outcome, though.
-		table.RemoveByValue(self.List, elem) -- "Slow" operation
+		table_RemoveByValue(list, elem) -- "Slow" operation
 	end
 	self.Map[elem] = true
 
 	-- TODO: Reverse priority queue insert search order, or find another faster way
 
 	-- Insert elem at position that preserves the priority order
-	for i, v in ipairs(self.List) do
-		if priValue >= self.PriValFunc(v) then
-			table.insert(self.List, i, elem) -- "Slow" operation
+	for i, v in ipairs(list) do
+		if priValue >= priValueFunc(v) then
+			table_insert(list, i, elem) -- "Slow" operation
 			return
 		end
 	end
 
 	-- Append to list if nothing was found
-	return table.insert(self.List, elem) -- Fast operation
+	return table_insert(list, elem) -- Fast operation
 end
 
 -- Returns the element with the highest priority, and removes it from the queue.
 -- Will return nil if there is no element.
 function PRIORITY_QUEUE:Dequeue()
 	-- Get and remove element from the end of the list
-	local elem = table.remove(self.List) -- Fast operation
+	local elem = table_remove(self.List) -- Fast operation
 	if not elem then return nil end
 
 	-- Remove element from map/set
