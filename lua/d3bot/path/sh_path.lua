@@ -168,6 +168,7 @@ function PATH:GeneratePathToPos(startPos, startTriangle, destPos, destTriangle)
 
 					-- As we will use a consistent (monotone) heuristic and no negative costs, the first encounter of the edge here represents already the optimal path.
 					-- There is no need to check this, except if the heuristic gets changed.
+					-- TODO: Figure out why navmeshing behaves like it uses an admissible heuristic
 					local edgeInfo = edgeData[neighborEdge]
 					if tentative_gScore < (edgeInfo and edgeInfo.GScore or math.huge) then
 
