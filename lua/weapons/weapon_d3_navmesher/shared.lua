@@ -57,6 +57,7 @@ SWEP.CanDeploy = true
 -- Load edit modes
 include("editmodes/sh_triangle.lua")
 include("editmodes/sh_flip_normal.lua")
+include("editmodes/sh_path_test.lua")
 
 function SWEP:Initialize()
 	-- Starting edit mode

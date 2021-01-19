@@ -117,6 +117,51 @@ function NAV_EDGE:MarshalToTable()
 	return t -- Make sure that any object returned here is a deep copy of its original
 end
 
+-- Get the cached values, if needed this will regenerate the cache.
+function NAV_EDGE:GetCache()
+	local cache = self.Cache
+	if cache then return cache end
+
+	-- Regenerate cache
+	local cache = {}
+	self.Cache = cache
+
+	-- A signal that the cache contains correct or malformed data.
+	-- Changing this to false will not cause the cache to be rebuilt.
+	cache.IsValid = true
+
+	-- Calculate center
+	cache.Center = (self.Points[1] + self.Points[2]) / 2
+
+	-- Calculate connected "neighbor" edges that can be accessed either via triangles or similar navmesh entities.
+	cache.ConnectedEdges = {}
+	for _, triangle in ipairs(self.Triangles) do
+		for _, edge in ipairs(triangle.Edges) do
+			if edge ~= self then
+				local otherEdgeCenter = (edge.Points[1] + edge.Points[2]) / 2
+				table.insert(cache.ConnectedEdges, {Edge = edge, Via = triangle, Distance = (otherEdgeCenter - cache.Center):Length()})
+			end
+		end
+	end
+
+	-- Calculate connected "neighbor" edges that can be accessed either via triangles or similar navmesh entities.
+	-- Additional condition: The edges need more than 1 triangle or similar navmesh entities connected to them.
+	-- This is a subset of ConnectedEdges and will be used for pathfinding.
+	cache.PathfindingEdges = {}
+	for _, v in ipairs(cache.ConnectedEdges) do
+		if #v.Edge.Triangles > 1 then
+			table.insert(cache.PathfindingEdges, v)
+		end
+	end
+
+	return cache
+end
+
+-- Invalidate the cache, it will be regenerated on next use.
+function NAV_EDGE:InvalidateCache()
+	self.Cache = nil
+end
+
 -- Deletes the edge from the navmesh and makes sure that there is nothing left that references it.
 function NAV_EDGE:Delete()
 	-- Publish change event

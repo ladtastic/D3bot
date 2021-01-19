@@ -16,21 +16,22 @@
 -- along with D3bot.  If not, see <http://www.gnu.org/licenses/>.
 
 local D3bot = D3bot
-local LOCOMOTION = D3bot.Locomotion
+local ACTIONS = D3bot.Actions
 
--- Add new locomotion controller
-function LOCOMOTION.Gesture(bot, mem, gestureName)
-	-- Init
-	mem.Locomotion = {}
+-- Let the bot jump a single time.
+-- Takes 1 second in total.
+function ACTIONS.JumpUp(bot, mem)
+	-- Press jump button
+	mem.ControlCallback = function(bot, mem, cUserCmd)
+		cUserCmd:ClearButtons()
+		cUserCmd:ClearMovement()
+		cUserCmd:SetButtons(IN_JUMP)
+	end
 
-	-- BUG: Gestures don't seem to work with this kind of bot entities
-	local duration = bot:SetSequence(gestureName)
-	bot:ResetSequenceInfo()
-	bot:SetCycle(0)
-	bot:SetPlaybackRate(1)
+	coroutine.wait(0.2)
 
-	coroutine.wait(duration)
+	-- Release jump button
+	mem.ControlCallback = nil
 
-	-- Cleanup
-	mem.Locomotion = nil
+	coroutine.wait(0.8)
 end

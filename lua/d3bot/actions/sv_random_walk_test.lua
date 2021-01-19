@@ -16,17 +16,14 @@
 -- along with D3bot.  If not, see <http://www.gnu.org/licenses/>.
 
 local D3bot = D3bot
-local LOCOMOTION = D3bot.Locomotion
+local ACTIONS = D3bot.Actions
 
--- Add new locomotion controller
-function LOCOMOTION.RandomWalkTest(bot, mem, duration)
-	-- Init
-	mem.Locomotion = {}
-
+-- Let the bot walk in a random direction.
+function ACTIONS.RandomWalkTest(bot, mem, duration)
 	local direction = Vector(math.Rand(-1, 1), math.Rand(-1, 1), 0):GetNormalized()
 
 	-- Add control callback to bot
-	mem.Locomotion.Callback = function(bot, mem, cUserCmd)
+	mem.ControlCallback = function(bot, mem, cUserCmd)
 		cUserCmd:ClearButtons()
 		cUserCmd:ClearMovement()
 		cUserCmd:SetForwardMove(100)
@@ -38,6 +35,6 @@ function LOCOMOTION.RandomWalkTest(bot, mem, duration)
 	-- Wait for x amount of time
 	coroutine.wait(duration)
 
-	-- Cleanup
-	mem.Locomotion = nil
+	-- Reset control
+	mem.ControlCallback = nil
 end

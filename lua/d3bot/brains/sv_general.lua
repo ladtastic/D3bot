@@ -18,7 +18,8 @@
 local D3bot = D3bot
 local UTIL = D3bot.Util
 local BRAINS = D3bot.Brains
-local LOCOMOTION = D3bot.Locomotion
+local ACTIONS = D3bot.Actions
+local LOCOMOTION_HANDLERS = D3bot.LocomotionHandlers
 
 -- Add new brain class.
 BRAINS.GENERAL = BRAINS.GENERAL or {}
@@ -39,10 +40,10 @@ function THIS_BRAIN:AssignToBot(bot, mem)
 	setmetatable(brain, self)
 
 	-- Add main handler
-	brain.MainCoroutine = coroutine.create(function() brain:Think_Coroutine(bot, mem) end)
+	brain.MainCoroutine = coroutine.create(function() brain:_ThinkCoroutine(bot, mem) end)
 
 	mem.Brain = brain
-	return true
+	return brain
 end
 
 ------------------------------------------------------
@@ -50,13 +51,13 @@ end
 ------------------------------------------------------
 
 -- Think coroutine. Put all the important stuff in here.
-function THIS_BRAIN:Think_Coroutine(bot, mem)
+function THIS_BRAIN:_ThinkCoroutine(bot, mem)
 
 	-- Walk in an arc for 3 seconds
-	LOCOMOTION.SinCosTest(bot, mem, 3)
+	ACTIONS.SinCosTest(bot, mem, 3)
 
 	-- Walk in some random direction for 3 seconds
-	LOCOMOTION.RandomWalkTest(bot, mem, 3)
+	ACTIONS.RandomWalkTest(bot, mem, 3)
 
 	-- Wait 2 seconds
 	coroutine.wait(2)

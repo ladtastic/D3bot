@@ -42,14 +42,14 @@ local function ControlDistributor(bot, cUserCmd)
 		end
 	end
 
-	-- Check if there is a locomotion control callback
-	if mem.Locomotion == nil or mem.Locomotion.Callback == nil then
+	-- Check if there is a bot control callback (For pushing buttons and stuff)
+	if mem.ControlCallback == nil then
 		cUserCmd:ClearButtons()
 		cUserCmd:ClearMovement()
 		return
 	end
 
-	-- "Don't you know I'm loco?"
-	mem.Locomotion.Callback(bot, mem, cUserCmd)
+	-- Call bot control callback, duh
+	mem.ControlCallback(bot, mem, cUserCmd)
 end
 hook.Add("StartCommand", D3bot.HookPrefix .. "ControlDistributor", ControlDistributor)

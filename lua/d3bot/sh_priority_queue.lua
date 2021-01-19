@@ -15,6 +15,8 @@
 -- You should have received a copy of the GNU General Public License
 -- along with D3bot.  If not, see <http://www.gnu.org/licenses/>.
 
+-- TODO: Use heap based method to sort the objects
+
 local D3bot = D3bot
 local PRIORITY_QUEUE = D3bot.PRIORITY_QUEUE
 
@@ -94,3 +96,100 @@ function PRIORITY_QUEUE:Dequeue()
 
 	return elem
 end
+
+------------------------------------------------------
+--		Benchmark
+------------------------------------------------------
+
+--[[local PriorityQueue = include("sh_priority_queue_2.lua")
+
+-- Create list of 10000 elements
+local testElements = {}
+for i = 1, 10001 do
+	local elem = {Name = "elem " .. i, Cost = math.random()}
+	table_insert(testElements, elem)
+end
+
+local pq = PRIORITY_QUEUE:New(function(elem) return elem.Cost end)
+
+local startTime = SysTime()
+-- "Simulate" A* with a consistent heuristic. (Neighbors don't get requeued into the open list)
+local d3ResultElements = {}
+for i = 1, 1000 do
+	pq:Enqueue(testElements[i*2])
+	pq:Enqueue(testElements[i*2+1])
+	table_insert(d3ResultElements, pq:Dequeue())
+end
+local endTime = SysTime()
+
+--PrintTable(d3ResultElements)
+print("D3bot v2:", endTime - startTime.."s")
+
+------------------------------------------------------
+--		Benchmark azBot
+------------------------------------------------------
+
+local lib = {}
+lib.SortedQueueMeta = { __index = {} }
+local sortedQueueFallback = lib.SortedQueueMeta.__index
+function lib.NewSortedQueue(func)
+	return setmetatable({
+		Set = {},
+		Func = func }, lib.SortedQueueMeta)
+end
+function sortedQueueFallback:Enqueue(item)
+	if self.Set[item] then return end
+	self.Set[item] = true
+	for idx, v in ipairs(self) do if self.Func(item, v) then return table.insert(self, idx, item) end end
+	return table.insert(self, item)
+end
+function sortedQueueFallback:Dequeue()
+	local item = table.remove(self)
+	if item then self.Set[item] = nil end
+	return item
+end
+
+local pq = lib.NewSortedQueue(function(elemA, elemB) return elemA.Cost > elemB.Cost end)
+
+local startTime = SysTime()
+-- "Simulate" A* with a consistent heuristic. (Neighbors don't get requeued into the open list)
+local azResultElements = {}
+for i = 1, 1000 do
+	pq:Enqueue(testElements[i*2])
+	pq:Enqueue(testElements[i*2+1])
+	table_insert(azResultElements, pq:Dequeue())
+end
+local endTime = SysTime()
+
+--PrintTable(azResultElements)
+print("azBot:", endTime - startTime.."s")
+
+------------------------------------------------------
+--		Benchmark heap based priority queue
+------------------------------------------------------
+
+local pq = PriorityQueue()
+
+local startTime = SysTime()
+-- "Simulate" A* with a consistent heuristic. (Neighbors don't get requeued into the open list)
+local heapResultElements = {}
+for i = 1, 1000 do
+	pq:put(testElements[i*2], testElements[i*2].Cost)
+	pq:put(testElements[i*2+1], testElements[i*2+1].Cost)
+	table_insert(heapResultElements, pq:pop())
+end
+local endTime = SysTime()
+
+--PrintTable(heapResultElements)
+print("heap based:", endTime - startTime.."s")
+
+-- Compare results
+if #d3ResultElements ~= #azResultElements then print("Length of results doesn't match!") end
+if #d3ResultElements ~= #heapResultElements then print("Length of results doesn't match!") end
+
+for i, v in ipairs(d3ResultElements) do
+	local v2 = azResultElements[i]
+	local v3 = heapResultElements[i]
+	if v ~= v2 then print("Entry "..i.." doesn't match in both result lists!") end
+	if v ~= v3 then print("Entry "..i.." doesn't match in both result lists!") end
+end]]

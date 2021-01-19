@@ -18,7 +18,8 @@
 local D3bot = D3bot
 local UTIL = D3bot.Util
 local BRAINS = D3bot.Brains
-local LOCOMOTION = D3bot.Locomotion
+local ACTIONS = D3bot.Actions
+local LOCOMOTION_HANDLERS = D3bot.LocomotionHandlers
 
 -- Add new brain class.
 BRAINS.ON_ERROR = BRAINS.ON_ERROR or {}
@@ -39,10 +40,10 @@ function THIS_BRAIN:AssignToBot(bot, mem)
 	setmetatable(brain, self)
 
 	-- Add main handler
-	brain.MainCoroutine = coroutine.create(function() brain:Think_Coroutine(bot, mem) end)
+	brain.MainCoroutine = coroutine.create(function() brain:_ThinkCoroutine(bot, mem) end)
 
 	mem.Brain = brain
-	return true
+	return brain
 end
 
 ------------------------------------------------------
@@ -50,16 +51,16 @@ end
 ------------------------------------------------------
 
 -- Think coroutine. Put all the important stuff in here.
-function THIS_BRAIN:Think_Coroutine(bot, mem)
+function THIS_BRAIN:_ThinkCoroutine(bot, mem)
 	--bot:Say("I had a stronk")
 
 	-- Do dumb gesture/sequence
-	--LOCOMOTION.Gesture(bot, mem, "taunt_robot")
+	--ACTIONS.Gesture(bot, mem, "taunt_robot")
 
 	-- Jump several times
 	for i = 1, 2, 1 do
 		bot:EmitSound("vo/k_lab/kl_ahhhh.wav")
-		LOCOMOTION.JumpUp(bot, mem)
+		ACTIONS.JumpUp(bot, mem)
 	end
 
 	coroutine.wait(math.random() * 10)

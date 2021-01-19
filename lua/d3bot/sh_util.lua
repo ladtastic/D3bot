@@ -192,6 +192,27 @@ function UTIL.GetClosestIntersectingWithRay(origin, dir, ...)
 	return minEntity, minDist
 end
 
+-- Returns the closest entity from lists of entities to the point pos.
+-- The entities in the supplied lists have to implement the GetClosestDistanceSqr method.
+-- The result is either nil or the closest entity, and the minimal squared distance.
+function UTIL.GetClosestToPos(pos, ...)
+	local lists = {...}
+	local minDist = math.huge
+	local minEntity = nil
+
+	for _, list in ipairs(lists) do
+		for _, entity in pairs(list) do
+			local dist = entity:GetClosestDistanceSqr(pos)
+			if dist and minDist > dist then
+				minDist = dist
+				minEntity = entity
+			end
+		end
+	end
+
+	return minEntity, minDist
+end
+
 -- Returns pos snapped to the closest (in proximity range) snapping point of a given navmesh or map geometry.
 -- Additionally this will round the vector to one source engine unit.
 -- The result is a snapped point and a bool stating if the pos got snapped or not.

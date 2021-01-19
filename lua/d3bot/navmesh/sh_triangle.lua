@@ -59,10 +59,13 @@ function NAV_TRIANGLE:New(navmesh, id, e1, e2, e3, flipNormal)
 		return nil, ERROR:New("The triangle's smallest height is below allowed min. height (%s < %s)", math.min(h1, h2, h3), self.MinHeight)
 	end
 
-	-- Add reference to this triangle to all edges
+	-- Add reference to this triangle to all edges and invalidate their cache
 	table.insert(e1.Triangles, obj)
+	e1:InvalidateCache()
 	table.insert(e2.Triangles, obj)
+	e2:InvalidateCache()
 	table.insert(e3.Triangles, obj)
+	e3:InvalidateCache()
 
 	-- Check if there was a previous element. If so, delete it
 	local old = navmesh.Triangles[obj.ID]
@@ -179,6 +182,17 @@ function NAV_TRIANGLE:GetCache()
 		cache.Centroid = (points[1] + points[2] + points[3]) / 3
 	end
 
+	-- Determine locomotion type (Hardcoded locomotion types)
+	cache.LocomotionType = "Ground" -- Default type
+	if cache.Normal then
+		local angle = cache.Normal:Angle()
+		-- Everything steeper than 45 deg is considered a wall
+		if angle.pitch < 45 then
+			cache.LocomotionType = "Wall"
+		end
+		-- TODO: Add user defined locomotion type override to triangles
+	end
+
 	return cache
 end
 
@@ -202,6 +216,8 @@ function NAV_TRIANGLE:_Delete()
 	-- Delete any reference to this triangle from edges
 	for _, edge in ipairs(self.Edges) do
 		table.RemoveByValue(edge.Triangles, self)
+		-- Invalidate cache of the edge
+		edge:InvalidateCache()
 		-- Invalidate cache of the (other) connected triangles
 		for _, triangle in ipairs(edge.Triangles) do
 			triangle:InvalidateCache()
@@ -318,6 +334,12 @@ function NAV_TRIANGLE:GetClosestPointToPoint(p)
 
 	-- Transform barycentric back to cartesian
 	return p1 * u + p2 * v + p3 * w
+end
+
+-- Returns the closest distance to the given point p.
+function NAV_TRIANGLE:GetClosestDistanceSqr(p)
+	local selfP = self:GetClosestPointToPoint(p)
+	return (selfP - p):LengthSqr()
 end
 
 -- Returns whether a ray from the given origin in the given direction dir intersects with the triangle.

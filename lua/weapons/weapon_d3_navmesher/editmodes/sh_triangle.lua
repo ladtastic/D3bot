@@ -197,12 +197,9 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm)
 		end
 	end
 
-	-- Draw 3D cursor with geometry snapping
+	-- Add point to temp triangle points, so it draws the 3D cursors and the ghost of the triangle if possible
 	if not tracedEdge and trRes.Hit and (3 - #trianglePoints) >= 1 then
 		table.insert(trianglePoints, snappedPos)
-		RENDER_UTIL.Draw3DCursorPos(snappedPos, Color(255, 255, 255, 255), Color(0, 0, 0, 255))
-		--render.DrawSphere(snappedPos, 10, 10, 10, Color(255, 255, 255, 31))
-		--render.DrawSphere(snappedPos, 1, 10, 10, Color(255, 255, 255, 127))
 	end
 
 	-- Highlighting of navmesh triangles

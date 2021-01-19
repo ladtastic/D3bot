@@ -1,17 +1,17 @@
 -- Copyright (C) 2020 David Vogel
--- 
+--
 -- This file is part of D3bot.
--- 
+--
 -- D3bot is free software: you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
 -- the Free Software Foundation, either version 3 of the License, or
 -- (at your option) any later version.
--- 
+--
 -- D3bot is distributed in the hope that it will be useful,
 -- but WITHOUT ANY WARRANTY; without even the implied warranty of
 -- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 -- GNU General Public License for more details.
--- 
+--
 -- You should have received a copy of the GNU General Public License
 -- along with D3bot.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -34,8 +34,9 @@ D3bot.NavMain = D3bot.NavMain or {} -- Container for the main navmesh instance f
 D3bot.NavFile = D3bot.NavFile or {} -- Navmesh file functions
 D3bot.NavPubSub = D3bot.NavPubSub or {} -- Navmesh pub/sub functions
 D3bot.NavEdit = D3bot.NavEdit or {} -- Functions to edit the main navmesh instance on the server. The functions are available on the client realm, too
-D3bot.Locomotion = D3bot.Locomotion or {} -- Locomotion handlers
-D3bot.Brains = D3bot.Brains or {} -- Brain handlers
+D3bot.Brains = D3bot.Brains or {} -- Brain handlers that run action handlers on bots
+D3bot.Actions = D3bot.Actions or {} -- Action handlers that represent bot behavior
+D3bot.LocomotionHandlers = D3bot.LocomotionHandlers or {} -- List of available locomotion handler classes that "link" navmesh geometry to bot behavior
 
 -- SWEP and UI namespaces
 D3bot.NavSWEP = D3bot.NavSWEP or {} -- Navmeshing SWEP stuff, this is not the SWEP table itself
@@ -53,9 +54,10 @@ D3bot.AddonRoot = "d3bot/"
 D3bot.ERROR = D3bot.ERROR or {} -- Error handling/signalling class
 D3bot.PRIORITY_QUEUE = D3bot.PRIORITY_QUEUE or {} -- Prioritized queue class
 D3bot.CONCOMMAND = D3bot.CONCOMMAND or {} -- Console command class, to replicate and parse client side commands
-D3bot.NAV_MESH = D3bot.NAV_MESH or {} -- NAV_MESH Class
-D3bot.NAV_EDGE = D3bot.NAV_EDGE or {} -- NAV_EDGE Class
-D3bot.NAV_TRIANGLE = D3bot.NAV_TRIANGLE or {} -- NAV_TRIANGLE Class
+D3bot.NAV_MESH = D3bot.NAV_MESH or {} -- NAV_MESH class
+D3bot.NAV_EDGE = D3bot.NAV_EDGE or {} -- NAV_EDGE class
+D3bot.NAV_TRIANGLE = D3bot.NAV_TRIANGLE or {} -- NAV_TRIANGLE class
+D3bot.PATH = D3bot.PATH or {} -- PATH class that handles pathfinding
 
 ------------------------------------------------------
 --		Includes
@@ -83,6 +85,9 @@ UTIL.IncludeRealm("navmesh/sh_pubsub.lua", UTIL.REALM_SHARED)
 UTIL.IncludeRealm("navmesh/sh_edit.lua", UTIL.REALM_SHARED)
 UTIL.IncludeRealm("navmesh/sv_file.lua", UTIL.REALM_SERVER)
 
+-- Path stuff
+UTIL.IncludeRealm("path/sh_path.lua", UTIL.REALM_SHARED)
+
 -- Load bot naming script (default, and any optional override)
 UTIL.IncludeRealm("names/sv_default.lua", UTIL.REALM_SERVER)
 if D3bot.Config.NameScript then
@@ -92,10 +97,14 @@ end
 -- Load any gamemode specific logic
 UTIL.IncludeRealm("gamemodes/" .. engine.ActiveGamemode() .. "/sh_init.lua", UTIL.REALM_SHARED)
 
+-- Load locomotion handler classes (General and gamemode specific)
+UTIL.IncludeDirectory(D3bot.AddonRoot .. "locomotion_handlers/", "*.lua", UTIL.REALM_SHARED)
+UTIL.IncludeDirectory(D3bot.AddonRoot .. "gamemodes/" .. engine.ActiveGamemode() .. "/locomotion_handlers/", "*.lua", UTIL.REALM_SHARED)
+
+-- Load action handlers (General and gamemode specific)
+UTIL.IncludeDirectory(D3bot.AddonRoot .. "actions/", "*.lua", UTIL.REALM_SERVER)
+UTIL.IncludeDirectory(D3bot.AddonRoot .. "gamemodes/" .. engine.ActiveGamemode() .. "/actions/", "*.lua", UTIL.REALM_SERVER)
+
 -- Load brains (General and gamemode specific)
 UTIL.IncludeDirectory(D3bot.AddonRoot .. "brains/", "*.lua", UTIL.REALM_SERVER)
 UTIL.IncludeDirectory(D3bot.AddonRoot .. "gamemodes/" .. engine.ActiveGamemode() .. "/brains/", "*.lua", UTIL.REALM_SERVER)
-
--- Load locomotion controllers (General and gamemode specific)
-UTIL.IncludeDirectory(D3bot.AddonRoot .. "locomotion/", "*.lua", UTIL.REALM_SERVER)
-UTIL.IncludeDirectory(D3bot.AddonRoot .. "gamemodes/" .. engine.ActiveGamemode() .. "/locomotion/", "*.lua", UTIL.REALM_SERVER)
