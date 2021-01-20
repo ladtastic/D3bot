@@ -81,11 +81,21 @@ function THIS_EDIT_MODE:GeneratePath(navmesh)
 	-- Create path object
 	self.Path = PATH:New(navmesh, abilities)
 
-	-- Generate path
+	
+
+	-- Get triangles of start and end pos
 	local startTriangle = UTIL.GetClosestToPos(self.StartPos, navmesh.Triangles)
 	local endTriangle = UTIL.GetClosestToPos(self.EndPos, navmesh.Triangles)
 	if not startTriangle or not endTriangle then return end
-	self.Path:GeneratePathToPos(self.StartPos, startTriangle, self.EndPos, endTriangle)
+
+	-- Calculate path (Several times for average)
+	local startTime = SysTime()
+	for i = 1, 10 do
+		self.Path:GeneratePathToPos(self.StartPos, startTriangle, self.EndPos, endTriangle)
+	end
+	local endTime = SysTime()
+
+	LocalPlayer():ChatPrint(string.format("It took %f ms to generate the path", (endTime - startTime)*1000/10))
 end
 
 -- Left mouse button action.
