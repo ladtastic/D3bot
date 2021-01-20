@@ -53,6 +53,8 @@ end
 function PATH:GeneratePathToPos(startPos, startTriangle, destPos, destTriangle)
 	-- See: https://en.wikipedia.org/wiki/A*_search_algorithm
 
+	-- TODO: Simplify pathfinding by creating a point object that implements edge like methods. (Will get rid of duplicate code and fix some edge cases)
+
 	-- Reset current path
 	self.Path = {}
 
@@ -130,9 +132,10 @@ function PATH:GeneratePathToPos(startPos, startTriangle, destPos, destTriangle)
 	-- Their initial gScore is the cost of moving from startPos to the edge center.
 	local e1, e2, e3 = startTriangle.Edges[1], startTriangle.Edges[2], startTriangle.Edges[3]
 	local e1Center, e2Center, e3Center = e1:GetCache().Center, e2:GetCache().Center, e3:GetCache().Center
-	enqueueEdge(e1, startLocomotionHandler:GetApproximateCost(startPos, e1Center), nil, startTriangle, e1Center)
-	enqueueEdge(e2, startLocomotionHandler:GetApproximateCost(startPos, e2Center), nil, startTriangle, e2Center)
-	enqueueEdge(e3, startLocomotionHandler:GetApproximateCost(startPos, e3Center), nil, startTriangle, e3Center)
+	local costMod = startLocomotionHandler.CostModifier
+	enqueueEdge(e1, (startPos - e1Center):Length() + (costMod and costMod(startLocomotionHandler, startPos, e1Center) or 0), nil, startTriangle, e1Center)
+	enqueueEdge(e2, (startPos - e2Center):Length() + (costMod and costMod(startLocomotionHandler, startPos, e2Center) or 0), nil, startTriangle, e2Center)
+	enqueueEdge(e3, (startPos - e3Center):Length() + (costMod and costMod(startLocomotionHandler, startPos, e3Center) or 0), nil, startTriangle, e3Center)
 
 	-- As search is edge based, get edges that represent the end condition
 	local endE1, endE2, endE3 = destTriangle.Edges[1], destTriangle.Edges[2], destTriangle.Edges[3]
@@ -145,7 +148,8 @@ function PATH:GeneratePathToPos(startPos, startTriangle, destPos, destTriangle)
 		closedList[edge] = true
 
 		-- Get gScore of current edge
-		local gScore = edgeData[edge].GScore
+		local edgeInfo = edgeData[edge]
+		local gScore = edgeInfo.GScore
 
 		-- Found destination triangle by one of its edges, now generate path.
 		-- This does not include the cost from this edge to the destPos, but should work good enough.
@@ -165,18 +169,25 @@ function PATH:GeneratePathToPos(startPos, startTriangle, destPos, destTriangle)
 				-- Via may be a triangle or some other similar navmesh entity.
 				local locomotionHandler = abilities[via:GetCache().LocomotionType]
 
-				-- Check locomotion handler ("Is the bot able to navigate to this edge?")
+				-- Check if there is a locomotion handler ("Does the bot know how to navigate on this navmesh entity?")
 				if locomotionHandler then
 					local neighborEdgeCache = neighborEdge:GetCache()
-					local tentative_gScore = gScore + distance--locomotionHandler:GetApproximateCost(neighborEdgeCache.Center, edgeCache.Center)
 
-					-- Check if the gScore is better than the previous score
-					local edgeInfo = edgeData[neighborEdge]
-					if tentative_gScore < (edgeInfo and edgeInfo.GScore or math.huge) then
+					-- And check if the bot is able to walk to the next edge
+					if not locomotionHandler.CanNavigateToPos or locomotionHandler:CanNavigateToPos(edgeCache.Center, neighborEdgeCache.Center) then
 
-						-- Enqueue neighbor edge
-						enqueueEdge(neighborEdge, tentative_gScore, edge, via, neighborEdgeCache.Center)
+						-- Calculate gScore for the neighbor edge
+						local costMod = locomotionHandler.CostModifier
+						local tentative_gScore = gScore + distance + (costMod and costMod(locomotionHandler, neighborEdgeCache.Center, edgeCache.Center) or 0)
 
+						-- Check if the gScore is better than the previous score
+						local neighborEdgeInfo = edgeData[neighborEdge]
+						if tentative_gScore < (neighborEdgeInfo and neighborEdgeInfo.GScore or math.huge) then
+
+							-- Enqueue neighbor edge
+							enqueueEdge(neighborEdge, tentative_gScore, edge, via, neighborEdgeCache.Center)
+
+						end
 					end
 				end
 			end

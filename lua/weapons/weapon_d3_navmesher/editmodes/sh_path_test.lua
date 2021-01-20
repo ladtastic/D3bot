@@ -68,14 +68,15 @@ end
 ------------------------------------------------------
 
 -- Generate a path from the current edit mode state and store it.
-function THIS_EDIT_MODE:GeneratePath(navmesh)
+function THIS_EDIT_MODE:GeneratePath(navmesh, debugOutput)
 
 	-- Can't generate a path if start and end point are not defined
 	if not self.StartPos or not self.EndPos then return true end
 
-	-- Add some fake locomotion handlers
+	-- Add some virtual locomotion handlers
 	local abilities = {
 		Ground = LOCOMOTION_HANDLERS.WALKING:New(200)
+		--Wall = LOCOMOTION_HANDLERS.JUMP_AND_FALL:New(56, 1000)
 	}
 
 	-- Create path object
@@ -88,13 +89,16 @@ function THIS_EDIT_MODE:GeneratePath(navmesh)
 	if not startTriangle or not endTriangle then return end
 
 	-- Calculate path (Several times for average)
+	local iterations = debugOutput and 1000 or 1
 	local startTime = SysTime()
-	for i = 1, 1000 do
+	for i = 1, iterations do
 		self.Path:GeneratePathToPos(startPos, startTriangle, endPost, endTriangle)
 	end
 	local endTime = SysTime()
 
-	LocalPlayer():ChatPrint(string.format("It took %f ms to generate the path", (endTime - startTime)*1000/1000))
+	if debugOutput then
+		LocalPlayer():ChatPrint(string.format("It took %f ms to generate the path", (endTime - startTime)*1000/iterations))
+	end
 end
 
 -- Left mouse button action.
@@ -116,7 +120,7 @@ function THIS_EDIT_MODE:PrimaryAttack(wep)
 	self.StartPos = trRes.HitPos
 
 	-- (Re)generate path
-	self:GeneratePath(navmesh)
+	self:GeneratePath(navmesh, true)
 
 	wep.Weapon:EmitSound("buttons/blip2.wav")
 
@@ -142,7 +146,7 @@ function THIS_EDIT_MODE:SecondaryAttack(wep)
 	self.EndPos = trRes.HitPos
 
 	-- (Re)generate path
-	self:GeneratePath(navmesh)
+	self:GeneratePath(navmesh, true)
 
 	wep.Weapon:EmitSound("buttons/blip2.wav")
 
@@ -175,6 +179,10 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm)
 
 	-- Draw client side navmesh
 	navmesh:Render3D()
+
+	-- Debug: Live path regeneration
+	self.EndPos = trRes.HitPos
+	self:GeneratePath(navmesh, false)
 
 	-- Draw path
 	if self.Path then
