@@ -62,7 +62,8 @@ function PATH:GeneratePathToPos(startPos, startTriangle, destPos, destTriangle)
 
 	-- Data structures for pathfinding
 	local edgeData = {} -- Contains scores and other information about edges
-	local openList = PRIORITY_QUEUE:New(function(edge) return edgeData[edge].FScore end) -- List of edges that have to be expanded
+	local closedList = {} -- List of edges that have been expanded
+	local openList = PRIORITY_QUEUE:New() -- List of edges that have to be expanded
 
 	-- Function to build a path from the generated data
 	local function reconstructPath(edge)
@@ -109,13 +110,13 @@ function PATH:GeneratePathToPos(startPos, startTriangle, destPos, destTriangle)
 
 	-- Helper function for adding edges to the open list
 	local function enqueueEdge(edge, tentative_gScore, fromEdge, via, toPos)
+		local fScore = tentative_gScore + heuristic(toPos) -- Best guess as to how cheap a path can be that goes through this edge
 		edgeData[edge] = {
 			GScore = tentative_gScore, -- The cheapest path from start to this edge
-			FScore = tentative_gScore + heuristic(toPos), -- Best guess as to how cheap a path can be that goes through this edge
 			FromEdge = fromEdge, -- The previous edge
 			Via = via -- The navmesh entity that connects the previous and current edge
 		}
-		openList:Enqueue(edge)
+		openList:Enqueue(edge, fScore)
 	end
 
 	-- If the bot doesn't know how to navigate on the triangle that he starts on, abort
@@ -129,9 +130,9 @@ function PATH:GeneratePathToPos(startPos, startTriangle, destPos, destTriangle)
 	-- Their initial gScore is the cost of moving from startPos to the edge center.
 	local e1, e2, e3 = startTriangle.Edges[1], startTriangle.Edges[2], startTriangle.Edges[3]
 	local e1Center, e2Center, e3Center = e1:GetCache().Center, e2:GetCache().Center, e3:GetCache().Center
-	enqueueEdge(e1, startLocomotionHandler:GetApproximateCost(e1Center - startPos), nil, startTriangle, e1Center)
-	enqueueEdge(e2, startLocomotionHandler:GetApproximateCost(e2Center - startPos), nil, startTriangle, e2Center)
-	enqueueEdge(e3, startLocomotionHandler:GetApproximateCost(e3Center - startPos), nil, startTriangle, e3Center)
+	enqueueEdge(e1, startLocomotionHandler:GetApproximateCost(startPos, e1Center), nil, startTriangle, e1Center)
+	enqueueEdge(e2, startLocomotionHandler:GetApproximateCost(startPos, e2Center), nil, startTriangle, e2Center)
+	enqueueEdge(e3, startLocomotionHandler:GetApproximateCost(startPos, e3Center), nil, startTriangle, e3Center)
 
 	-- As search is edge based, get edges that represent the end condition
 	local endE1, endE2, endE3 = destTriangle.Edges[1], destTriangle.Edges[2], destTriangle.Edges[3]
@@ -139,6 +140,9 @@ function PATH:GeneratePathToPos(startPos, startTriangle, destPos, destTriangle)
 	-- Get next edge from queue and expand it
 	for edge in openList.Dequeue, openList do
 		local edgeCache = edge:GetCache()
+
+		-- Add to closed list
+		closedList[edge] = true
 
 		-- Get gScore of current edge
 		local gScore = edgeData[edge].GScore
@@ -155,7 +159,7 @@ function PATH:GeneratePathToPos(startPos, startTriangle, destPos, destTriangle)
 
 			-- Check if neighbor is in the closed list, if so it's already optimal.
 			-- This check must be removed if the heuristic is changed to an "admissible heuristic".
-			if true or not edgeData[neighborEdge] then
+			if not closedList[neighborEdge] then
 
 				-- Get locomotion type and handler.
 				-- Via may be a triangle or some other similar navmesh entity.
@@ -164,11 +168,9 @@ function PATH:GeneratePathToPos(startPos, startTriangle, destPos, destTriangle)
 				-- Check locomotion handler ("Is the bot able to navigate to this edge?")
 				if locomotionHandler then
 					local neighborEdgeCache = neighborEdge:GetCache()
-					local tentative_gScore = gScore + locomotionHandler:GetApproximateCost(neighborEdgeCache.Center - edgeCache.Center)
+					local tentative_gScore = gScore + distance--locomotionHandler:GetApproximateCost(neighborEdgeCache.Center, edgeCache.Center)
 
-					-- As we will use a consistent (monotone) heuristic and no negative costs, the first encounter of the edge here represents already the optimal path.
-					-- There is no need to check this, except if the heuristic gets changed.
-					-- TODO: Figure out why pathfinding behaves like it uses an admissible heuristic
+					-- Check if the gScore is better than the previous score
 					local edgeInfo = edgeData[neighborEdge]
 					if tentative_gScore < (edgeInfo and edgeInfo.GScore or math.huge) then
 

@@ -34,13 +34,10 @@ local ipairs = ipairs
 PRIORITY_QUEUE.__index = PRIORITY_QUEUE
 
 -- Returns a sorted/prioritized queue object.
--- priValFunc is used to determine the priority *value* of each element. (A priority value of 1 is of higher priority than a priority value of 2)
--- Internally, the elements are ordered descending by their priority *value* (The last element has the highest priority).
-function PRIORITY_QUEUE:New(priValFunc)
+function PRIORITY_QUEUE:New()
 	local obj = {
-		Map = {},
-		List = {},
-		PriValFunc = priValFunc
+		Map = {}, -- Contains the priority for every element
+		List = {} -- Contains the elements in descending priority *value* order (The last element has the highest priority)
 	}
 
 	-- Instantiate
@@ -54,42 +51,53 @@ end
 ------------------------------------------------------
 
 -- Insert or overwrite an arbitrary object in(to) the queue.
--- By inserting an element again (Overwriting), its position in the queue will be recalculated.
--- Overwriting is a slow operation, so it's better to prevent this if possible.
--- You must make sure that the priority value doesn't change for any element stored inside the queue, otherwise you will get wrong results.
-function PRIORITY_QUEUE:Enqueue(elem)
-	local priValueFunc = self.PriValFunc
-	local priValue = priValueFunc(elem)
+-- The lower the given priValue, the higher is the priority of the inserted value.
+-- By reinserting an element with a higher priority, the position in the queue will be updated.
+-- Updating is a slow operation, so it's better to prevent this if possible.
+function PRIORITY_QUEUE:Enqueue(elem, priValue)
 	local list = self.List
 
-	-- Check if element already exists
-	if self.Map[elem] then
+	-- Check if element already exists and if its priority is smaller
+	local oldPriValue = self.Map[elem]
+	if oldPriValue and oldPriValue > priValue then
+		-- It exists and is lower priority
 		-- Stupid linear search.
 		-- Alternatively it's possible to just return here and ignore the new element, this will slightly change the outcome, though.
-		table_RemoveByValue(list, elem) -- "Slow" operation
+		for i, v in ipairs(list) do
+			if v[1] == elem then
+				table_remove(list, i) -- "Slow" operation
+				break
+			end
+		end
+	elseif oldPriValue then
+		-- It exists and is higher priority
+		return
 	end
-	self.Map[elem] = true
+	self.Map[elem] = priValue
 
 	-- TODO: Reverse priority queue insert search order, or find another faster way
 
 	-- Insert elem at position that preserves the priority order
+	local entry = {[1] = elem, [2] = priValue}
 	for i, v in ipairs(list) do
-		if priValue >= priValueFunc(v) then
-			table_insert(list, i, elem) -- "Slow" operation
+		if priValue >= v[2] then
+			table_insert(list, i, entry) -- "Slow" operation
 			return
 		end
 	end
 
 	-- Append to list if nothing was found
-	return table_insert(list, elem) -- Fast operation
+	return table_insert(list, entry) -- Fast operation
 end
 
 -- Returns the element with the highest priority, and removes it from the queue.
 -- Will return nil if there is no element.
 function PRIORITY_QUEUE:Dequeue()
 	-- Get and remove element from the end of the list
-	local elem = table_remove(self.List) -- Fast operation
-	if not elem then return nil end
+	local entry = table_remove(self.List) -- Fast operation
+	if not entry then return nil end
+
+	local elem = entry[1]
 
 	-- Remove element from map/set
 	self.Map[elem] = nil

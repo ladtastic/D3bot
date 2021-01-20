@@ -46,11 +46,11 @@ end
 --		Methods
 ------------------------------------------------------
 
--- Returns the cost (in engine units) for a given difference of two position vectors.
+-- Returns the cost (in engine units) between two position vectors.
 -- This is used to approximate the cost for pathfinding.
--- As it only uses the difference vector, it can't know if the bot has to crouch/duck or similar things.
+-- It can't know if the bot has to crouch/duck or similar things.
 -- Any time based cost would need to be transformed into a distance based cost in here.
 -- This method should be as fast as possible.
-function THIS_LOCO_HANDLER:GetApproximateCost(diff)
-	return diff:Length()
+function THIS_LOCO_HANDLER:GetApproximateCost(posA, posB)
+	return (posB - posA):Length()
 end
