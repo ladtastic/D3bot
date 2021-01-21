@@ -17,6 +17,7 @@
 
 local D3bot = D3bot
 local PATH = D3bot.PATH
+local PATH_POINT = D3bot.PATH_POINT
 local PRIORITY_QUEUE = D3bot.PRIORITY_QUEUE
 
 ------------------------------------------------------
@@ -46,60 +47,40 @@ end
 --		Methods
 ------------------------------------------------------
 
--- Generates a path from the start to dest position.
--- A position is defined by both a vector and a navmesh triangle that vector is on/in.
--- It must be made sure that pos triangle pairs match, otherwise the returned path will not be optimal or even malformed.
--- The actual pathfinding is based on edges, not triangles.
-function PATH:GeneratePathToPos(startPos, startTriangle, destPos, destTriangle)
+-- Generates a path from startPoint to destPoint PATH_POINT objects.
+-- The actual pathfinding is mostly based on edges, not triangles.
+function PATH:GeneratePathToPos(startPoint, destPoint)
 	-- See: https://en.wikipedia.org/wiki/A*_search_algorithm
-
-	-- TODO: Simplify pathfinding by creating a point object that implements edge like methods. (Will get rid of duplicate code and fix some edge cases)
 
 	-- Reset current path
 	self.Path = {}
 
-	-- Load some variables from self (for optimization)
+	-- Define some variables for optimization
 	local navmesh = self.Navmesh
 	local abilities = self.Abilities
+	local startPos, destPos = startPoint:GetCentroid(), destPoint:GetCentroid()
 
 	-- Data structures for pathfinding
-	local edgeData = {} -- Contains scores and other information about edges
-	local closedList = {} -- List of edges that have been expanded
-	local openList = PRIORITY_QUEUE:New() -- List of edges that have to be expanded
+	local entityData = {} -- Contains scores and other information about visited navmesh entities
+	local closedList = {} -- List of entities that have been expanded
+	local openList = PRIORITY_QUEUE:New() -- List of entities that have to be expanded
 
 	-- Function to build a path from the generated data
-	local function reconstructPath(edge)
-		-- Add destPos
-		local pathElement = {
-			Pos = destPos,
-			Via = destTriangle,
-			LocomotionHandler = abilities[destTriangle:GetCache().LocomotionType]
-		}
-		table.insert(self.Path, pathElement)
-
-		-- Add everything in between: Recursively go through edges and their previous elements to find the path in reverse order
-		local edge = edge
-		while edge do
-			local edgeCache = edge:GetCache()
-			local edgeInfo = edgeData[edge]
+	local function reconstructPath(entity)
+		-- Iterate from the found destination to the start entity and push path to pathElements
+		local entity = entity
+		while entity do
+			local entityInfo = entityData[entity]
 
 			local pathElement = {
-				Pos = edgeCache.Center,
-				Via = edgeInfo.Via,
-				LocomotionHandler = abilities[edgeInfo.Via:GetCache().LocomotionType]
+				Pos = entity:GetCentroid(),
+				Via = entityInfo.Via,
+				LocomotionHandler = abilities[entityInfo.Via:GetCache().LocomotionType]
 			}
 			table.insert(self.Path, pathElement)
 
-			edge = edgeInfo.FromEdge
+			entity = entityInfo.From
 		end
-
-		-- Add startPos
-		local pathElement = {
-			Pos = startPos,
-			Via = startTriangle,
-			LocomotionHandler = abilities[startTriangle:GetCache().LocomotionType]
-		}
-		table.insert(self.Path, pathElement)
 
 		return true
 	end
@@ -110,60 +91,54 @@ function PATH:GeneratePathToPos(startPos, startTriangle, destPos, destTriangle)
 		return (destPos-pos):Length()
 	end
 
-	-- Helper function for adding edges to the open list
-	local function enqueueEdge(edge, tentative_gScore, fromEdge, via, toPos)
-		local fScore = tentative_gScore + heuristic(toPos) -- Best guess as to how cheap a path can be that goes through this edge
-		edgeData[edge] = {
-			GScore = tentative_gScore, -- The cheapest path from start to this edge
-			FromEdge = fromEdge, -- The previous edge
-			Via = via -- The navmesh entity that connects the previous and current edge
+	-- Helper function for adding navmesh entities to the open list
+	local function enqueueEntity(entity, tentative_gScore, from, via, toPos)
+		local fScore = tentative_gScore + heuristic(toPos) -- Best guess as to how cheap a path can be that goes through this entity
+		entityData[entity] = {
+			GScore = tentative_gScore, -- The cheapest path from start to this entity
+			From = from, -- The previous entity
+			Via = via -- The navmesh entity that connects the previous and current entity
 		}
-		openList:Enqueue(edge, fScore)
+		openList:Enqueue(entity, fScore)
 	end
 
-	-- If the bot doesn't know how to navigate on the triangle that he starts on, abort
-	local startLocomotionHandler = abilities[startTriangle:GetCache().LocomotionType]
-	if not startLocomotionHandler then return false end
-
-	-- If the bot doesn't know how to navigate on the destination triangle, abort
-	if not abilities[destTriangle:GetCache().LocomotionType] then return false end
-
-	-- Add the edges of the startTriangle to the open list.
-	-- Their initial gScore is the cost of moving from startPos to the edge center.
-	local e1, e2, e3 = startTriangle.Edges[1], startTriangle.Edges[2], startTriangle.Edges[3]
-	local e1Center, e2Center, e3Center = e1:GetCache().Center, e2:GetCache().Center, e3:GetCache().Center
-	local costMod = startLocomotionHandler.CostModifier
-	enqueueEdge(e1, (startPos - e1Center):Length() + (costMod and costMod(startLocomotionHandler, startPos, e1Center) or 0), nil, startTriangle, e1Center)
-	enqueueEdge(e2, (startPos - e2Center):Length() + (costMod and costMod(startLocomotionHandler, startPos, e2Center) or 0), nil, startTriangle, e2Center)
-	enqueueEdge(e3, (startPos - e3Center):Length() + (costMod and costMod(startLocomotionHandler, startPos, e3Center) or 0), nil, startTriangle, e3Center)
-
-	-- As search is edge based, get edges that represent the end condition
+	-- Add start point to open list
+	enqueueEntity(startPoint, 0, nil, startPoint.Triangle, startPoint:GetCentroid())
+	
+	-- As search is edge based, store edges where the destPoint has to be injected to the "neighbors" list
+	local destTriangle = destPoint.Triangle
 	local endE1, endE2, endE3 = destTriangle.Edges[1], destTriangle.Edges[2], destTriangle.Edges[3]
 
-	-- Get next edge from queue and expand it
-	for edge in openList.Dequeue, openList do
-		local edgeCache = edge:GetCache()
-
+	-- Get next entity from queue and expand it
+	for entity in openList.Dequeue, openList do
 		-- Add to closed list
-		closedList[edge] = true
+		closedList[entity] = true
 
-		-- Get gScore of current edge
-		local edgeInfo = edgeData[edge]
-		local gScore = edgeInfo.GScore
-
-		-- Found destination triangle by one of its edges, now generate path.
-		-- This does not include the cost from this edge to the destPos, but should work good enough.
-		if edge == endE1 or edge == endE2 or edge == endE3 then
-			return reconstructPath(edge)
+		-- End condition: Found destPoint.
+		if entity == destPoint then
+			return reconstructPath(entity)
 		end
 
-		-- Iterate over neighbor edges
-		for _, v in ipairs(edgeCache.PathfindingEdges) do
-			local neighborEdge, via, distance = v.Edge, v.Via, v.Distance
+		-- Store some variables of this entity for later use
+		local entityInfo = entityData[entity]
+		local gScore = entityInfo.GScore
+		local entityPos = entity:GetCentroid()
+
+		-- Get list of neighbor navmesh entities
+		local neighbors = entity:GetPathfindingNeighbors()
+
+		-- If we are at the edge of our destination triangle, inject destPoint into neighbor list
+		if entity == endE1 or entity == endE2 or entity == endE3 then
+			neighbors = table.Add({{Entity = destPoint, Via = destPoint.Triangle, Distance = (destPoint:GetCentroid() - entityPos):Length()}}, neighbors)
+		end
+
+		-- Iterate over neighbor entities
+		for _, neighbor in ipairs(neighbors) do
+			local neighborEntity, via, distance = neighbor.Entity, neighbor.Via, neighbor.Distance
 
 			-- Check if neighbor is in the closed list, if so it's already optimal.
 			-- This check must be removed if the heuristic is changed to an "admissible heuristic".
-			if not closedList[neighborEdge] then
+			if not closedList[neighborEntity] then
 
 				-- Get locomotion type and handler.
 				-- Via may be a triangle or some other similar navmesh entity.
@@ -171,21 +146,25 @@ function PATH:GeneratePathToPos(startPos, startTriangle, destPos, destTriangle)
 
 				-- Check if there is a locomotion handler ("Does the bot know how to navigate on this navmesh entity?")
 				if locomotionHandler then
-					local neighborEdgeCache = neighborEdge:GetCache()
+					local neighborEntityPos = neighborEntity:GetCentroid()
 
-					-- And check if the bot is able to walk to the next edge
-					if not locomotionHandler.CanNavigateToPos or locomotionHandler:CanNavigateToPos(edgeCache.Center, neighborEdgeCache.Center) then
+					-- And check if the bot is able to walk to the next entity
+					if not locomotionHandler.CanNavigateToPos or locomotionHandler:CanNavigateToPos(entityPos, neighborEntityPos) then
 
-						-- Calculate gScore for the neighbor edge
-						local costMod = locomotionHandler.CostModifier
-						local tentative_gScore = gScore + distance + (costMod and costMod(locomotionHandler, neighborEdgeCache.Center, edgeCache.Center) or 0)
+						-- Calculate gScore for the neighbor entity
+						local tentative_gScore
+						if locomotionHandler.CostOverride then
+							tentative_gScore = gScore + locomotionHandler:CostOverride(entityPos, neighborEntityPos)
+						else
+							tentative_gScore = gScore + distance
+						end
 
 						-- Check if the gScore is better than the previous score
-						local neighborEdgeInfo = edgeData[neighborEdge]
-						if tentative_gScore < (neighborEdgeInfo and neighborEdgeInfo.GScore or math.huge) then
+						local neighborEntityInfo = entityData[neighborEntity]
+						if tentative_gScore < (neighborEntityInfo and neighborEntityInfo.GScore or math.huge) then
 
-							-- Enqueue neighbor edge
-							enqueueEdge(neighborEdge, tentative_gScore, edge, via, neighborEdgeCache.Center)
+							-- Enqueue neighbor entity
+							enqueueEntity(neighborEntity, tentative_gScore, entity, via, neighborEntityPos)
 
 						end
 					end

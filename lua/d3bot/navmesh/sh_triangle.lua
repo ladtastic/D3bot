@@ -193,6 +193,17 @@ function NAV_TRIANGLE:GetCache()
 		-- TODO: Add user defined locomotion type override to triangles
 	end
 
+	-- Get all edges of this triangle that have more than 1 triangle or similar navmesh entities connected to them.
+	-- Use triangle centroid as starting point.
+	-- This will be used for pathfinding.
+	cache.PathfindingNeighbors = {}
+	for _, edge in ipairs(self.Edges) do
+		if #edge.Triangles > 1 then
+			local edgeCenter = (edge.Points[1] + edge.Points[2]) / 2
+			table.insert(cache.PathfindingNeighbors, {Entity = edge, Via = self, Distance = (edgeCenter - cache.Centroid):Length()})
+		end
+	end
+
 	return cache
 end
 
@@ -227,6 +238,20 @@ function NAV_TRIANGLE:_Delete()
 	local navmesh = self.Navmesh
 	self.Navmesh = nil
 	navmesh.Triangles[self.ID] = nil
+end
+
+-- Returns the average of all points that are contained in this geometry, or nil.
+function NAV_TRIANGLE:GetCentroid()
+	local cache = self:GetCache()
+	return cache.Centroid
+end
+
+-- Returns a list of connected neighbor entities that a bot can navigate to.
+-- The result is a list of tables that contain the destination entity and some metadata.
+-- This is used for pathfinding.
+function NAV_TRIANGLE:GetPathfindingNeighbors()
+	local cache = self:GetCache()
+	return cache.PathfindingNeighbors
 end
 
 -- Returns whether the triangle consists out of the three given edges or not.

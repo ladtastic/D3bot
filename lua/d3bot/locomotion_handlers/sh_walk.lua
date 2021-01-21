@@ -46,12 +46,11 @@ end
 --		Methods
 ------------------------------------------------------
 
--- Returns the additional cost (in engine units) between two position vectors that will be added onto the distance.
--- This is used to modify the approximate cost for pathfinding, and should be as fast as possible.
--- It can't know if the bot has to crouch/duck or similar things.
--- Any time based cost would need to be transformed into a distance based cost in here.
---function THIS_LOCO_HANDLER:CostModifier(posA, posB)
---	return 0
+-- Overrides the base pathfinding cost (in engine units) between two position vectors.
+-- If not defined, the distance between the points will be used as metric.
+-- Any time based cost would need to be transformed into a distance based cost in here (Relative to normal walking speed).
+--function THIS_LOCO_HANDLER:CostOverride(posA, posB)
+--	return (posB - posA):Length()
 --end
 
 -- Returns whether the bot can move from posA to posB.

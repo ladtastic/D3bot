@@ -58,6 +58,7 @@ D3bot.NAV_MESH = D3bot.NAV_MESH or {} -- NAV_MESH class
 D3bot.NAV_EDGE = D3bot.NAV_EDGE or {} -- NAV_EDGE class
 D3bot.NAV_TRIANGLE = D3bot.NAV_TRIANGLE or {} -- NAV_TRIANGLE class
 D3bot.PATH = D3bot.PATH or {} -- PATH class that handles pathfinding
+D3bot.PATH_POINT = D3bot.PATH_POINT or {} -- PATH_POINT helper class for start and destination points
 
 ------------------------------------------------------
 --		Includes
@@ -87,6 +88,7 @@ UTIL.IncludeRealm("navmesh/sv_file.lua", UTIL.REALM_SERVER)
 
 -- Path stuff
 UTIL.IncludeRealm("path/sh_path.lua", UTIL.REALM_SHARED)
+UTIL.IncludeRealm("path/sh_path_point.lua", UTIL.REALM_SHARED)
 
 -- Load bot naming script (default, and any optional override)
 UTIL.IncludeRealm("names/sv_default.lua", UTIL.REALM_SERVER)

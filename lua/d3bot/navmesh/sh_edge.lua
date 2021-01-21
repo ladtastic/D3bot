@@ -133,24 +133,24 @@ function NAV_EDGE:GetCache()
 	-- Calculate center
 	cache.Center = (self.Points[1] + self.Points[2]) / 2
 
-	-- Calculate connected "neighbor" edges that can be accessed either via triangles or similar navmesh entities.
-	cache.ConnectedEdges = {}
+	-- Get connected "neighbor" edges that can be accessed either via triangles or similar navmesh entities.
+	cache.ConnectedNeighbors = {}
 	for _, triangle in ipairs(self.Triangles) do
 		for _, edge in ipairs(triangle.Edges) do
 			if edge ~= self then
 				local otherEdgeCenter = (edge.Points[1] + edge.Points[2]) / 2
-				table.insert(cache.ConnectedEdges, {Edge = edge, Via = triangle, Distance = (otherEdgeCenter - cache.Center):Length()})
+				table.insert(cache.ConnectedNeighbors, {Entity = edge, Via = triangle, Distance = (otherEdgeCenter - cache.Center):Length()})
 			end
 		end
 	end
 
-	-- Calculate connected "neighbor" edges that can be accessed either via triangles or similar navmesh entities.
+	-- Get connected "neighbor" edges that can be accessed either via triangles or similar navmesh entities.
 	-- Additional condition: The edges need more than 1 triangle or similar navmesh entities connected to them.
-	-- This is a subset of ConnectedEdges and will be used for pathfinding.
-	cache.PathfindingEdges = {}
-	for _, v in ipairs(cache.ConnectedEdges) do
-		if #v.Edge.Triangles > 1 then
-			table.insert(cache.PathfindingEdges, v)
+	-- This is a subset of ConnectedNeighbors and will be used for pathfinding.
+	cache.PathfindingNeighbors = {}
+	for _, v in ipairs(cache.ConnectedNeighbors) do
+		if #v.Entity.Triangles > 1 then
+			table.insert(cache.PathfindingNeighbors, v)
 		end
 	end
 
@@ -189,6 +189,20 @@ function NAV_EDGE:_GC()
 	if #self.Triangles == 0 then
 		self:Delete()
 	end
+end
+
+-- Returns the average of all points that are contained in this geometry, or nil.
+function NAV_EDGE:GetCentroid()
+	local cache = self:GetCache()
+	return cache.Center
+end
+
+-- Returns a list of connected neighbor entities that a bot can navigate to.
+-- The result is a list of tables that contain the destination entity and some metadata.
+-- This is used for pathfinding.
+function NAV_EDGE:GetPathfindingNeighbors()
+	local cache = self:GetCache()
+	return cache.PathfindingNeighbors
 end
 
 -- Returns whether the edge consists out of the two given points or not.

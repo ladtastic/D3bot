@@ -26,6 +26,7 @@ local RENDER_UTIL = D3bot.RenderUtil
 local NAV_MAIN = D3bot.NavMain
 local LOCOMOTION_HANDLERS = D3bot.LocomotionHandlers
 local PATH = D3bot.PATH
+local PATH_POINT = D3bot.PATH_POINT
 
 local NAV_SWEP = D3bot.NavSWEP
 local EDIT_MODES = NAV_SWEP.EditModes
@@ -71,7 +72,7 @@ end
 function THIS_EDIT_MODE:GeneratePath(navmesh, debugOutput)
 
 	-- Can't generate a path if start and end point are not defined
-	if not self.StartPos or not self.EndPos then return true end
+	if not self.StartPos or not self.DestPos then return true end
 
 	-- Add some virtual locomotion handlers
 	local abilities = {
@@ -83,16 +84,15 @@ function THIS_EDIT_MODE:GeneratePath(navmesh, debugOutput)
 	self.Path = PATH:New(navmesh, abilities)
 
 	-- Get triangles of start and end pos
-	local startPos, endPost = self.StartPos, self.EndPos
-	local startTriangle = UTIL.GetClosestToPos(startPos, navmesh.Triangles)
-	local endTriangle = UTIL.GetClosestToPos(endPost, navmesh.Triangles)
-	if not startTriangle or not endTriangle then return end
+	local startPoint = PATH_POINT:New(navmesh, self.StartPos)
+	local destPoint = PATH_POINT:New(navmesh, self.DestPos)
+	if not startPoint or not destPoint then return end
 
 	-- Calculate path (Several times for average)
 	local iterations = debugOutput and 1000 or 1
 	local startTime = SysTime()
 	for i = 1, iterations do
-		self.Path:GeneratePathToPos(startPos, startTriangle, endPost, endTriangle)
+		self.Path:GeneratePathToPos(startPoint, destPoint)
 	end
 	local endTime = SysTime()
 
@@ -143,7 +143,7 @@ function THIS_EDIT_MODE:SecondaryAttack(wep)
 	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())
 
 	-- Set end pos
-	self.EndPos = trRes.HitPos
+	self.DestPos = trRes.HitPos
 
 	-- (Re)generate path
 	self:GeneratePath(navmesh, true)
@@ -181,7 +181,7 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm)
 	navmesh:Render3D()
 
 	-- Debug: Live path regeneration
-	self.EndPos = trRes.HitPos
+	self.DestPos = trRes.HitPos
 	self:GeneratePath(navmesh, false)
 
 	-- Draw path
@@ -195,8 +195,8 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm)
 		RENDER_UTIL.Draw3DCursorPos(self.StartPos, 2, Color(255, 0, 0, 255), Color(0, 0, 0, 255))
 	end
 	render.SetColorMaterialIgnoreZ()
-	if self.EndPos then
-		RENDER_UTIL.Draw3DCursorPos(self.EndPos, 2, Color(0, 255, 0, 255), Color(0, 0, 0, 255))
+	if self.DestPos then
+		RENDER_UTIL.Draw3DCursorPos(self.DestPos, 2, Color(0, 255, 0, 255), Color(0, 0, 0, 255))
 	end
 
 	cam.End3D()
