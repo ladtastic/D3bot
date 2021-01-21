@@ -79,7 +79,7 @@ function PRIORITY_QUEUE:Enqueue(elem, priValue)
 
 	-- Insert elem at position that preserves the priority order.
 	-- Stupid linear search, it would be slightly better to search from the top. But only slightly.
-	local entry = {[1] = elem, [2] = priValue}
+	local entry = {elem, priValue}
 	for i, v in ipairs(list) do
 		if priValue >= v[2] then
 			table_insert(list, i, entry) -- "Slow" operation

@@ -75,7 +75,7 @@ function PATH:GeneratePathToPos(startPoint, destPoint)
 			local pathElement = {
 				Pos = entity:GetCentroid(),
 				Via = entityInfo.Via,
-				LocomotionHandler = abilities[entityInfo.Via:GetCache().LocomotionType]
+				LocomotionHandler = abilities[entityInfo.Via:GetLocomotionType()]
 			}
 			table.insert(self.Path, pathElement)
 
@@ -103,7 +103,7 @@ function PATH:GeneratePathToPos(startPoint, destPoint)
 	end
 
 	-- Add start point to open list
-	enqueueEntity(startPoint, 0, nil, startPoint.Triangle, startPoint:GetCentroid())
+	enqueueEntity(startPoint, 0, nil, startPoint.Triangle, startPos)
 	
 	-- As search is edge based, store edges where the destPoint has to be injected to the "neighbors" list
 	local destTriangle = destPoint.Triangle
@@ -129,7 +129,7 @@ function PATH:GeneratePathToPos(startPoint, destPoint)
 
 		-- If we are at the edge of our destination triangle, inject destPoint into neighbor list
 		if entity == endE1 or entity == endE2 or entity == endE3 then
-			neighbors = table.Add({{Entity = destPoint, Via = destPoint.Triangle, Distance = (destPoint:GetCentroid() - entityPos):Length()}}, neighbors)
+			neighbors = table.Add({{Entity = destPoint, Via = destPoint.Triangle, Distance = (destPos - entityPos):Length()}}, neighbors)
 		end
 
 		-- Iterate over neighbor entities
@@ -142,7 +142,7 @@ function PATH:GeneratePathToPos(startPoint, destPoint)
 
 				-- Get locomotion type and handler.
 				-- Via may be a triangle or some other similar navmesh entity.
-				local locomotionHandler = abilities[via:GetCache().LocomotionType]
+				local locomotionHandler = abilities[via:GetLocomotionType()]
 
 				-- Check if there is a locomotion handler ("Does the bot know how to navigate on this navmesh entity?")
 				if locomotionHandler then

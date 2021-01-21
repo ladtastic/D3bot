@@ -254,6 +254,12 @@ function NAV_TRIANGLE:GetPathfindingNeighbors()
 	return cache.PathfindingNeighbors
 end
 
+-- Returns the locomotion type as a string.
+function NAV_TRIANGLE:GetLocomotionType()
+	local cache = self:GetCache()
+	return cache.LocomotionType
+end
+
 -- Returns whether the triangle consists out of the three given edges or not.
 function NAV_TRIANGLE:ConsistsOfEdges(e1, e2, e3)
 	local se1, se2, se3 = self.Edges[1], self.Edges[2], self.Edges[3]
