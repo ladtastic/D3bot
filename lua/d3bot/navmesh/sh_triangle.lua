@@ -55,17 +55,25 @@ function NAV_TRIANGLE:New(navmesh, id, e1, e2, e3, flipNormal)
 
 	-- Check the resulting triangle's min height
 	local h1, h2, h3 = UTIL.GetTriangleHeights(trianglePoints[1], trianglePoints[2], trianglePoints[3])
-	if math.min(h1, h2, h3) < self.MinHeight then
-		return nil, ERROR:New("The triangle's smallest height is below allowed min. height (%s < %s)", math.min(h1, h2, h3), self.MinHeight)
+	if math.min(h1, h2, h3) < obj.MinHeight then
+		return nil, ERROR:New("The triangle's smallest height is below allowed min. height (%s < %s)", math.min(h1, h2, h3), obj.MinHeight)
 	end
 
-	-- Add reference to this triangle to all edges and invalidate their cache
+	-- Add reference to this triangle to all edges
 	table.insert(e1.Triangles, obj)
-	e1:InvalidateCache()
 	table.insert(e2.Triangles, obj)
-	e2:InvalidateCache()
 	table.insert(e3.Triangles, obj)
-	e3:InvalidateCache()
+
+	-- Invalidate the cache of the neighbor triangles and their edges.
+	-- It's ugly but has to be done.
+	for _, edge in ipairs(obj.Edges) do
+		for _, triangle in ipairs(edge.Triangles) do
+			for _, edge2 in ipairs(triangle.Edges) do
+				-- This may be run twice on some edges, but it's a fast operation
+				edge2:InvalidateCache()
+			end
+		end
+	end
 
 	-- Check if there was a previous element. If so, delete it
 	local old = navmesh.Triangles[obj.ID]

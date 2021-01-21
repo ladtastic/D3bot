@@ -31,6 +31,7 @@ local THIS_LOCO_HANDLER = LOCOMOTION_HANDLERS.WALKING
 THIS_LOCO_HANDLER.__index = THIS_LOCO_HANDLER
 
 -- Creates a new instance of a general locomotion handler for bots that can walk.
+-- Works best with locomotion types: "Ground".
 function THIS_LOCO_HANDLER:New(speed)
 	local handler = {
 		Speed = speed -- Speed for normal (unmodified) walking in engine units per second
@@ -53,8 +54,11 @@ end
 --	return (posB - posA):Length()
 --end
 
--- Returns whether the bot can move from posA to posB.
+-- Returns whether the bot can move from entityA to entityB via entityVia.
+-- entityData is a map that contains pathfinding metadata (Parent entity, ...).
+-- Leaving this undefined has the same result as returning true.
+-- The entities are most likely navmesh edges or NAV_PATH_POINT objects.
 -- This is used in pathfinding and should be as fast as possible.
---function THIS_LOCO_HANDLER:CanNavigateToPos(posA, posB)
+--function THIS_LOCO_HANDLER:CanNavigate(entityA, entityVia, entityB, entityData)
 --	return true
 --end

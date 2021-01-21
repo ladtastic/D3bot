@@ -149,7 +149,7 @@ function PATH:GeneratePathToPos(startPoint, destPoint)
 					local neighborEntityPos = neighborEntity:GetCentroid()
 
 					-- And check if the bot is able to walk to the next entity
-					if not locomotionHandler.CanNavigateToPos or locomotionHandler:CanNavigateToPos(entityPos, neighborEntityPos) then
+					if not locomotionHandler.CanNavigate or locomotionHandler:CanNavigate(entity, via, neighborEntity, entityData) then
 
 						-- Calculate gScore for the neighbor entity
 						local tentative_gScore

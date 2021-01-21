@@ -76,8 +76,8 @@ function THIS_EDIT_MODE:GeneratePath(navmesh, debugOutput)
 
 	-- Add some virtual locomotion handlers
 	local abilities = {
-		Ground = LOCOMOTION_HANDLERS.WALKING:New(200)
-		--Wall = LOCOMOTION_HANDLERS.JUMP_AND_FALL:New(56, 1000)
+		Ground = LOCOMOTION_HANDLERS.WALKING:New(200),
+		Wall = LOCOMOTION_HANDLERS.JUMP_AND_FALL:New(56, 1000)
 	}
 
 	-- Create path object

@@ -41,6 +41,17 @@ function UTIL.RoundVector(vec)
 	return Vector(math.floor(vec[1] + 0.5), math.floor(vec[2] + 0.5), math.floor(vec[3] + 0.5))
 end
 
+-- A simple sign function.
+-- Unlike the mathematical sign function, this only returns a bool.
+-- For numbers >= 0 it returns true, otherwise false.
+function UTIL.SimpleSign(num)
+	if num >= 0 then
+		return true
+	else
+		return false
+	end
+end
+
 -- Realm bitmasks
 UTIL.REALM_SERVER = 1 -- 0b01
 UTIL.REALM_CLIENT = 2 -- 0b10
