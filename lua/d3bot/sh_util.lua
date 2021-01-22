@@ -22,7 +22,8 @@ local CONVARS = D3bot.Convars
 local UTIL = D3bot.Util
 local ERROR = D3bot.ERROR
 
--- Get a map with all currently used usernames (ply:Nick() of all players).
+---Get a map with all currently used usernames (ply:Nick() of all players).
+---@return table usernames @Map with username mapped to player objects.
 function UTIL.GetUsernamesMap()
 	local usernames = {}
 	for _, ply in pairs(player.GetAll()) do

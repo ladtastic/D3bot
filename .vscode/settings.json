@@ -60,5 +60,20 @@
     "licenser.disableAutoHeaderInsertion": true,
     "cSpell.enableFiletypes": [
         "lua"
+    ],
+    "Lua.runtime.unicodeName": true,
+    "Lua.runtime.version": "LuaJIT",
+    "Lua.runtime.special": {
+        "include": "require"
+    },
+    "Lua.workspace.library": {
+        "libgmod/": true
+    },
+    "Lua.workspace.preloadFileSize": 500,
+    "Lua.diagnostics.globals": [
+        "CLIENT",
+        "SERVER",
+        "ULib",
+        "SWEP"
     ]
 }
