@@ -168,9 +168,9 @@ end
 function NAV_MESH:FindTriangle3P(p1, p2, p3)
 	local e1, err = self:FindEdge2P(p1, p2)
 	if err then return nil, err end
-	local e1, err = self:FindEdge2P(p2, p3)
+	local e2, err = self:FindEdge2P(p2, p3)
 	if err then return nil, err end
-	local e1, err = self:FindEdge2P(p3, p1)
+	local e3, err = self:FindEdge2P(p3, p1)
 	if err then return nil, err end
 
 	local triangle, err = self:FindTriangle3E(e1, e2, e3)
