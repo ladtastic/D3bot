@@ -92,7 +92,7 @@ function THIS_EDIT_MODE:GeneratePath(navmesh, debugOutput)
 	local iterations = debugOutput and 1000 or 1
 	local startTime = SysTime()
 	for i = 1, iterations do
-		self.Path:GeneratePathToPos(startPoint, destPoint)
+		self.Path:GeneratePathBetweenPoints(startPoint, destPoint)
 	end
 	local endTime = SysTime()
 

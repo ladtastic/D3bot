@@ -16,6 +16,7 @@
 -- along with D3bot.  If not, see <http://www.gnu.org/licenses/>.
 
 local D3bot = D3bot
+local ERROR = D3bot.ERROR
 local PATH = D3bot.PATH
 local PATH_POINT = D3bot.PATH_POINT
 local PRIORITY_QUEUE = D3bot.PRIORITY_QUEUE
@@ -49,7 +50,7 @@ end
 
 -- Generates a path from startPoint to destPoint PATH_POINT objects.
 -- The actual pathfinding is mostly based on edges, not triangles.
-function PATH:GeneratePathToPos(startPoint, destPoint)
+function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 	-- See: https://en.wikipedia.org/wiki/A*_search_algorithm
 
 	-- Reset current path
@@ -82,7 +83,7 @@ function PATH:GeneratePathToPos(startPoint, destPoint)
 			entity = entityInfo.From
 		end
 
-		return true
+		return nil
 	end
 
 	-- Returns the heuristic for a given vector pos.
@@ -174,7 +175,29 @@ function PATH:GeneratePathToPos(startPoint, destPoint)
 	end
 
 	-- No path found
-	return false
+	return ERROR:New("Couldn't find a path from %s to %s", startPoint, destPoint)
+end
+
+-- Generates a path to the given vector destPos or updates an already existing path.
+-- This tries to recalculate as few things as possible.
+function PATH:UpdatePathToPos(startPos, destPos)
+	local navmesh = self.Navmesh
+
+	-- TODO: Check if destPos is still on the same navmesh entity (shortest distance to {current triangle, neighbors...})
+	-- TODO: Regenerate path if destPos moved to different navmesh
+
+	-- It should be decided in an intelligent way how and when to regenerate the path.
+	-- Ideally it only has to do a full path regeneration when the destPos moves too much, otherwise it only has to update the last path element.
+	-- Also, if the current path is long enough, there is no need to regenerate the path every time the destPos moves from one triangle to another.
+	-- In this case it could do a search from the old "end" position of the path to the new destPos.
+
+	-- Regenerate path
+	local startPoint, err = PATH_POINT:New(navmesh, startPos)
+	if err then return err end
+	local destPoint, err = PATH_POINT:New(navmesh, destPos)
+	if err then return err end
+
+	self:GeneratePathBetweenPoints(startPoint, destPoint)
 end
 
 -- Draw the path into a 3D rendering context.
