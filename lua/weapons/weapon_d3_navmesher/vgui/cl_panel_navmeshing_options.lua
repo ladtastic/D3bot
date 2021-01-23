@@ -23,7 +23,7 @@ local UTIL = D3bot.Util
 local CONCOMMANDS = D3bot.ConCommands
 
 local NAV_SWEP = D3bot.NavSWEP
-local EDIT_MODES = NAV_SWEP.EditModes
+local EDIT_MODES = D3bot.NavSWEP.EditModes
 
 local PANEL = {}
 

@@ -1,17 +1,17 @@
 -- Copyright (C) 2020 David Vogel
--- 
+--
 -- This file is part of D3bot.
--- 
+--
 -- D3bot is free software: you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
 -- the Free Software Foundation, either version 3 of the License, or
 -- (at your option) any later version.
--- 
+--
 -- D3bot is distributed in the hope that it will be useful,
 -- but WITHOUT ANY WARRANTY; without even the implied warranty of
 -- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 -- GNU General Public License for more details.
--- 
+--
 -- You should have received a copy of the GNU General Public License
 -- along with D3bot.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -35,15 +35,22 @@ for _, basePath in ipairs(NAV_FILE.BasePaths) do
 	end
 end
 
--- Builds and returns a file path from the given base path and map name.
+---Builds and returns a file path from the given base path and map name.
+---@param basePath table
+---@param mapName string
+---@return string
 local function getFilePath(basePath, mapName)
 	return basePath.path .. mapName .. ".json", basePath.gamePath
 end
 
--- Iterates over base paths until it finds an existing file.
--- Returns a filePath and gamePath pair.
+---Iterates over base paths until it finds an existing file.
+---Returns a filePath and gamePath pair.
+---@param basePaths table[]
+---@param mapName string
+---@return string filePath @Path to the file, relative to the root that gamePath defines.
+---@return string gamePath @A string like "DATA".
 local function findValidFilePath(basePaths, mapName)
-	for _, basePath in ipairs(NAV_FILE.BasePaths) do
+	for _, basePath in ipairs(basePaths) do
 		local filePath, gamePath = getFilePath(basePath, mapName)
 		if file.Exists(filePath, gamePath) then
 			return filePath, gamePath
@@ -51,8 +58,8 @@ local function findValidFilePath(basePaths, mapName)
 	end
 end
 
--- Loads the main navmesh from a file.
--- This will try to load the navmesh from several directories, see NAV_FILE.BasePaths.
+---Loads the main navmesh from a file.
+---This will try to load the navmesh from several directories, see NAV_FILE.BasePaths.
 function NAV_FILE.LoadMainNavmesh()
 	local mapName = game.GetMap()
 	local filePath, gamePath = findValidFilePath(NAV_FILE.BasePaths, mapName)
@@ -69,8 +76,8 @@ function NAV_FILE.LoadMainNavmesh()
 	end
 end
 
--- Stores the main navmesh in a file.
--- This will store the navmesh in gmod's data directory.
+---Stores the main navmesh in a file.
+---This will store the navmesh in gmod's data directory.
 function NAV_FILE.SaveMainNavmesh()
 	local mapName = game.GetMap()
 	local filePath, gamePath = getFilePath(NAV_FILE.BasePaths[1], mapName)

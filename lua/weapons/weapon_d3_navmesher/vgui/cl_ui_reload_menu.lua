@@ -18,8 +18,8 @@
 local D3bot = D3bot
 local CONVARS = D3bot.Convars
 local NAV_SWEP = D3bot.NavSWEP
-local UI = NAV_SWEP.UI
-local RELOAD_MENU = UI.ReloadMenu
+local UI = D3bot.NavSWEP.UI
+local RELOAD_MENU = D3bot.NavSWEP.UI.ReloadMenu
 
 function RELOAD_MENU:Create()
 	if IsValid(self.PanelInstance) then

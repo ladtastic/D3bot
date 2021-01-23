@@ -17,8 +17,10 @@
         "SWEP's",
         "SWEPs",
         "Selfcheck",
+        "Unauthed",
         "VGUI",
         "Vogel",
+        "acception",
         "ahhhh",
         "baseclass",
         "basetexture",
@@ -49,6 +51,7 @@
         "texwide",
         "toolgun",
         "toolmode",
+        "ulib",
         "vararg",
         "viewscreen",
         "zculling"
@@ -77,5 +80,8 @@
         "SERVER",
         "ULib",
         "SWEP"
-    ]
+    ],
+    "Lua.diagnostics.severity": {
+        "trailing-space": "Information"
+    }
 }

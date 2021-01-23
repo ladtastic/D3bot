@@ -1,17 +1,17 @@
 -- Copyright (C) 2020 David Vogel
--- 
+--
 -- This file is part of D3bot.
--- 
+--
 -- D3bot is free software: you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
 -- the Free Software Foundation, either version 3 of the License, or
 -- (at your option) any later version.
--- 
+--
 -- D3bot is distributed in the hope that it will be useful,
 -- but WITHOUT ANY WARRANTY; without even the implied warranty of
 -- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 -- GNU General Public License for more details.
--- 
+--
 -- You should have received a copy of the GNU General Public License
 -- along with D3bot.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -33,12 +33,9 @@ THIS_LOCO_HANDLER.__index = THIS_LOCO_HANDLER
 -- Creates a new instance of a general locomotion handler for bots that can walk.
 -- Works best with locomotion types: "Ground".
 function THIS_LOCO_HANDLER:New(speed)
-	local handler = {
+	local handler = setmetatable({
 		Speed = speed -- Speed for normal (unmodified) walking in engine units per second
-	}
-
-	-- Instantiate
-	setmetatable(handler, self)
+	}, self)
 
 	return handler
 end

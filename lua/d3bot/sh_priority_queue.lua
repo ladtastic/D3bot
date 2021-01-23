@@ -18,7 +18,6 @@
 -- TODO: Use heap based method to sort the objects
 
 local D3bot = D3bot
-local PRIORITY_QUEUE = D3bot.PRIORITY_QUEUE
 
 -- Some optimization stuff
 local table_RemoveByValue = table.RemoveByValue
@@ -30,18 +29,20 @@ local ipairs = ipairs
 --		Static
 ------------------------------------------------------
 
--- Make all methods and properties of the class available to its objects.
+---@class D3botPRIORITY_QUEUE
+---@field Map table<any, number> @Contains the priority for every element
+---@field List any[] @Contains the elements in descending priority *value* order (The last element has the highest priority)
+local PRIORITY_QUEUE = D3bot.PRIORITY_QUEUE
 PRIORITY_QUEUE.__index = PRIORITY_QUEUE
 
--- Returns a sorted/prioritized queue object.
+---Returns a sorted/prioritized queue object.
+---@return D3botPRIORITY_QUEUE | nil
+---@return D3botERROR | nil err
 function PRIORITY_QUEUE:New()
-	local obj = {
-		Map = {}, -- Contains the priority for every element
-		List = {} -- Contains the elements in descending priority *value* order (The last element has the highest priority)
-	}
-
-	-- Instantiate
-	setmetatable(obj, self)
+	local obj = setmetatable({
+		Map = {},
+		List = {}
+	}, self)
 
 	return obj, nil
 end
@@ -50,10 +51,13 @@ end
 --		Methods
 ------------------------------------------------------
 
--- Insert or overwrite an arbitrary object in(to) the queue.
--- The lower the given priValue, the higher is the priority of the inserted value.
--- By reinserting an element with a higher priority, the position in the queue will be updated.
--- Updating is a slow operation, so it's better to prevent this if possible.
+---Insert or overwrite an arbitrary object in(to) the queue.
+---The lower the given priValue, the higher is the priority of the inserted value.
+---By reinserting an element with a higher priority, the position in the queue will be updated.
+---Updating is a slow operation, so it's better to prevent this if possible.
+---@param elem any
+---@param priValue number
+---@return boolean inserted @Returns true if the element was inserted or updated, false otherwise.
 function PRIORITY_QUEUE:Enqueue(elem, priValue)
 	local list = self.List
 
@@ -71,7 +75,7 @@ function PRIORITY_QUEUE:Enqueue(elem, priValue)
 		end
 	elseif oldPriValue then
 		-- It exists and is higher priority
-		return
+		return false
 	end
 	self.Map[elem] = priValue
 
@@ -83,16 +87,18 @@ function PRIORITY_QUEUE:Enqueue(elem, priValue)
 	for i, v in ipairs(list) do
 		if priValue >= v[2] then
 			table_insert(list, i, entry) -- "Slow" operation
-			return
+			return true
 		end
 	end
 
 	-- Append to list if nothing was found
-	return table_insert(list, entry) -- Fast operation
+	table_insert(list, entry) -- Fast operation
+	return true
 end
 
--- Returns the element with the highest priority, and removes it from the queue.
--- Will return nil if there is no element.
+---Returns the element with the highest priority, and removes it from the queue.
+---Will return nil if there is no element.
+---@return any | nil
 function PRIORITY_QUEUE:Dequeue()
 	-- Get and remove element from the end of the list
 	local entry = table_remove(self.List) -- Fast operation

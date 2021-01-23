@@ -18,23 +18,31 @@
 local D3bot = D3bot
 local ERROR = D3bot.ERROR
 local UTIL = D3bot.Util
-local PATH_POINT = D3bot.PATH_POINT
 
 ------------------------------------------------------
 --		Static
 ------------------------------------------------------
 
--- Make all methods and properties of the class available to its objects.
+---@class D3botPATH_POINT
+---@field Navmesh D3botNAV_MESH
+---@field Pos GVector
+---@field Triangle D3botNAV_TRIANGLE @The triangle that the point lies on (or is closest to)
+---@field PathfindingNeighbors table[]
+local PATH_POINT = D3bot.PATH_POINT
 PATH_POINT.__index = PATH_POINT
 
--- Get new instance of a path point object.
--- This is not a point of a path, but a helper point for the start and destination positions of paths.
--- It will implement methods similar to navmesh entities so that it can be used in the pathfinder.
+---Get new instance of a path point object.
+---This is not a point of a path, but a helper point for the start and destination positions of paths.
+---It will implement methods similar to navmesh entities so that it can be used in the pathfinder.
+---@param navmesh D3botNAV_MESH
+---@param pos GVector
+---@return D3botPATH_POINT | nil
+---@return D3botERROR | nil err
 function PATH_POINT:New(navmesh, pos)
-	local obj = {
+	local obj = setmetatable({
 		Navmesh = navmesh,
 		Pos = pos
-	}
+	}, self)
 
 	-- Check if there is even a position
 	if not pos then
@@ -57,9 +65,6 @@ function PATH_POINT:New(navmesh, pos)
 		end
 	end
 
-	-- Instantiate
-	setmetatable(obj, self)
-
 	return obj, nil
 end
 
@@ -67,14 +72,16 @@ end
 --		Methods
 ------------------------------------------------------
 
--- Returns the average of all points that are contained in this geometry, or nil.
+---Returns the average of all points that are contained in this geometry, or nil.
+---@return GVector
 function PATH_POINT:GetCentroid()
 	return self.Pos
 end
 
--- Returns a list of connected neighbor entities that a bot can navigate to.
--- The result is a list of tables that contain the destination entity and some metadata.
--- This is used for pathfinding.
+---Returns a list of connected neighbor entities that a bot can navigate to.
+---The result is a list of tables that contain the destination entity and some metadata.
+---This is used for pathfinding.
+---@return table[]
 function PATH_POINT:GetPathfindingNeighbors()
 	return self.PathfindingNeighbors
 end

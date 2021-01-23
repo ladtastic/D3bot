@@ -27,17 +27,22 @@ matricesRot6Sided[4]:Rotate(Angle(0, 270, 0))
 matricesRot6Sided[5]:Rotate(Angle(90, 0, 0))
 matricesRot6Sided[6]:Rotate(Angle(-90, 0, 0))
 
--- Draws a 3D arrow (pyramid) pointing in positive x direction.
--- The tip is at Vector(0,0,0).
+-- Vertices of an "arrow" pyramid.
 local Draw3DArrowP1, Draw3DArrowP2, Draw3DArrowP3, Draw3DArrowP4, Draw3DArrowP5 = Vector(0,0,0), Vector(-1,1,1), Vector(-1,1,-1), Vector(-1,-1,-1), Vector(-1,-1,1)
+
+---Draws a 3D arrow (pyramid) pointing in positive x direction.
+---The tip is at Vector(0,0,0).
+---@param color GColor
 function RENDER_UTIL.Draw3DArrow(color)
 	render.DrawQuad(Draw3DArrowP1, Draw3DArrowP2, Draw3DArrowP3, Draw3DArrowP4, color)
 	render.DrawQuad(Draw3DArrowP1, Draw3DArrowP4, Draw3DArrowP5, Draw3DArrowP2, color)
 	render.DrawQuad(Draw3DArrowP5, Draw3DArrowP4, Draw3DArrowP3, Draw3DArrowP2, color)
 end
 
--- Draws a spinning 3D cursor.
--- This is basically 6 arrows pointing inwards.
+---Draws a spinning 3D cursor.
+---This is basically 6 arrows pointing inwards.
+---@param colorA GColor
+---@param colorB GColor
 function RENDER_UTIL.Draw3DCursor(colorA, colorB)
 	local omega = CurTime() * math.pi * 2 * 0.5
 
@@ -59,8 +64,12 @@ function RENDER_UTIL.Draw3DCursor(colorA, colorB)
 	cam.PopModelMatrix()
 end
 
--- Draws a spinning 3D cursor at given position.
--- This is basically 6 arrows pointing inwards.
+---Draws a spinning 3D cursor at given position.
+---This is basically 6 arrows pointing inwards.
+---@param pos GVector
+---@param size number
+---@param colorA GColor
+---@param colorB GColor
 function RENDER_UTIL.Draw3DCursorPos(pos, size, colorA, colorB)
 	local omega = CurTime() * math.pi * 2 * 0.5
 

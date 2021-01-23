@@ -1,17 +1,17 @@
 -- Copyright (C) 2020 David Vogel
--- 
+--
 -- This file is part of D3bot.
--- 
+--
 -- D3bot is free software: you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
 -- the Free Software Foundation, either version 3 of the License, or
 -- (at your option) any later version.
--- 
+--
 -- D3bot is distributed in the hope that it will be useful,
 -- but WITHOUT ANY WARRANTY; without even the implied warranty of
 -- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 -- GNU General Public License for more details.
--- 
+--
 -- You should have received a copy of the GNU General Public License
 -- along with D3bot.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -19,12 +19,14 @@
 -- Basically server --> client communication.
 
 local D3bot = D3bot
-local ERROR = D3bot.ERROR
-local NAV_PUBSUB = D3bot.NavPubSub
 local NAV_MAIN = D3bot.NavMain
 local NAV_MESH = D3bot.NAV_MESH
 local NAV_EDGE = D3bot.NAV_EDGE
 local NAV_TRIANGLE = D3bot.NAV_TRIANGLE
+
+---@class D3botNAV_PUBSUB @Static class or just a collection of functions with a global state.
+---@field Subscribers GPlayer[]
+local NAV_PUBSUB = D3bot.NavPubSub
 
 ------------------------------------------------------
 --		Shared
@@ -35,7 +37,9 @@ local NAV_TRIANGLE = D3bot.NAV_TRIANGLE
 ------------------------------------------------------
 
 if SERVER then
-	-- Subscribe the client of the player to navmesh change events.
+	---Subscribe the client of the player to navmesh change events.
+	---@param ply GPlayer
+	---@return boolean
 	function NAV_PUBSUB:SubscribePlayer(ply)
 		self.Subscribers = self.Subscribers or {}
 
@@ -52,8 +56,10 @@ if SERVER then
 		return true
 	end
 
-	-- Unsubscribe the client of the player from navmesh change events.
-	-- Make sure this is called before a player leaves the server.
+	---Unsubscribe the client of the player from navmesh change events.
+	---Make sure this is called before a player leaves the server.
+	---@param ply GPlayer
+	---@return boolean
 	function NAV_PUBSUB:UnsubscribePlayer(ply)
 		if not self.Subscribers then return false end
 
@@ -63,7 +69,9 @@ if SERVER then
 		return true
 	end
 
-	-- Sends the navmesh to all subscribers or to the optional plys parameter which can be a player or a table of players.
+	---Sends the navmesh to all subscribers or to the optional plys parameter which can be a player or a table of players.
+	---@param navmesh D3botNAV_MESH
+	---@param plys GPlayer | GPlayer[]
 	function NAV_PUBSUB:SendNavmeshToSubs(navmesh, plys)
 		plys = plys or self.Subscribers
 		if not plys then return end
@@ -80,7 +88,8 @@ if SERVER then
 	end
 	util.AddNetworkString("D3bot_Nav_PubSub_Navmesh")
 
-	-- Removes the navmeshes from all subscribers or from the optional plys parameter which can be a player or a table of players.
+	---Removes the navmeshes from all subscribers or from the optional plys parameter which can be a player or a table of players.
+	---@param plys GPlayer | GPlayer[]
 	function NAV_PUBSUB:DeleteNavmeshFromSubs(plys)
 		plys = plys or self.Subscribers
 		if not plys then return end
@@ -90,7 +99,8 @@ if SERVER then
 	end
 	util.AddNetworkString("D3bot_Nav_PubSub_NavmeshDelete")
 
-	-- Sends a given edge to all the subscribers.
+	---Sends a given edge to all the subscribers.
+	---@param edge D3botNAV_EDGE
 	function NAV_PUBSUB:SendEdgeToSubs(edge)
 		if not self.Subscribers then return end
 
@@ -100,7 +110,8 @@ if SERVER then
 	end
 	util.AddNetworkString("D3bot_Nav_PubSub_Edge")
 
-	-- Deletes a given edge from all the subscribers.
+	---Deletes a given edge from all the subscribers.
+	---@param id number | string
 	function NAV_PUBSUB:DeleteEdgeFromSubs(id)
 		if not self.Subscribers then return end
 
@@ -110,7 +121,8 @@ if SERVER then
 	end
 	util.AddNetworkString("D3bot_Nav_PubSub_EdgeDelete")
 
-	-- Sends a given triangle to all the subscribers.
+	---Sends a given triangle to all the subscribers.
+	---@param triangle D3botNAV_TRIANGLE
 	function NAV_PUBSUB:SendTriangleToSubs(triangle)
 		if not self.Subscribers then return end
 
@@ -120,7 +132,8 @@ if SERVER then
 	end
 	util.AddNetworkString("D3bot_Nav_PubSub_Triangle")
 
-	-- Deletes a given triangle from all the subscribers.
+	---Deletes a given triangle from all the subscribers.
+	---@param id number | string
 	function NAV_PUBSUB:DeleteTriangleFromSubs(id)
 		if not self.Subscribers then return end
 

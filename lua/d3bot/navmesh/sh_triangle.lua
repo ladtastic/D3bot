@@ -1,51 +1,62 @@
 -- Copyright (C) 2020 David Vogel
--- 
+--
 -- This file is part of D3bot.
--- 
+--
 -- D3bot is free software: you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
 -- the Free Software Foundation, either version 3 of the License, or
 -- (at your option) any later version.
--- 
+--
 -- D3bot is distributed in the hope that it will be useful,
 -- but WITHOUT ANY WARRANTY; without even the implied warranty of
 -- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 -- GNU General Public License for more details.
--- 
+--
 -- You should have received a copy of the GNU General Public License
 -- along with D3bot.  If not, see <http://www.gnu.org/licenses/>.
 
 local D3bot = D3bot
 local UTIL = D3bot.Util
 local ERROR = D3bot.ERROR
-local NAV_TRIANGLE = D3bot.NAV_TRIANGLE
 
 ------------------------------------------------------
 --		Static
 ------------------------------------------------------
 
--- Make all methods and properties of the class available to its objects.
+---@class D3botNAV_TRIANGLE
+---@field Navmesh D3botNAV_MESH
+---@field ID number | string
+---@field Edges D3botNAV_EDGE[]
+---@field FlipNormal boolean
+---@field Cache table @Contains cached values like the normal, the 3 corner points and neighbor triangles. Can be invalidated.
+---@field UI table @General structure for UI related properties like selection status.
+local NAV_TRIANGLE = D3bot.NAV_TRIANGLE
 NAV_TRIANGLE.__index = NAV_TRIANGLE
 
 -- Min height of any triangle.
 NAV_TRIANGLE.MinHeight = 10
 
--- Get new instance of a triangle object.
--- This represents a triangle that is defined by 3 edges that are connected in a loop.
--- If a triangle with the same id already exists, it will be overwritten.
--- It's possible to get invalid triangles, therefore this needs to be checked.
+---Get new instance of a triangle object.
+---This represents a triangle that is defined by 3 edges that are connected in a loop.
+---If a triangle with the same id already exists, it will be overwritten.
+---It's possible to get invalid triangles, therefore this needs to be checked.
+---@param navmesh D3botNAV_MESH
+---@param id number | string
+---@param e1 D3botNAV_EDGE
+---@param e2 D3botNAV_EDGE
+---@param e3 D3botNAV_EDGE
+---@param flipNormal boolean
+---@return D3botNAV_TRIANGLE | nil
+---@return D3botERROR | nil err
 function NAV_TRIANGLE:New(navmesh, id, e1, e2, e3, flipNormal)
-	local obj = {
+	local obj = setmetatable({
 		Navmesh = navmesh,
-		ID = id or navmesh:GetUniqueID(), -- TODO: Convert id to integer if possible
+		ID = id or navmesh:GetUniqueID(),
 		Edges = {e1, e2, e3},
 		FlipNormal = flipNormal,
-		Cache = nil, -- Contains cached values like the normal, the 3 corner points and neighbor triangles. Can be invalidated.
-		UI = {} -- General structure for UI related properties like selection status
-	}
-
-	-- Instantiate
-	setmetatable(obj, self)
+		Cache = nil,
+		UI = {}
+	}, self)
 
 	-- Check if the edges form a triangle shape
 	local trianglePoints, err = UTIL.EdgesToTrianglePoints(obj.Edges)
@@ -105,8 +116,12 @@ function NAV_TRIANGLE:New(navmesh, id, e1, e2, e3, flipNormal)
 	return obj, nil
 end
 
--- Same as NAV_TRIANGLE:New(), but uses table t to restore a previous state that came from MarshalToTable().
--- As it needs a navmesh to find the edges by their reference ID, this should only be called after all the edges have been fully loaded into the navmesh.
+---Same as NAV_TRIANGLE:New(), but uses table t to restore a previous state that came from MarshalToTable().
+---As it needs a navmesh to find the edges by their reference ID, this should only be called after all the edges have been fully loaded into the navmesh.
+---@param navmesh D3botNAV_MESH
+---@param t table
+---@return D3botNAV_TRIANGLE | nil
+---@return D3botERROR | nil err
 function NAV_TRIANGLE:NewFromTable(navmesh, t)
 	local e1 = navmesh:FindEdgeByID(t.Edges[1])
 	local e2 = navmesh:FindEdgeByID(t.Edges[2])
@@ -123,13 +138,15 @@ end
 --		Methods
 ------------------------------------------------------
 
--- Returns the object's ID, which is most likely a number object.
--- It can be anything else, though.
+---Returns the object's ID, which is most likely a number object.
+---It can be anything else, though.
+---@return number | string
 function NAV_TRIANGLE:GetID()
 	return self.ID
 end
 
--- Returns a table that contains all important data of this object.
+---Returns a table that contains all important data of this object.
+---@return table
 function NAV_TRIANGLE:MarshalToTable()
 	local t = {
 		ID = self:GetID(),
@@ -144,7 +161,8 @@ function NAV_TRIANGLE:MarshalToTable()
 	return t -- Make sure that any object returned here is a deep copy of its original
 end
 
--- Get the cached values, if needed this will regenerate the cache.
+---Get the cached values, if needed this will regenerate the cache.
+--@return table
 function NAV_TRIANGLE:GetCache()
 	local cache = self.Cache
 	if cache then return cache end
@@ -215,12 +233,12 @@ function NAV_TRIANGLE:GetCache()
 	return cache
 end
 
--- Invalidate the cache, it will be regenerated on next use.
+---Invalidate the cache, it will be regenerated on next use.
 function NAV_TRIANGLE:InvalidateCache()
 	self.Cache = nil
 end
 
--- Deletes the triangle from the navmesh and makes sure that there is nothing left that references it.
+---Deletes the triangle from the navmesh and makes sure that there is nothing left that references it.
 function NAV_TRIANGLE:Delete()
 	-- Publish change event
 	if self.Navmesh.PubSub then
@@ -230,7 +248,7 @@ function NAV_TRIANGLE:Delete()
 	self:_Delete()
 end
 
--- Internal method.
+---Internal method.
 function NAV_TRIANGLE:_Delete()
 	-- Delete any reference to this triangle from edges
 	for _, edge in ipairs(self.Edges) do
@@ -248,27 +266,34 @@ function NAV_TRIANGLE:_Delete()
 	navmesh.Triangles[self.ID] = nil
 end
 
--- Returns the average of all points that are contained in this geometry, or nil.
+---Returns the average of all points that are contained in this geometry, or nil.
+---@return GVector | nil
 function NAV_TRIANGLE:GetCentroid()
 	local cache = self:GetCache()
 	return cache.Centroid
 end
 
--- Returns a list of connected neighbor entities that a bot can navigate to.
--- The result is a list of tables that contain the destination entity and some metadata.
--- This is used for pathfinding.
+---Returns a list of connected neighbor entities that a bot can navigate to.
+---The result is a list of tables that contain the destination entity and some metadata.
+---This is used for pathfinding.
+---@return table[]
 function NAV_TRIANGLE:GetPathfindingNeighbors()
 	local cache = self:GetCache()
 	return cache.PathfindingNeighbors
 end
 
--- Returns the locomotion type as a string.
+---Returns the locomotion type as a string.
+---@return string
 function NAV_TRIANGLE:GetLocomotionType()
 	local cache = self:GetCache()
 	return cache.LocomotionType
 end
 
--- Returns whether the triangle consists out of the three given edges or not.
+---Returns whether the triangle consists out of the three given edges or not.
+---@param e1 D3botNAV_EDGE
+---@param e2 D3botNAV_EDGE
+---@param e3 D3botNAV_EDGE
+---@return boolean
 function NAV_TRIANGLE:ConsistsOfEdges(e1, e2, e3)
 	local se1, se2, se3 = self.Edges[1], self.Edges[2], self.Edges[3]
 	-- There is probably a nicer way to do this, but it doesn't need to be that fast.
@@ -283,10 +308,12 @@ function NAV_TRIANGLE:ConsistsOfEdges(e1, e2, e3)
 	return false
 end
 
--- Returns the winding order/direction relative to the given edge.
--- true: Winding direction is aligned with the edge.
--- false: Winding direction is aligned against the edge.
--- nil: Otherwise.
+---Returns the winding order/direction relative to the given edge.
+---true: Winding direction is aligned with the edge.
+---false: Winding direction is aligned against the edge.
+---nil: Otherwise.
+---@param edge D3botNAV_EDGE
+---@return boolean | nil
 function NAV_TRIANGLE:WindingOrderToEdge(edge)
 	local cache = self:GetCache()
 	if not cache.IsValid then return nil end
@@ -306,9 +333,9 @@ function NAV_TRIANGLE:WindingOrderToEdge(edge)
 	return nil
 end
 
--- Calculates and changes the triangle's new FlipNormal state.
--- This is determined by its neighbor triangles.
--- If the neighbor give a conflicting answer, the normal will be pointing upwards.
+---Calculates and changes the triangle's new FlipNormal state.
+---This is determined by its neighbor triangles.
+---If the neighbor give a conflicting answer, the normal will be pointing upwards.
 function NAV_TRIANGLE:RecalcFlipNormal()
 	local cache = self:GetCache()
 
@@ -338,7 +365,8 @@ function NAV_TRIANGLE:RecalcFlipNormal()
 	end
 end
 
--- Changes and publishes the FlipNormal state.
+---Changes and publishes the FlipNormal state.
+---@param state boolean
 function NAV_TRIANGLE:SetFlipNormal(state)
 	local navmesh = self.Navmesh
 
@@ -357,7 +385,9 @@ function NAV_TRIANGLE:SetFlipNormal(state)
 	end
 end
 
--- Returns the closest point to the given point p.
+---Returns the closest point to the given point p.
+---@param p GVector
+---@return GVector
 function NAV_TRIANGLE:GetClosestPointToPoint(p)
 	local cache = self:GetCache()
 	if not cache.IsValid then return nil end
@@ -375,15 +405,20 @@ function NAV_TRIANGLE:GetClosestPointToPoint(p)
 	return p1 * u + p2 * v + p3 * w
 end
 
--- Returns the closest distance to the given point p.
+---Returns the closest squared distance to the given point p.
+---@param p GVector
+---@return number
 function NAV_TRIANGLE:GetClosestDistanceSqr(p)
 	local selfP = self:GetClosestPointToPoint(p)
 	return (selfP - p):LengthSqr()
 end
 
--- Returns whether a ray from the given origin in the given direction dir intersects with the triangle.
--- The result is either nil or the distance from the origin as a fraction of dir length.
--- This will not return anything behind the origin, or beyond the length of dir.
+---Returns whether a ray from the given origin in the given direction dir intersects with the triangle.
+---The result is either nil or the distance from the origin as a fraction of dir length.
+---This will not return anything behind the origin, or beyond the length of dir.
+---@param origin GVector @Ray origin.
+---@param dir GVector @Ray direction.
+---@return number | nil distance
 function NAV_TRIANGLE:IntersectsRay(origin, dir)
 	local cache = self:GetCache()
 	if not cache.IsValid then return nil end
@@ -410,7 +445,7 @@ function NAV_TRIANGLE:IntersectsRay(origin, dir)
 	return d
 end
 
--- Draw the edge into a 3D rendering context.
+---Draw the edge into a 3D rendering context.
 function NAV_TRIANGLE:Render3D()
 	local cache = self:GetCache()
 	local ui = self.UI
@@ -435,7 +470,8 @@ function NAV_TRIANGLE:Render3D()
 	end
 end
 
--- Define metamethod for string conversion.
+---Define metamethod for string conversion.
+---@return string
 function NAV_TRIANGLE:__tostring()
 	return string.format("{Triangle %s}", self:GetID())
 end

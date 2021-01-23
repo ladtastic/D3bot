@@ -17,7 +17,6 @@
 
 local D3bot = D3bot
 local ERROR = D3bot.ERROR
-local PATH = D3bot.PATH
 local PATH_POINT = D3bot.PATH_POINT
 local PRIORITY_QUEUE = D3bot.PRIORITY_QUEUE
 
@@ -25,21 +24,26 @@ local PRIORITY_QUEUE = D3bot.PRIORITY_QUEUE
 --		Static
 ------------------------------------------------------
 
--- Make all methods and properties of the class available to its objects.
+---@class D3botPATH
+---@field Navmesh D3botNAV_MESH
+---@field Abilities table<string, table> @Maps navmesh locomotion types (keys) to locomotion handlers (values)
+---@field Path table[] @Queue of path elements in reverse order (current element is last in the list)
+local PATH = D3bot.PATH
 PATH.__index = PATH
 
--- Get new instance of a path object.
--- abilities is a table that maps navmesh locomotion types (keys) to locomotion handlers (values)
--- This contains a path as a series of points with some metadata (E.g. what navmesh triangle this points to, the navmesh connection entity it uses (NAV_EDGE, ...)).
+---Get new instance of a path object.
+---abilities is a table that maps navmesh locomotion types (keys) to locomotion handlers (values)
+---This contains a path as a series of points with some metadata (E.g. what navmesh triangle this points to, the navmesh connection entity it uses (NAV_EDGE, ...)).
+---@param navmesh D3botNAV_MESH
+---@param abilities table<string, table>
+---@return D3botPATH | nil
+---@return D3botERROR | nil err
 function PATH:New(navmesh, abilities)
-	local obj = {
+	local obj = setmetatable({
 		Navmesh = navmesh,
-		Abilities = abilities, -- Maps navmesh locomotion types (keys) to locomotion handlers (values)
-		Path = {} -- Queue of path elements in reverse order (current element is last in the list)
-	}
-
-	-- Instantiate
-	setmetatable(obj, self)
+		Abilities = abilities,
+		Path = {}
+	}, self)
 
 	return obj, nil
 end
@@ -48,8 +52,11 @@ end
 --		Methods
 ------------------------------------------------------
 
--- Generates a path from startPoint to destPoint PATH_POINT objects.
--- The actual pathfinding is mostly based on edges, not triangles.
+---Generates a path from startPoint to destPoint PATH_POINT objects.
+---The actual pathfinding is mostly based on edges, not triangles.
+---@param startPoint D3botPATH_POINT
+---@param destPoint D3botPATH_POINT
+---@return D3botERROR | nil err
 function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 	-- See: https://en.wikipedia.org/wiki/A*_search_algorithm
 
@@ -105,7 +112,7 @@ function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 
 	-- Add start point to open list
 	enqueueEntity(startPoint, 0, nil, startPoint.Triangle, startPos)
-	
+
 	-- As search is edge based, store edges where the destPoint has to be injected to the "neighbors" list
 	local destTriangle = destPoint.Triangle
 	local endE1, endE2, endE3 = destTriangle.Edges[1], destTriangle.Edges[2], destTriangle.Edges[3]
@@ -178,8 +185,11 @@ function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 	return ERROR:New("Couldn't find a path from %s to %s", startPoint, destPoint)
 end
 
--- Generates a path to the given vector destPos or updates an already existing path.
--- This tries to recalculate as few things as possible.
+---Generates a path to the given vector destPos or updates an already existing path.
+---This tries to recalculate as few things as possible.
+---@param startPos GVector
+---@param destPos GVector
+---@return D3botERROR | nil err
 function PATH:UpdatePathToPos(startPos, destPos)
 	local navmesh = self.Navmesh
 
@@ -197,10 +207,10 @@ function PATH:UpdatePathToPos(startPos, destPos)
 	local destPoint, err = PATH_POINT:New(navmesh, destPos)
 	if err then return err end
 
-	self:GeneratePathBetweenPoints(startPoint, destPoint)
+	return self:GeneratePathBetweenPoints(startPoint, destPoint)
 end
 
--- Draw the path into a 3D rendering context.
+---Draw the path into a 3D rendering context.
 function PATH:Render3D()
 	render.SetColorMaterialIgnoreZ()
 	cam.IgnoreZ(true)

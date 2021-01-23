@@ -1,30 +1,36 @@
 -- Copyright (C) 2020 David Vogel
--- 
+--
 -- This file is part of D3bot.
--- 
+--
 -- D3bot is free software: you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
 -- the Free Software Foundation, either version 3 of the License, or
 -- (at your option) any later version.
--- 
+--
 -- D3bot is distributed in the hope that it will be useful,
 -- but WITHOUT ANY WARRANTY; without even the implied warranty of
 -- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 -- GNU General Public License for more details.
--- 
+--
 -- You should have received a copy of the GNU General Public License
 -- along with D3bot.  If not, see <http://www.gnu.org/licenses/>.
 
 local D3bot = D3bot
 local UTIL = D3bot.Util
 local ERROR = D3bot.ERROR
-local NAV_EDGE = D3bot.NAV_EDGE
 
 ------------------------------------------------------
 --		Static
 ------------------------------------------------------
 
--- Make all methods and properties of the class available to its objects.
+---@class D3botNAV_EDGE
+---@field Navmesh D3botNAV_MESH
+---@field ID number | string
+---@field Points GVector[]
+---@field Triangles D3botNAV_TRIANGLE[] @This points to triangles that this edge is part of. There should be at most 2 triangles.
+---@field Cache table @Contains connected neighbor edges and other cached values.
+---@field UI table @General structure for UI related properties like selection status
+local NAV_EDGE = D3bot.NAV_EDGE
 NAV_EDGE.__index = NAV_EDGE
 
 -- Radius of the edge used for drawing and mouse click tracing.
@@ -33,21 +39,25 @@ NAV_EDGE.DisplayRadius = 5
 -- Min length of any edge.
 NAV_EDGE.MinLength = 10
 
--- Get new instance of an edge object with the two given points.
--- This represents an edge that is defined with two points.
--- If an edge with the same id already exists, it will be overwritten.
--- The point coordinates will be rounded to a single engine unit.
+---Get new instance of an edge object with the two given points.
+---This represents an edge that is defined with two points.
+---If an edge with the same id already exists, it will be overwritten.
+---The point coordinates will be rounded to a single engine unit.
+---@param navmesh D3botNAV_MESH
+---@param id number | string
+---@param p1 GVector
+---@param p2 GVector
+---@return D3botNAV_EDGE | nil
+---@return D3botERROR | nil err
 function NAV_EDGE:New(navmesh, id, p1, p2)
-	local obj = {
+	local obj = setmetatable({
 		Navmesh = navmesh,
-		ID = id or navmesh:GetUniqueID(), -- TODO: Convert id to integer if possible
+		ID = id or navmesh:GetUniqueID(),
 		Points = {UTIL.RoundVector(p1), UTIL.RoundVector(p2)},
-		Triangles = {}, -- This points to triangles that this edge is part of. There should be at most 2 triangles.
-		UI = {} -- General structure for UI related properties like selection status
-	}
-
-	-- Instantiate
-	setmetatable(obj, self)
+		Triangles = {},
+		Cache = nil,
+		UI = {}
+	}, self)
 
 	-- Make sure that length is >= self.MinLength
 	local length = (p2-p1):Length()
@@ -88,7 +98,11 @@ function NAV_EDGE:New(navmesh, id, p1, p2)
 	return obj, nil
 end
 
--- Same as NAV_EDGE:New(), but uses table t to restore a previous state that came from MarshalToTable().
+---Same as NAV_EDGE:New(), but uses table t to restore a previous state that came from MarshalToTable().
+---@param navmesh D3botNAV_MESH
+---@param t table
+---@return D3botNAV_EDGE | nil
+---@return D3botERROR | nil err
 function NAV_EDGE:NewFromTable(navmesh, t)
 	local obj, err = self:New(navmesh, t.ID, t.Points[1], t.Points[2])
 	return obj, err
@@ -98,13 +112,15 @@ end
 --		Methods
 ------------------------------------------------------
 
--- Returns the object's ID, which is most likely a number object.
--- It can be anything else, though.
+---Returns the object's ID, which is most likely a number object.
+---It can be anything else, though.
+---@return number | string
 function NAV_EDGE:GetID()
 	return self.ID
 end
 
--- Returns a table that contains all important data of this object.
+---Returns a table that contains all important data of this object.
+---@return table
 function NAV_EDGE:MarshalToTable()
 	local t = {
 		ID = self:GetID(),
@@ -117,7 +133,8 @@ function NAV_EDGE:MarshalToTable()
 	return t -- Make sure that any object returned here is a deep copy of its original
 end
 
--- Get the cached values, if needed this will regenerate the cache.
+---Get the cached values, if needed this will regenerate the cache.
+--@return table
 function NAV_EDGE:GetCache()
 	local cache = self.Cache
 	if cache then return cache end
@@ -130,7 +147,8 @@ function NAV_EDGE:GetCache()
 	-- Changing this to false will not cause the cache to be rebuilt.
 	cache.IsValid = true
 
-	-- Calculate center
+	---Calculate center
+	---@type GVector
 	cache.Center = (self.Points[1] + self.Points[2]) / 2
 
 	-- Get connected "neighbor" edges that can be accessed either via triangles or similar navmesh entities.
@@ -157,12 +175,12 @@ function NAV_EDGE:GetCache()
 	return cache
 end
 
--- Invalidate the cache, it will be regenerated on next use.
+---Invalidate the cache, it will be regenerated on next use.
 function NAV_EDGE:InvalidateCache()
 	self.Cache = nil
 end
 
--- Deletes the edge from the navmesh and makes sure that there is nothing left that references it.
+---Deletes the edge from the navmesh and makes sure that there is nothing left that references it.
 function NAV_EDGE:Delete()
 	-- Publish change event
 	if self.Navmesh.PubSub then
@@ -172,7 +190,7 @@ function NAV_EDGE:Delete()
 	return self:_Delete()
 end
 
--- Internal method.
+---Internal method.
 function NAV_EDGE:_Delete()
 	-- Delete the (one or two) triangles that use this edge
 	for _, triangle in ipairs(self.Triangles) do
@@ -183,30 +201,35 @@ function NAV_EDGE:_Delete()
 	self.Navmesh = nil
 end
 
--- Internal method: Deletes the edge, if there is nothing that references it.
--- Only call GC from the server side and let it sync the result to all clients.
+---Internal method: Deletes the edge, if there is nothing that references it.
+---Only call GC from the server side and let it sync the result to all clients.
 function NAV_EDGE:_GC()
 	if #self.Triangles == 0 then
 		self:Delete()
 	end
 end
 
--- Returns the average of all points that are contained in this geometry, or nil.
+---Returns the average of all points that are contained in this geometry, or nil.
+---@return GVector
 function NAV_EDGE:GetCentroid()
 	local cache = self:GetCache()
 	return cache.Center
 end
 
--- Returns a list of connected neighbor entities that a bot can navigate to.
--- The result is a list of tables that contain the destination entity and some metadata.
--- This is used for pathfinding.
+---Returns a list of connected neighbor entities that a bot can navigate to.
+---The result is a list of tables that contain the destination entity and some metadata.
+---This is used for pathfinding.
+---@return any[]
 function NAV_EDGE:GetPathfindingNeighbors()
 	local cache = self:GetCache()
 	return cache.PathfindingNeighbors
 end
 
--- Returns whether the edge consists out of the two given points or not.
--- The point coordinates will be rounded to a single engine unit.
+---Returns whether the edge consists out of the two given points or not.
+---The point coordinates will be rounded to a single engine unit.
+---@param p1 GVector
+---@param p2 GVector
+---@return boolean
 function NAV_EDGE:ConsistsOfPoints(p1, p2)
 	p1, p2 = UTIL.RoundVector(p1), UTIL.RoundVector(p2)
 	if self.Points[1] == p1 and self.Points[2] == p2 then return true end
@@ -214,10 +237,12 @@ function NAV_EDGE:ConsistsOfPoints(p1, p2)
 	return false
 end
 
--- Returns the closest points to the given line defined by its origin and the direction dir.
--- The first returned point lies on the element itself.
--- The second returned point lies on the given line.
--- The length of dir has no influence on the result.
+---Returns the closest points to the given line defined by its origin and the direction dir.
+---The length of dir has no influence on the result.
+---@param origin GVector @Origin of the line or ray.
+---@param dir GVector @Direction of the line or ray.
+---@return GVector edgePoint @Closest point on the edge itself.
+---@return GVector rayPoint @Closest point on the ray.
 function NAV_EDGE:GetClosestPointToLine(origin, dir)
 	-- See: http://geomalgorithms.com/a07-_distance.html
 
@@ -239,9 +264,11 @@ function NAV_EDGE:GetClosestPointToLine(origin, dir)
 	return p1 + u * scClamped, origin + dir * tc
 end
 
--- Returns whether a ray from the given origin in the given direction dir intersects with the edge.
--- The result is either nil or the distance from the origin as a fraction of dir length.
--- This will not return anything behind the origin, or beyond the length of dir.
+---Returns whether a ray from the given origin in the given direction dir intersects with the edge.
+---This will not return anything behind the origin, or beyond the length of dir.
+---@param origin GVector @Origin of the line or ray.
+---@param dir GVector @Direction of the line or ray.
+---@return number | nil dist @Distance from the origin as a fraction of dir length.
 function NAV_EDGE:IntersectsRay(origin, dir)
 	-- See: http://geomalgorithms.com/a07-_distance.html
 
@@ -284,7 +311,7 @@ function NAV_EDGE:IntersectsRay(origin, dir)
 	return d
 end
 
--- Draw the edge into a 3D rendering context.
+---Draw the edge into a 3D rendering context.
 function NAV_EDGE:Render3D()
 	local ui = self.UI
 	local p1, p2 = self.Points[1], self.Points[2]
@@ -300,7 +327,8 @@ function NAV_EDGE:Render3D()
 	end
 end
 
--- Define metamethod for string conversion.
+---Define metamethod for string conversion.
+---@return string
 function NAV_EDGE:__tostring()
 	return string.format("{Edge %s}", self:GetID())
 end
