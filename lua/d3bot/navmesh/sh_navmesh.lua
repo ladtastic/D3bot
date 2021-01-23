@@ -30,9 +30,12 @@ local NAV_TRIANGLE = D3bot.NAV_TRIANGLE
 -- Make all methods and properties of the class available to its objects.
 NAV_MESH.__index = NAV_MESH
 
--- Get new instance of a navmesh container object.
--- This contains edges and triangles of a navmesh and provides methods for locating and path finding.
+---Get new instance of a navmesh container object.
+---This contains edges and triangles of a navmesh and provides methods for locating and path finding.
+---@return D3botNAV_MESH
+---@return D3botERROR err
 function NAV_MESH:New()
+	---@class D3botNAV_MESH
 	local obj = {
 		Edges = {},
 		Triangles = {},
@@ -47,6 +50,9 @@ function NAV_MESH:New()
 end
 
 -- Same as NAV_MESH:New(), but uses table t to restore a previous state that came from MarshalToTable().
+---@param t table
+---@return D3botNAV_MESH
+---@return D3botERROR err
 function NAV_MESH:NewFromTable(t)
 	local obj = self:New()
 

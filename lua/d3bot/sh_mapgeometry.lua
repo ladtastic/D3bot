@@ -17,7 +17,7 @@
 
 local D3bot = D3bot
 local UTIL = D3bot.Util
-local MAPGEOMETRY = D3bot.MapGeometry
+local MAPGEOMETRY = D3bot.MapGeometry ---@class D3botMAPGEOMETRY
 
 function MAPGEOMETRY:GetCache()
 	local cache = self.Cache

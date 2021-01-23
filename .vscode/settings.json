@@ -43,11 +43,13 @@
         "renderutil",
         "reseteditmode",
         "savemesh",
+        "stackoverflow",
         "stronk",
         "succ",
         "texwide",
         "toolgun",
         "toolmode",
+        "vararg",
         "viewscreen",
         "zculling"
     ],

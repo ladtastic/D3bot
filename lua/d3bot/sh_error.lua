@@ -27,11 +27,15 @@ local ERROR = D3bot.ERROR
 -- Make all methods and properties of the class available to its objects.
 ERROR.__index = ERROR
 
--- Get new instance of an error object with the given formatted message.
+---Get new instance of an error object with the given formatted message.
+---@param format string
+--@vararg any
+---@return D3botERROR err
 function ERROR:New(format, ...)
 	local params = {...}
 	local message = string.format(format, unpack(params))
 
+	---@class D3botERROR
 	local obj = {
 		Message = message,
 	}
@@ -46,12 +50,14 @@ end
 --		Methods
 ------------------------------------------------------
 
--- Return the error message as string.
+---Return the error message as string.
+---@return string
 function ERROR:Error()
 	return self.Message
 end
 
--- Define metamethod for string conversion.
+---Define metamethod for string conversion.
+---@return string
 function ERROR:__tostring()
 	return self:Error()
 end
