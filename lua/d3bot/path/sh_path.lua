@@ -21,18 +21,33 @@ local PATH_POINT = D3bot.PATH_POINT
 local PRIORITY_QUEUE = D3bot.PRIORITY_QUEUE
 
 ------------------------------------------------------
+--		"Structures"
+------------------------------------------------------
+
+---@class D3botPATH_NEIGHBOR @Basically a predefined path fragment that is cached in navmesh objects. This enables the pathfinder to iterate over navmesh objects, and build paths. A list of these is returned by GetPathfindingNeighbors methods.
+---@field From table @Edge or similar navmesh object.
+---@field FromPos GVector @Centroid of From.
+---@field Via table @Triangle or similar navmesh object.
+---@field To table @Edge or similar navmesh object.
+---@field ToPos GVector @Centroid of To.
+---@field LocomotionType string @Locomotion type.
+---@field PathDirection GVector @Vector from start position to dest position.
+---@field Distance number @Distance from start to dest.
+---@field OrthogonalOutside GVector @Vector for the end condition of this path element. It should point outside of triangle edges or similar things
+
+------------------------------------------------------
 --		Static
 ------------------------------------------------------
 
 ---@class D3botPATH
 ---@field Navmesh D3botNAV_MESH
----@field Abilities table<string, table> @Maps navmesh locomotion types (keys) to locomotion handlers (values)
----@field Path table[] @Queue of path elements in reverse order (current element is last in the list)
+---@field Abilities table<string, table> @Maps navmesh locomotion types (keys) to locomotion handlers (values).
+---@field Path table[] @Queue of path elements in reverse order (current element is last in the list).
 local PATH = D3bot.PATH
 PATH.__index = PATH
 
 ---Get new instance of a path object.
----abilities is a table that maps navmesh locomotion types (keys) to locomotion handlers (values)
+---abilities is a table that maps navmesh locomotion types (keys) to locomotion handlers (values).
 ---This contains a path as a series of points with some metadata (E.g. what navmesh triangle this points to, the navmesh connection entity it uses (NAV_EDGE, ...)).
 ---@param navmesh D3botNAV_MESH
 ---@param abilities table<string, table>
@@ -60,30 +75,38 @@ end
 function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 	-- See: https://en.wikipedia.org/wiki/A*_search_algorithm
 
-	-- Reset current path
+	-- Reset current path.
 	self.Path = {}
 
-	-- Define some variables for optimization
+	-- Define some variables for optimization.
 	local navmesh = self.Navmesh
 	local abilities = self.Abilities
 	local startPos, destPos = startPoint:GetCentroid(), destPoint:GetCentroid()
 
-	-- Data structures for pathfinding
-	local entityData = {} -- Contains scores and other information about visited navmesh entities
-	local closedList = {} -- List of entities that have been expanded
-	local openList = PRIORITY_QUEUE:New() -- List of entities that have to be expanded
+	-- Data structures for pathfinding.
+	local entityData = {} -- Contains scores and other information about visited navmesh entities.
+	local closedList = {} -- List of entities that have been expanded.
+	local openList = PRIORITY_QUEUE:New() -- List of entities that have to be expanded.
 
-	-- Function to build a path from the generated data
+	---Function to build a path from the generated data.
+	---@param entity any
+	---@return D3botERROR | nil
 	local function reconstructPath(entity)
-		-- Iterate from the found destination to the start entity and push path to pathElements
-		local entity = entity
+		local iterCounter = 0
+
+		-- Iterate from the found destination to the start entity and push path to pathElements.
 		while entity do
+			-- Debug end condition
+			if iterCounter > 10000 then return ERROR:New("Maximum amount of iterations in path reconstructions exceeded") end
+			iterCounter = iterCounter + 1
+
 			local entityInfo = entityData[entity]
+			if not entityInfo.From then break end
+			local pathFragment = entityInfo.NeighborTable
 
 			local pathElement = {
-				Pos = entity:GetCentroid(),
-				Via = entityInfo.Via,
-				LocomotionHandler = abilities[entityInfo.Via:GetLocomotionType()]
+				PathFragment = pathFragment,
+				LocomotionHandler = abilities[pathFragment.LocomotionType]
 			}
 			table.insert(self.Path, pathElement)
 
@@ -99,27 +122,36 @@ function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 		return (destPos-pos):Length()
 	end
 
-	-- Helper function for adding navmesh entities to the open list
-	local function enqueueEntity(entity, tentative_gScore, from, via, toPos)
-		local fScore = tentative_gScore + heuristic(toPos) -- Best guess as to how cheap a path can be that goes through this entity
-		entityData[entity] = {
-			GScore = tentative_gScore, -- The cheapest path from start to this entity
-			From = from, -- The previous entity
-			Via = via -- The navmesh entity that connects the previous and current entity
+	---Helper function for adding navmesh entities to the open list.
+	---@param neighbor D3botPATH_NEIGHBOR
+	---@param tentative_gScore number
+	local function enqueueEntity(neighbor, tentative_gScore)
+		local fScore = tentative_gScore + heuristic(neighbor.ToPos) -- Best guess as to how cheap a path can be that goes through this entity.
+		entityData[neighbor.To] = {
+			GScore = tentative_gScore, -- The cheapest path from start to this entity.
+			From = neighbor.From, -- The previous entity.
+			Via = neighbor.Via, -- The navmesh entity that connects the previous and current entity.
+			NeighborTable = neighbor -- Store the full neighbor metadata (aka path fragment) table for later use.
 		}
-		openList:Enqueue(entity, fScore)
+		openList:Enqueue(neighbor.To, fScore)
 	end
 
-	-- Add start point to open list
-	enqueueEntity(startPoint, 0, nil, startPoint.Triangle, startPos)
+	-- Add start point to open list.
+	enqueueEntity({To = startPoint, ToPos = startPos, Via = startPoint.Triangle}, 0)
 
-	-- As search is edge based, store edges where the destPoint has to be injected to the "neighbors" list
+	-- As search is edge based, store edges where the destPoint has to be injected to the "neighbors" list.
 	local destTriangle = destPoint.Triangle
 	local endE1, endE2, endE3 = destTriangle.Edges[1], destTriangle.Edges[2], destTriangle.Edges[3]
 
-	-- Get next entity from queue and expand it
+	local iterCounter = 0
+
+	-- Get next entity from queue and expand it.
 	for entity in openList.Dequeue, openList do
-		-- Add to closed list
+		-- Debug end condition
+		if iterCounter > 10000 then return ERROR:New("Maximum amount of iterations in pathfinding exceeded") end
+		iterCounter = iterCounter + 1
+
+		-- Add to closed list.
 		closedList[entity] = true
 
 		-- End condition: Found destPoint.
@@ -127,52 +159,53 @@ function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 			return reconstructPath(entity)
 		end
 
-		-- Store some variables of this entity for later use
+		-- Store some variables of this entity for later use.
 		local entityInfo = entityData[entity]
 		local gScore = entityInfo.GScore
 		local entityPos = entity:GetCentroid()
 
-		-- Get list of neighbor navmesh entities
+		---Get list of neighbor navmesh entities.
+		---@type D3botPATH_NEIGHBOR[]
 		local neighbors = entity:GetPathfindingNeighbors()
 
-		-- If we are at the edge of our destination triangle, inject destPoint into neighbor list
+		-- If we are at the edge of our destination triangle, inject destPoint into temporary neighbors list.
 		if entity == endE1 or entity == endE2 or entity == endE3 then
-			neighbors = table.Add({{Entity = destPoint, Via = destPoint.Triangle, Distance = (destPos - entityPos):Length()}}, neighbors)
+			local neighbor = destPoint:GetPathfindingNeighborForInjection(entity, entityPos)
+			neighbors = table.Add({neighbor}, neighbors)
 		end
 
-		-- Iterate over neighbor entities
+		---Iterate over neighbor entities.
+		---@type D3botPATH_NEIGHBOR
 		for _, neighbor in ipairs(neighbors) do
-			local neighborEntity, via, distance = neighbor.Entity, neighbor.Via, neighbor.Distance
+			local neighborEntity = neighbor.To
 
 			-- Check if neighbor is in the closed list, if so it's already optimal.
 			-- This check must be removed if the heuristic is changed to an "admissible heuristic".
 			if not closedList[neighborEntity] then
 
-				-- Get locomotion type and handler.
-				-- Via may be a triangle or some other similar navmesh entity.
-				local locomotionHandler = abilities[via:GetLocomotionType()]
+				-- Get locomotion handler.
+				local locomotionHandler = abilities[neighbor.LocomotionType]
 
-				-- Check if there is a locomotion handler ("Does the bot know how to navigate on this navmesh entity?")
+				-- Check if there is a locomotion handler ("Does the bot know how to navigate on this navmesh entity?").
 				if locomotionHandler then
-					local neighborEntityPos = neighborEntity:GetCentroid()
 
-					-- And check if the bot is able to walk to the next entity
-					if not locomotionHandler.CanNavigate or locomotionHandler:CanNavigate(entity, via, neighborEntity, entityData) then
+					-- And check if the bot is able to walk to the next entity.
+					if not locomotionHandler.CanNavigate or locomotionHandler:CanNavigate(neighbor, entityData) then
 
-						-- Calculate gScore for the neighbor entity
+						-- Calculate gScore for the neighbor entity.
 						local tentative_gScore
 						if locomotionHandler.CostOverride then
-							tentative_gScore = gScore + locomotionHandler:CostOverride(entityPos, neighborEntityPos)
+							tentative_gScore = gScore + locomotionHandler:CostOverride(neighbor)
 						else
-							tentative_gScore = gScore + distance
+							tentative_gScore = gScore + neighbor.Distance
 						end
 
-						-- Check if the gScore is better than the previous score
+						-- Check if the gScore is better than the previous score.
 						local neighborEntityInfo = entityData[neighborEntity]
 						if tentative_gScore < (neighborEntityInfo and neighborEntityInfo.GScore or math.huge) then
 
-							-- Enqueue neighbor entity
-							enqueueEntity(neighborEntity, tentative_gScore, entity, via, neighborEntityPos)
+							-- Enqueue neighbor entity.
+							enqueueEntity(neighbor, tentative_gScore)
 
 						end
 					end
@@ -215,15 +248,10 @@ function PATH:Render3D()
 	render.SetColorMaterialIgnoreZ()
 	cam.IgnoreZ(true)
 
-	local oldPos
 	for _, pathElement in pairs(self.Path) do
-		local pos = pathElement.Pos
-
-		if pos and oldPos then
-			render.DrawBeam(pos, oldPos, 5, 0, 1, Color(0, 0, 255, 255))
-		end
-
-		oldPos = pos
+		local locomotionHandler = pathElement.LocomotionHandler
+		-- Let the locomotion handler render the path element.
+		locomotionHandler:Render3D(pathElement)
 	end
 
 	cam.IgnoreZ(false)

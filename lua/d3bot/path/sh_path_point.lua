@@ -55,13 +55,31 @@ function PATH_POINT:New(navmesh, pos)
 		return nil, ERROR:New("Can't find closest triangle for point %s", pos)
 	end
 
+	-- Triangle normal
+	local triangleNormal = obj.Triangle:GetCache().Normal
+
 	-- Get all edges that can be navigated to from this point and that have more than 1 triangle or similar navmesh entities connected to them.
 	-- This will be used for pathfinding.
 	obj.PathfindingNeighbors = {}
 	for _, edge in ipairs(obj.Triangle.Edges) do
 		if #edge.Triangles > 1 then
 			local edgeCenter = (edge.Points[1] + edge.Points[2]) / 2
-			table.insert(obj.PathfindingNeighbors, {Entity = edge, Via = obj.Triangle, Distance = (edgeCenter - pos):Length()})
+			local edgeVector = edge.Points[2] - edge.Points[1]
+			local edgeOrthogonal = triangleNormal:Cross(edgeVector) -- Vector that is orthogonal to the edge and parallel to the triangle plane.
+			local pathDirection = edgeCenter - pos -- Basically the walking direction.
+			---@type D3botPATH_NEIGHBOR
+			local neighbor = {
+				From = obj,
+				FromPos = pos,
+				Via = obj.Triangle,
+				To = edge,
+				ToPos = edge:GetCentroid(),
+				LocomotionType = obj.Triangle:GetLocomotionType(),
+				PathDirection = pathDirection, -- Vector from start position to dest position.
+				Distance = pathDirection:Length(), -- Distance from start to dest.
+				OrthogonalOutside = (edgeOrthogonal * (edgeOrthogonal:Dot(pathDirection))):GetNormalized() -- Vector for path end condition that is orthogonal to the edge and parallel to the triangle plane, additionally it always points outside the triangle.
+			}
+			table.insert(obj.PathfindingNeighbors, neighbor)
 		end
 	end
 
@@ -81,7 +99,35 @@ end
 ---Returns a list of connected neighbor entities that a bot can navigate to.
 ---The result is a list of tables that contain the destination entity and some metadata.
 ---This is used for pathfinding.
----@return table[]
+---@return D3botPATH_NEIGHBOR[]
 function PATH_POINT:GetPathfindingNeighbors()
 	return self.PathfindingNeighbors
+end
+
+---Returns a single path fragment that can be injected into the "PathfindingNeighbors" list in the pathfinding routine.
+---This is basically the path fragment from any edge ("from") of the destination triangle to the PATH_POINT itself.
+---@param from table
+---@param fromPos GVector
+---@return D3botPATH_NEIGHBOR
+function PATH_POINT:GetPathfindingNeighborForInjection(from, fromPos)
+	local pathDirection = self.Pos - fromPos -- Basically the walking direction.
+	---@type D3botPATH_NEIGHBOR
+	local neighbor = {
+		From = from,
+		FromPos = fromPos,
+		Via = self.Triangle,
+		To = self,
+		ToPos = self.Pos,
+		LocomotionType = self.Triangle:GetLocomotionType(),
+		PathDirection = pathDirection, -- Vector from start position to dest position.
+		Distance = pathDirection:Length(), -- Distance from start to dest.
+		OrthogonalOutside = pathDirection:GetNormalized() -- Vector for the end condition of this path element.
+	}
+	return neighbor
+end
+
+---Define metamethod for string conversion.
+---@return string
+function PATH_POINT:__tostring()
+	return string.format("{Path point %s}", self.Pos)
 end

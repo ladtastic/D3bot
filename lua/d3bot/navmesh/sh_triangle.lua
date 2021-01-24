@@ -206,6 +206,8 @@ function NAV_TRIANGLE:GetCache()
 	-- Calculate "centroid" center
 	if cache.IsValid then
 		cache.Centroid = (points[1] + points[2] + points[3]) / 3
+	else
+		cache.Centroid = Vector(0, 0, 0)
 	end
 
 	-- Determine locomotion type (Hardcoded locomotion types)
@@ -223,10 +225,27 @@ function NAV_TRIANGLE:GetCache()
 	-- Use triangle centroid as starting point.
 	-- This will be used for pathfinding.
 	cache.PathfindingNeighbors = {}
-	for _, edge in ipairs(self.Edges) do
-		if #edge.Triangles > 1 then
-			local edgeCenter = (edge.Points[1] + edge.Points[2]) / 2
-			table.insert(cache.PathfindingNeighbors, {Entity = edge, Via = self, Distance = (edgeCenter - cache.Centroid):Length()})
+	if cache.IsValid then
+		for _, edge in ipairs(self.Edges) do
+			if #edge.Triangles > 1 then
+				local edgeCenter = (edge.Points[1] + edge.Points[2]) / 2
+				local edgeVector = edge.Points[2] - edge.Points[1]
+				local edgeOrthogonal = cache.Normal:Cross(edgeVector) -- Vector that is orthogonal to the edge and parallel to the triangle plane.
+				local pathDirection = edgeCenter - cache.Centroid -- Basically the walking direction.
+				---@type D3botPATH_NEIGHBOR
+				local neighbor = {
+					From = self,
+					FromPos = cache.Centroid,
+					Via = self,
+					To = edge,
+					ToPos = edge:GetCentroid(),
+					LocomotionType = cache.LocomotionType,
+					PathDirection = pathDirection, -- Vector from start position to dest position.
+					Distance = pathDirection:Length(), -- Distance from start to dest.
+					OrthogonalOutside = (edgeOrthogonal * (edgeOrthogonal:Dot(pathDirection))):GetNormalized() -- Vector for path end condition that is orthogonal to the edge and parallel to the triangle plane, additionally it always points outside the triangle.
+				}
+				table.insert(cache.PathfindingNeighbors, neighbor)
+			end
 		end
 	end
 
@@ -276,7 +295,7 @@ end
 ---Returns a list of connected neighbor entities that a bot can navigate to.
 ---The result is a list of tables that contain the destination entity and some metadata.
 ---This is used for pathfinding.
----@return table[]
+---@return D3botPATH_NEIGHBOR[]
 function NAV_TRIANGLE:GetPathfindingNeighbors()
 	local cache = self:GetCache()
 	return cache.PathfindingNeighbors

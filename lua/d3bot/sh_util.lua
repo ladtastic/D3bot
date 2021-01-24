@@ -46,15 +46,28 @@ function UTIL.RoundVector(vec)
 	return Vector(math.floor(vec[1] + 0.5), math.floor(vec[2] + 0.5), math.floor(vec[3] + 0.5))
 end
 
----A simple sign function.
+---Returns whether a number is positive (including positive 0) or not.
 ---Unlike the mathematical sign function, this only returns a bool.
 ---@param num number
 ---@return boolean positive @True if num >= 0 and false otherwise.
-function UTIL.SimpleSign(num)
+function UTIL.PositiveNumber(num)
 	if num >= 0 then
 		return true
 	else
 		return false
+	end
+end
+
+---Returns the sign of a given number as integer.
+---@param num number
+---@return integer sign @1 when num > 0, -1 when num < -0, otherwise 0
+function UTIL.Sign(num)
+	if num > 0 then
+		return 1
+	elseif num < -0 then
+		return -1
+	else
+		return 0
 	end
 end
 
@@ -332,8 +345,8 @@ end
 ---@param ply GPlayer
 ---@return table tr @The trace query table.
 ---@return table trRes @The trace result table.
----@return table navAimOrigin @Ray origin that can be used for tracing navmesh elements.
----@return table navAimVec @Ray direction vector.
+---@return GVector navAimOrigin @Ray origin that can be used for tracing navmesh elements.
+---@return GVector navAimVec @Ray direction vector.
 function UTIL.SWEPLineTrace(ply)
 	local shouldHitWater = CONVARS.SWEPHitWater:GetBool()
 
