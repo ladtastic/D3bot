@@ -28,7 +28,7 @@ local ERROR = D3bot.ERROR
 ---@field ID number | string
 ---@field Edges D3botNAV_EDGE[]
 ---@field FlipNormal boolean
----@field Cache table @Contains cached values like the normal, the 3 corner points and neighbor triangles. Can be invalidated.
+---@field Cache table | nil @Contains cached values like the normal, the 3 corner points and neighbor triangles. Can be invalidated.
 ---@field UI table @General structure for UI related properties like selection status.
 local NAV_TRIANGLE = D3bot.NAV_TRIANGLE
 NAV_TRIANGLE.__index = NAV_TRIANGLE
@@ -237,7 +237,7 @@ function NAV_TRIANGLE:GetCache()
 					FromPos = cache.Centroid,
 					Via = self,
 					To = edge,
-					ToPos = edge:GetCentroid(),
+					ToPos = edgeCenter,
 					LocomotionType = cache.LocomotionType,
 					PathDirection = pathDirection, -- Vector from start position to dest position.
 					Distance = pathDirection:Length(), -- Distance from start to dest.

@@ -34,6 +34,13 @@ local PRIORITY_QUEUE = D3bot.PRIORITY_QUEUE
 ---@field PathDirection GVector @Vector from start position to dest position.
 ---@field Distance number @Distance from start to dest.
 ---@field OrthogonalOutside GVector @Vector for the end condition of this path element. It should point outside of triangle edges or similar things
+local D3botPATH_FRAGMENT
+
+---@class D3botPATH_ELEMENT @An atomic part of a path. It is used by locomotion handlers to control bots.
+---@field PathFragment D3botPATH_FRAGMENT @Precalculated values of a path, don't modify.
+---@field LocomotionHandler table
+---@field Cache table | nil
+local D3botPATH_ELEMENT
 
 ------------------------------------------------------
 --		Static
@@ -42,7 +49,7 @@ local PRIORITY_QUEUE = D3bot.PRIORITY_QUEUE
 ---@class D3botPATH
 ---@field Navmesh D3botNAV_MESH
 ---@field Abilities table<string, table> @Maps navmesh locomotion types (keys) to locomotion handlers (values).
----@field Path table[] @Queue of path elements in reverse order (current element is last in the list).
+---@field Path D3botPATH_ELEMENT[] @Queue of path elements in reverse order (current element is last in the list).
 local PATH = D3bot.PATH
 PATH.__index = PATH
 
@@ -104,6 +111,7 @@ function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 			if not entityInfo.From then break end
 			local pathFragment = entityInfo.PathFragment
 
+			---@type D3botPATH_ELEMENT
 			local pathElement = {
 				PathFragment = pathFragment,
 				LocomotionHandler = abilities[pathFragment.LocomotionType]
@@ -247,6 +255,7 @@ function PATH:Render3D()
 	render.SetColorMaterialIgnoreZ()
 	cam.IgnoreZ(true)
 
+	---@type D3botPATH_ELEMENT
 	for _, pathElement in pairs(self.Path) do
 		local locomotionHandler = pathElement.LocomotionHandler
 		-- Let the locomotion handler render the path element.

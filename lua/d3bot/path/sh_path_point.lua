@@ -63,7 +63,7 @@ function PATH_POINT:New(navmesh, pos)
 	obj.PathFragments = {}
 	for _, edge in ipairs(obj.Triangle.Edges) do
 		if #edge.Triangles > 1 then
-			local edgeCenter = (edge.Points[1] + edge.Points[2]) / 2
+			local edgeCenter = edge:GetCentroid() -- Use cache as it may be faster.
 			local edgeVector = edge.Points[2] - edge.Points[1]
 			local edgeOrthogonal = triangleNormal:Cross(edgeVector) -- Vector that is orthogonal to the edge and parallel to the triangle plane.
 			local pathDirection = edgeCenter - pos -- Basically the walking direction.
@@ -73,7 +73,7 @@ function PATH_POINT:New(navmesh, pos)
 				FromPos = pos,
 				Via = obj.Triangle,
 				To = edge,
-				ToPos = edge:GetCentroid(),
+				ToPos = edgeCenter,
 				LocomotionType = obj.Triangle:GetLocomotionType(),
 				PathDirection = pathDirection, -- Vector from start position to dest position.
 				Distance = pathDirection:Length(), -- Distance from start to dest.

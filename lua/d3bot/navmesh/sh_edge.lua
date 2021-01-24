@@ -28,7 +28,7 @@ local ERROR = D3bot.ERROR
 ---@field ID number | string
 ---@field Points GVector[]
 ---@field Triangles D3botNAV_TRIANGLE[] @This points to triangles that this edge is part of. There should be at most 2 triangles.
----@field Cache table @Contains connected neighbor edges and other cached values.
+---@field Cache table | nil @Contains connected neighbor edges and other cached values.
 ---@field UI table @General structure for UI related properties like selection status
 local NAV_EDGE = D3bot.NAV_EDGE
 NAV_EDGE.__index = NAV_EDGE
@@ -158,16 +158,16 @@ function NAV_EDGE:GetCache()
 		for _, triangle in ipairs(self.Triangles) do
 			-- Get an orthogonal vector of the triangle plane, without using the triangle cache.
 			local trianglePoints, err = UTIL.EdgesToTrianglePoints(triangle.Edges)
-			local triangleOrthogonal = Vector(0, 0, 1)
+			local triangleNormal = Vector(0, 0, 1)
 			if trianglePoints then
-				triangleOrthogonal = (trianglePoints[1] - trianglePoints[2]):Cross(trianglePoints[3] - trianglePoints[1])
+				triangleNormal = (trianglePoints[1] - trianglePoints[2]):Cross(trianglePoints[3] - trianglePoints[1]):GetNormalized() -- Has to be normalized, because too large numbers will be interpreted as infinity. Thanks lua.
 			end
 
 			for _, edge in ipairs(triangle.Edges) do
 				if edge ~= self and #edge.Triangles > 1 then
 					local neighborEdgeCenter = (edge.Points[1] + edge.Points[2]) / 2
 					local edgeVector = edge.Points[2] - edge.Points[1]
-					local edgeOrthogonal = triangleOrthogonal:Cross(edgeVector) -- Vector that is orthogonal to the edge and parallel to the triangle plane.
+					local edgeOrthogonal = triangleNormal:Cross(edgeVector) -- Vector that is orthogonal to the edge and parallel to the triangle plane.
 					local pathDirection = neighborEdgeCenter - cache.Center -- Basically the walking direction.
 					---@type D3botPATH_FRAGMENT
 					local pathFragment = {
@@ -175,8 +175,8 @@ function NAV_EDGE:GetCache()
 						FromPos = cache.Center,
 						Via = triangle,
 						To = edge,
-						ToPos = edge:GetCentroid(),
-						LocomotionType = triangle:GetLocomotionType(), -- Not optimal as it makes a cache query, and has potential for infinite recursion.
+						ToPos = neighborEdgeCenter,
+						LocomotionType = triangle:GetLocomotionType(), -- Not optimal as it makes a cache query and has potential for infinite recursion.
 						PathDirection = pathDirection, -- Vector from start position to dest position.
 						Distance = pathDirection:Length(), -- Distance from start to dest.
 						OrthogonalOutside = (edgeOrthogonal * (edgeOrthogonal:Dot(pathDirection))):GetNormalized() -- Vector for path end condition that is orthogonal to the edge and parallel to the triangle plane, additionally it always points outside the triangle.

@@ -17,6 +17,7 @@
 
 local D3bot = D3bot
 local UTIL = D3bot.Util
+local RENDER_UTIL = D3bot.RenderUtil
 local LOCOMOTION_HANDLERS = D3bot.LocomotionHandlers
 
 -- Add new locomotion handler class.
@@ -48,7 +49,7 @@ end
 
 ---Get the cached values of the given pathElement, if needed this will regenerate the cache.
 ---This will store all variables needed for controlling the bot across the pathElement.
----@param pathElement any
+---@param pathElement D3botPATH_ELEMENT
 ---@return table
 function THIS_LOCO_HANDLER:GetPathElementCache(pathElement)
 	local cache = pathElement.Cache
@@ -87,9 +88,14 @@ end
 --end
 
 ---Draw the path into a 3D rendering context.
----@param pathElement table
+---@param pathElement D3botPATH_ELEMENT
 function THIS_LOCO_HANDLER:Render3D(pathElement)
 	local pathFragment = pathElement.PathFragment
 	local fromPos, toPos = pathFragment.FromPos, pathFragment.ToPos
-	render.DrawBeam(fromPos, toPos, 5, 0, 1, Color(0, 0, 255, 255))
+
+	-- Draw arrow as the main movement direction
+	RENDER_UTIL.Draw2DArrowPos(fromPos, toPos, 50, Color(0, 0, 255, 128))
+
+	-- Draw end condition planes
+	render.DrawQuadEasy(toPos, -pathFragment.OrthogonalOutside, 50, 50, Color(255, 0, 255, 128))
 end
