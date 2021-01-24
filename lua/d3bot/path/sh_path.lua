@@ -24,7 +24,7 @@ local PRIORITY_QUEUE = D3bot.PRIORITY_QUEUE
 --		"Structures"
 ------------------------------------------------------
 
----@class D3botPATH_NEIGHBOR @Basically a predefined path fragment that is cached in navmesh objects. This enables the pathfinder to iterate over navmesh objects, and build paths. A list of these is returned by GetPathfindingNeighbors methods.
+---@class D3botPATH_FRAGMENT @Basically a precalculated path fragment that is cached in navmesh objects. This enables the pathfinder to iterate over navmesh objects, and build paths. A list of these is returned by GetPathFragments methods.
 ---@field From table @Edge or similar navmesh object.
 ---@field FromPos GVector @Centroid of From.
 ---@field Via table @Triangle or similar navmesh object.
@@ -92,17 +92,17 @@ function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 	---@param entity any
 	---@return D3botERROR | nil
 	local function reconstructPath(entity)
-		local iterCounter = 0
+		--local iterCounter = 0
 
 		-- Iterate from the found destination to the start entity and push path to pathElements.
 		while entity do
 			-- Debug end condition
-			if iterCounter > 10000 then return ERROR:New("Maximum amount of iterations in path reconstructions exceeded") end
-			iterCounter = iterCounter + 1
+			--if iterCounter > 10000 then return ERROR:New("Maximum amount of iterations in path reconstructions exceeded") end
+			--iterCounter = iterCounter + 1
 
 			local entityInfo = entityData[entity]
 			if not entityInfo.From then break end
-			local pathFragment = entityInfo.NeighborTable
+			local pathFragment = entityInfo.PathFragment
 
 			local pathElement = {
 				PathFragment = pathFragment,
@@ -123,17 +123,17 @@ function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 	end
 
 	---Helper function for adding navmesh entities to the open list.
-	---@param neighbor D3botPATH_NEIGHBOR
+	---@param pathFragment D3botPATH_FRAGMENT
 	---@param tentative_gScore number
-	local function enqueueEntity(neighbor, tentative_gScore)
-		local fScore = tentative_gScore + heuristic(neighbor.ToPos) -- Best guess as to how cheap a path can be that goes through this entity.
-		entityData[neighbor.To] = {
+	local function enqueueEntity(pathFragment, tentative_gScore)
+		local fScore = tentative_gScore + heuristic(pathFragment.ToPos) -- Best guess as to how cheap a path can be that goes through this entity.
+		entityData[pathFragment.To] = {
 			GScore = tentative_gScore, -- The cheapest path from start to this entity.
-			From = neighbor.From, -- The previous entity.
-			Via = neighbor.Via, -- The navmesh entity that connects the previous and current entity.
-			NeighborTable = neighbor -- Store the full neighbor metadata (aka path fragment) table for later use.
+			From = pathFragment.From, -- The previous entity.
+			Via = pathFragment.Via, -- The navmesh entity that connects the previous and current entity.
+			PathFragment = pathFragment -- Store the full neighbor metadata (aka path fragment) table for later use.
 		}
-		openList:Enqueue(neighbor.To, fScore)
+		openList:Enqueue(pathFragment.To, fScore)
 	end
 
 	-- Add start point to open list.
@@ -143,13 +143,13 @@ function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 	local destTriangle = destPoint.Triangle
 	local endE1, endE2, endE3 = destTriangle.Edges[1], destTriangle.Edges[2], destTriangle.Edges[3]
 
-	local iterCounter = 0
+	--local iterCounter = 0
 
 	-- Get next entity from queue and expand it.
 	for entity in openList.Dequeue, openList do
 		-- Debug end condition
-		if iterCounter > 10000 then return ERROR:New("Maximum amount of iterations in pathfinding exceeded") end
-		iterCounter = iterCounter + 1
+		--if iterCounter > 10000 then return ERROR:New("Maximum amount of iterations in pathfinding exceeded") end
+		--iterCounter = iterCounter + 1
 
 		-- Add to closed list.
 		closedList[entity] = true
@@ -164,40 +164,39 @@ function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 		local gScore = entityInfo.GScore
 		local entityPos = entity:GetCentroid()
 
-		---Get list of neighbor navmesh entities.
-		---@type D3botPATH_NEIGHBOR[]
-		local neighbors = entity:GetPathfindingNeighbors()
+		---Get list of possible paths to take.
+		local pathFragments = entity:GetPathFragments()
 
-		-- If we are at the edge of our destination triangle, inject destPoint into temporary neighbors list.
+		-- If we are at the edge of our destination triangle, inject the pathFragment to the destPoint into the list of possible paths.
 		if entity == endE1 or entity == endE2 or entity == endE3 then
-			local neighbor = destPoint:GetPathfindingNeighborForInjection(entity, entityPos)
-			neighbors = table.Add({neighbor}, neighbors)
+			local pathFragment = destPoint:GetPathFragmentsForInjection(entity, entityPos)
+			pathFragments = table.Add({pathFragment}, pathFragments)
 		end
 
-		---Iterate over neighbor entities.
-		---@type D3botPATH_NEIGHBOR
-		for _, neighbor in ipairs(neighbors) do
-			local neighborEntity = neighbor.To
+		---Iterate over possible paths: Neighbor entities that are somehow connected to the current entity.
+		---@type D3botPATH_FRAGMENT
+		for _, pathFragment in ipairs(pathFragments) do
+			local neighborEntity = pathFragment.To
 
 			-- Check if neighbor is in the closed list, if so it's already optimal.
 			-- This check must be removed if the heuristic is changed to an "admissible heuristic".
 			if not closedList[neighborEntity] then
 
 				-- Get locomotion handler.
-				local locomotionHandler = abilities[neighbor.LocomotionType]
+				local locomotionHandler = abilities[pathFragment.LocomotionType]
 
 				-- Check if there is a locomotion handler ("Does the bot know how to navigate on this navmesh entity?").
 				if locomotionHandler then
 
 					-- And check if the bot is able to walk to the next entity.
-					if not locomotionHandler.CanNavigate or locomotionHandler:CanNavigate(neighbor, entityData) then
+					if not locomotionHandler.CanNavigate or locomotionHandler:CanNavigate(pathFragment, entityData) then
 
 						-- Calculate gScore for the neighbor entity.
 						local tentative_gScore
 						if locomotionHandler.CostOverride then
-							tentative_gScore = gScore + locomotionHandler:CostOverride(neighbor)
+							tentative_gScore = gScore + locomotionHandler:CostOverride(pathFragment)
 						else
-							tentative_gScore = gScore + neighbor.Distance
+							tentative_gScore = gScore + pathFragment.Distance
 						end
 
 						-- Check if the gScore is better than the previous score.
@@ -205,7 +204,7 @@ function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 						if tentative_gScore < (neighborEntityInfo and neighborEntityInfo.GScore or math.huge) then
 
 							-- Enqueue neighbor entity.
-							enqueueEntity(neighbor, tentative_gScore)
+							enqueueEntity(pathFragment, tentative_gScore)
 
 						end
 					end

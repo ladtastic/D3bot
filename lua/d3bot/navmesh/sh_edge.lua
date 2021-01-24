@@ -151,8 +151,9 @@ function NAV_EDGE:GetCache()
 	---@type GVector
 	cache.Center = (self.Points[1] + self.Points[2]) / 2
 
-	-- Get connected "neighbor" edges that can be accessed either via triangles or similar navmesh entities.
-	cache.ConnectedNeighbors = {}
+	---A list of possible paths to take from this edge.
+	---@type D3botPATH_FRAGMENT[]
+	cache.PathFragments = {}
 	if cache.IsValid then
 		for _, triangle in ipairs(self.Triangles) do
 			-- Get an orthogonal vector of the triangle plane, without using the triangle cache.
@@ -163,13 +164,13 @@ function NAV_EDGE:GetCache()
 			end
 
 			for _, edge in ipairs(triangle.Edges) do
-				if edge ~= self then
+				if edge ~= self and #edge.Triangles > 1 then
 					local neighborEdgeCenter = (edge.Points[1] + edge.Points[2]) / 2
 					local edgeVector = edge.Points[2] - edge.Points[1]
 					local edgeOrthogonal = triangleOrthogonal:Cross(edgeVector) -- Vector that is orthogonal to the edge and parallel to the triangle plane.
 					local pathDirection = neighborEdgeCenter - cache.Center -- Basically the walking direction.
-					---@type D3botPATH_NEIGHBOR
-					local neighbor = {
+					---@type D3botPATH_FRAGMENT
+					local pathFragment = {
 						From = self,
 						FromPos = cache.Center,
 						Via = triangle,
@@ -180,19 +181,9 @@ function NAV_EDGE:GetCache()
 						Distance = pathDirection:Length(), -- Distance from start to dest.
 						OrthogonalOutside = (edgeOrthogonal * (edgeOrthogonal:Dot(pathDirection))):GetNormalized() -- Vector for path end condition that is orthogonal to the edge and parallel to the triangle plane, additionally it always points outside the triangle.
 					}
-					table.insert(cache.ConnectedNeighbors, neighbor)
+					table.insert(cache.PathFragments, pathFragment)
 				end
 			end
-		end
-	end
-
-	-- Get connected "neighbor" edges that can be accessed either via triangles or similar navmesh entities.
-	-- Additional condition: The edges need more than 1 triangle or similar navmesh entities connected to them.
-	-- This is a subset of ConnectedNeighbors and will be used for pathfinding.
-	cache.PathfindingNeighbors = {}
-	for _, v in ipairs(cache.ConnectedNeighbors) do
-		if #v.To.Triangles > 1 then
-			table.insert(cache.PathfindingNeighbors, v)
 		end
 	end
 
@@ -240,13 +231,13 @@ function NAV_EDGE:GetCentroid()
 	return cache.Center
 end
 
----Returns a list of connected neighbor entities that a bot can navigate to.
----The result is a list of tables that contain the destination entity and some metadata.
+---Returns a list of possible paths to take from this navmesh entity.
+---The result is a list of path fragment tables that contain the destination entity and some metadata.
 ---This is used for pathfinding.
----@return D3botPATH_NEIGHBOR[]
-function NAV_EDGE:GetPathfindingNeighbors()
+---@return D3botPATH_FRAGMENT[]
+function NAV_EDGE:GetPathFragments()
 	local cache = self:GetCache()
-	return cache.PathfindingNeighbors
+	return cache.PathFragments
 end
 
 ---Returns whether the edge consists out of the two given points or not.

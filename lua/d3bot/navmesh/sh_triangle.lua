@@ -221,10 +221,9 @@ function NAV_TRIANGLE:GetCache()
 		-- TODO: Add user defined locomotion type override to triangles
 	end
 
-	-- Get all edges of this triangle that have more than 1 triangle or similar navmesh entities connected to them.
-	-- Use triangle centroid as starting point.
-	-- This will be used for pathfinding.
-	cache.PathfindingNeighbors = {}
+	---A list of possible paths to take from this triangle.
+	---@type D3botPATH_FRAGMENT[]
+	cache.PathFragments = {}
 	if cache.IsValid then
 		for _, edge in ipairs(self.Edges) do
 			if #edge.Triangles > 1 then
@@ -232,8 +231,8 @@ function NAV_TRIANGLE:GetCache()
 				local edgeVector = edge.Points[2] - edge.Points[1]
 				local edgeOrthogonal = cache.Normal:Cross(edgeVector) -- Vector that is orthogonal to the edge and parallel to the triangle plane.
 				local pathDirection = edgeCenter - cache.Centroid -- Basically the walking direction.
-				---@type D3botPATH_NEIGHBOR
-				local neighbor = {
+				---@type D3botPATH_FRAGMENT
+				local pathFragment = {
 					From = self,
 					FromPos = cache.Centroid,
 					Via = self,
@@ -244,7 +243,7 @@ function NAV_TRIANGLE:GetCache()
 					Distance = pathDirection:Length(), -- Distance from start to dest.
 					OrthogonalOutside = (edgeOrthogonal * (edgeOrthogonal:Dot(pathDirection))):GetNormalized() -- Vector for path end condition that is orthogonal to the edge and parallel to the triangle plane, additionally it always points outside the triangle.
 				}
-				table.insert(cache.PathfindingNeighbors, neighbor)
+				table.insert(cache.PathFragments, pathFragment)
 			end
 		end
 	end
@@ -292,13 +291,13 @@ function NAV_TRIANGLE:GetCentroid()
 	return cache.Centroid
 end
 
----Returns a list of connected neighbor entities that a bot can navigate to.
----The result is a list of tables that contain the destination entity and some metadata.
+---Returns a list of possible paths to take from this navmesh entity.
+---The result is a list of path fragment tables that contain the destination entity and some metadata.
 ---This is used for pathfinding.
----@return D3botPATH_NEIGHBOR[]
-function NAV_TRIANGLE:GetPathfindingNeighbors()
+---@return D3botPATH_FRAGMENT[]
+function NAV_TRIANGLE:GetPathFragments()
 	local cache = self:GetCache()
-	return cache.PathfindingNeighbors
+	return cache.PathFragments
 end
 
 ---Returns the locomotion type as a string.

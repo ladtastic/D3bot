@@ -65,24 +65,24 @@ function THIS_LOCO_HANDLER:GetPathElementCache(pathElement)
 	return cache
 end
 
----Overrides the base pathfinding cost (in engine units) for the path fragment defined in neighborTable.
+---Overrides the base pathfinding cost (in engine units) for the path fragment defined in pathFragment.
 ---If no method is defined, the distance between the points will be used as metric.
 ---Any time based cost would need to be transformed into a distance based cost in here (Relative to normal walking speed).
----@param neighborTable D3botPATH_NEIGHBOR
+---@param pathFragment D3botPATH_FRAGMENT
 ---@return number cost
---function THIS_LOCO_HANDLER:CostOverride(neighborTable)
+--function THIS_LOCO_HANDLER:CostOverride(pathFragment)
 --	return (posB - posA):Length()
 --end
 
----Returns whether the bot can move on the path fragment described by neighborTable.
+---Returns whether the bot can move on the path fragment described by pathFragment.
 ---entityData is a map that contains pathfinding metadata (Parent entity, ...).
 ---Leaving this undefined has the same result as returning true.
 ---The entities are most likely navmesh edges or NAV_PATH_POINT objects.
 ---This is used in pathfinding and should be as fast as possible.
----@param neighborTable D3botPATH_NEIGHBOR
+---@param pathFragment D3botPATH_FRAGMENT
 ---@param entityData table
 ---@return boolean
---function THIS_LOCO_HANDLER:CanNavigate(neighborTable, entityData)
+--function THIS_LOCO_HANDLER:CanNavigate(pathFragment, entityData)
 --	return true
 --end
 
