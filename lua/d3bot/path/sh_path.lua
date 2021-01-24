@@ -34,13 +34,11 @@ local PRIORITY_QUEUE = D3bot.PRIORITY_QUEUE
 ---@field PathDirection GVector @Vector from start position to dest position.
 ---@field Distance number @Distance from start to dest.
 ---@field OrthogonalOutside GVector @Vector for the end condition of this path element. It should point outside of triangle edges or similar things
-local D3botPATH_FRAGMENT
 
 ---@class D3botPATH_ELEMENT @An atomic part of a path. It is used by locomotion handlers to control bots.
 ---@field PathFragment D3botPATH_FRAGMENT @Precalculated values of a path, don't modify.
 ---@field LocomotionHandler table
 ---@field Cache table | nil
-local D3botPATH_ELEMENT
 
 ------------------------------------------------------
 --		Static
