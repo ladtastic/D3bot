@@ -25,7 +25,7 @@ local NAV_MESH = D3bot.NAV_MESH
 -- For loading, it will iterate over all entries until one with an existing file is found. (Not necessarily a valid navmesh)
 NAV_FILE.BasePaths = {
 	{gamePath = "DATA", path = D3bot.AddonRoot .. "navmeshes/map/"},
-	{gamePath = "GAME", path = "data/" .. D3bot.AddonRoot .. "navmeshes/map/"}
+	{gamePath = "GAME", path = "data/" .. D3bot.AddonRoot .. "navmeshes/map/"},
 }
 
 -- Create all paths that are in gmod's data directory.

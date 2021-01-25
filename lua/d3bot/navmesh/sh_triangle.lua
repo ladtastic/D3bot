@@ -55,7 +55,7 @@ function NAV_TRIANGLE:New(navmesh, id, e1, e2, e3, flipNormal)
 		Edges = {e1, e2, e3},
 		FlipNormal = flipNormal,
 		Cache = nil,
-		UI = {}
+		UI = {},
 	}, self)
 
 	-- General parameter checks. -- TODO: Check parameters for types and other stuff
@@ -167,9 +167,9 @@ function NAV_TRIANGLE:MarshalToTable()
 		Edges = {
 			self.Edges[1]:GetID(),
 			self.Edges[2]:GetID(),
-			self.Edges[3]:GetID()
+			self.Edges[3]:GetID(),
 		},
-		FlipNormal = self.FlipNormal
+		FlipNormal = self.FlipNormal,
 	}
 
 	return t -- Make sure that any object returned here is a deep copy of its original
@@ -255,7 +255,7 @@ function NAV_TRIANGLE:GetCache()
 					LocomotionType = cache.LocomotionType,
 					PathDirection = pathDirection, -- Vector from start position to dest position.
 					Distance = pathDirection:Length(), -- Distance from start to dest.
-					OrthogonalOutside = (edgeOrthogonal * (edgeOrthogonal:Dot(pathDirection))):GetNormalized() -- Vector for path end condition that is orthogonal to the edge and parallel to the triangle plane, additionally it always points outside the triangle.
+					OrthogonalOutside = (edgeOrthogonal * (edgeOrthogonal:Dot(pathDirection))):GetNormalized(), -- Vector for path end condition that is orthogonal to the edge and parallel to the triangle plane, additionally it always points outside the triangle.
 				}
 				table.insert(cache.PathFragments, pathFragment)
 			end

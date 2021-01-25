@@ -41,7 +41,7 @@ PATH_POINT.__index = PATH_POINT
 function PATH_POINT:New(navmesh, pos)
 	local obj = setmetatable({
 		Navmesh = navmesh,
-		Pos = pos
+		Pos = pos,
 	}, self)
 
 	-- Check if there is even a position
@@ -77,7 +77,7 @@ function PATH_POINT:New(navmesh, pos)
 				LocomotionType = obj.Triangle:GetLocomotionType(),
 				PathDirection = pathDirection, -- Vector from start position to dest position.
 				Distance = pathDirection:Length(), -- Distance from start to dest.
-				OrthogonalOutside = (edgeOrthogonal * (edgeOrthogonal:Dot(pathDirection))):GetNormalized() -- Vector for path end condition that is orthogonal to the edge and parallel to the triangle plane, additionally it always points outside the triangle.
+				OrthogonalOutside = (edgeOrthogonal * (edgeOrthogonal:Dot(pathDirection))):GetNormalized(), -- Vector for path end condition that is orthogonal to the edge and parallel to the triangle plane, additionally it always points outside the triangle.
 			}
 			table.insert(obj.PathFragments, pathFragment)
 		end
@@ -122,7 +122,7 @@ function PATH_POINT:GetPathFragmentsForInjection(from, fromPos)
 		LocomotionType = self.Triangle:GetLocomotionType(),
 		PathDirection = pathDirection, -- Vector from start position to dest position.
 		Distance = pathDirection:Length(), -- Distance from start to dest.
-		OrthogonalOutside = pathDirection:GetNormalized() -- Vector for the end condition of this path element.
+		OrthogonalOutside = pathDirection:GetNormalized(), -- Vector for the end condition of this path element.
 	}
 	return pathFragment
 end

@@ -46,7 +46,7 @@ function NAV_MESH:New()
 		Triangles = {},
 		AirConnections = {},
 		PubSub = nil,
-		UniqueIDCounter = 1
+		UniqueIDCounter = 1,
 	}, self)
 
 	return obj, nil

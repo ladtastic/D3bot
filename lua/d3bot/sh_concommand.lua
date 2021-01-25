@@ -43,7 +43,7 @@ function CONCOMMAND:New(name, autocomplete, helpText, flags)
 		NameServer = "sv_" .. name,
 		Autocomplete = autocomplete,
 		HelpText = helpText,
-		Flags = flags
+		Flags = flags,
 	}, self)
 
 	-- Add concommands to client and server. The server one has a different name.

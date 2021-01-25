@@ -41,7 +41,7 @@ PRIORITY_QUEUE.__index = PRIORITY_QUEUE
 function PRIORITY_QUEUE:New()
 	local obj = setmetatable({
 		Map = {},
-		List = {}
+		List = {},
 	}, self)
 
 	return obj, nil

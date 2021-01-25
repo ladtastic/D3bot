@@ -37,7 +37,7 @@ THIS_LOCO_HANDLER.__index = THIS_LOCO_HANDLER
 ---@return table
 function THIS_LOCO_HANDLER:New(speed)
 	local handler = setmetatable({
-		Speed = speed -- Speed for normal (unmodified) walking in engine units per second
+		Speed = speed, -- Speed for normal (unmodified) walking in engine units per second
 	}, self)
 
 	return handler

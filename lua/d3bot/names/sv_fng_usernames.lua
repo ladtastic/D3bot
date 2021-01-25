@@ -531,7 +531,7 @@ local names = {
 	"WritingBison",
 	"Yetea",
 	"Zebrag",
-	"Zebrawl"
+	"Zebrawl",
 }
 
 local tempNames = {}

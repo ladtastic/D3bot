@@ -12,7 +12,7 @@ surface.CreateFont(
 	{
 		font = "Helvetica",
 		size = 60,
-		weight = 900
+		weight = 900,
 	}
 )
 

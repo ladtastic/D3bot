@@ -38,7 +38,7 @@ THIS_LOCO_HANDLER.__index = THIS_LOCO_HANDLER
 function THIS_LOCO_HANDLER:New(maxJumpHeight, maxFallHeight)
 	local handler = setmetatable({
 		MaxJumpHeight = maxJumpHeight, -- Max. jump height that a bot can achieve by crouch jumping.
-		MaxFallHeight = maxFallHeight -- Max. height that the bot is allowed to fall down.
+		MaxFallHeight = maxFallHeight, -- Max. height that the bot is allowed to fall down.
 	}, self)
 
 	return handler

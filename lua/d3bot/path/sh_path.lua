@@ -62,7 +62,7 @@ function PATH:New(navmesh, abilities)
 	local obj = setmetatable({
 		Navmesh = navmesh,
 		Abilities = abilities,
-		Path = {}
+		Path = {},
 	}, self)
 
 	return obj, nil
@@ -112,7 +112,7 @@ function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 			---@type D3botPATH_ELEMENT
 			local pathElement = {
 				PathFragment = pathFragment,
-				LocomotionHandler = abilities[pathFragment.LocomotionType]
+				LocomotionHandler = abilities[pathFragment.LocomotionType],
 			}
 			table.insert(self.Path, pathElement)
 
@@ -136,7 +136,7 @@ function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 		entityData[pathFragment.To] = {
 			GScore = tentative_gScore, -- The cheapest path from start to this entity.
 			From = pathFragment.From, -- The previous entity for path reconstruction.
-			PathFragment = pathFragment -- Reference to the path fragment from the navmesh entity for later use. Do not modify the content!
+			PathFragment = pathFragment, -- Reference to the path fragment from the navmesh entity for later use. Do not modify the content!
 		}
 		openList:Enqueue(pathFragment.To, fScore)
 	end

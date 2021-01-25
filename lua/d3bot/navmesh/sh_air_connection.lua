@@ -53,7 +53,7 @@ function NAV_AIR_CONNECTION:New(navmesh, id, e1, e2)
 		ID = id or navmesh:GetUniqueID(),
 		Edges = {e1, e2},
 		Cache = nil,
-		UI = {}
+		UI = {},
 	}, self)
 
 	-- General parameter checks. -- TODO: Check parameters for types and other stuff
@@ -148,7 +148,7 @@ function NAV_AIR_CONNECTION:MarshalToTable()
 		ID = self:GetID(),
 		Edges = {
 			self.Edges[1]:GetID(),
-			self.Edges[2]:GetID()
+			self.Edges[2]:GetID(),
 		}
 	}
 
@@ -206,7 +206,7 @@ function NAV_AIR_CONNECTION:GetCache()
 					LocomotionType = cache.LocomotionType,
 					PathDirection = pathDirection, -- Vector from start position to dest position.
 					Distance = pathDirection:Length(), -- Distance from start to dest.
-					OrthogonalOutside = (edgeOrthogonal * (edgeOrthogonal:Dot(pathDirection))):GetNormalized() -- Vector for path end condition that is orthogonal to the edge and parallel to the triangle plane, additionally it always points outside the triangle.
+					OrthogonalOutside = (edgeOrthogonal * (edgeOrthogonal:Dot(pathDirection))):GetNormalized(), -- Vector for path end condition that is orthogonal to the edge and parallel to the triangle plane, additionally it always points outside the triangle.
 				}
 				table.insert(cache.PathFragments, pathFragment)
 			end
