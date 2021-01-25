@@ -48,28 +48,31 @@ end
 --		Methods
 ------------------------------------------------------
 
----Get the cached values of the given pathElement, if needed this will regenerate the cache.
----This will store all variables needed for controlling the bot across the pathElement.
----@param pathElement D3botPATH_ELEMENT
+---Returns the cache for the given pathElement (from pathElements at index), if needed this will regenerate the cache.
+---The cache contains all values to easily control the bot through the pathElement.
+---@param index integer @pathElements index
+---@param pathElements D3botPATH_ELEMENT[]
 ---@return table
-function THIS_LOCO_HANDLER:GetPathElementCache(pathElement)
+function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
+	local pathElement = pathElements[index]
 	local cache = pathElement.Cache
 	if cache then return cache end
 
 	-- Regenerate cache.
 	local cache = {}
-	self.Cache = cache
+	pathElement.Cache = cache
 
-	-- A signal that the cache contains correct or malformed data.
+	-- A flag indicating if the cache contains correct or malformed data.
 	-- Changing this to false will not cause the cache to be rebuilt.
 	cache.IsValid = true
 
 	return cache
 end
 
----Overrides the base pathfinding cost (in engine units) for the path fragment defined in pathFragment.
----If no method is defined, the distance between the points will be used as metric.
+---Overrides the base pathfinding cost (in engine units) for the given path fragment.
+---If no method is defined, the distance of the path fragment will be used as metric.
 ---Any time based cost would need to be transformed into a distance based cost in here (Relative to normal walking speed).
+---This is used in pathfinding and should be as fast as possible.
 ---@param pathFragment D3botPATH_FRAGMENT
 ---@return number cost
 function THIS_LOCO_HANDLER:CostOverride(pathFragment)
@@ -78,9 +81,8 @@ function THIS_LOCO_HANDLER:CostOverride(pathFragment)
 end
 
 ---Returns whether the bot can move on the path fragment described by pathFragment.
----entityData is a map that contains pathfinding metadata (Parent entity, ...).
+---entityData is a map that contains pathfinding metadata (Parent entity, gScore, ...).
 ---Leaving this undefined has the same result as returning true.
----The entities are most likely navmesh edges or NAV_PATH_POINT objects.
 ---This is used in pathfinding and should be as fast as possible.
 ---@param pathFragment D3botPATH_FRAGMENT
 ---@param entityData table
@@ -121,9 +123,11 @@ function THIS_LOCO_HANDLER:CanNavigate(pathFragment, entityData)
 	return false
 end
 
----Draw the path into a 3D rendering context.
----@param pathElement D3botPATH_ELEMENT
-function THIS_LOCO_HANDLER:Render3D(pathElement)
+---Draw the pathElement (from pathElements at index) into a 3D rendering context.
+---@param index integer @pathElements index
+---@param pathElements D3botPATH_ELEMENT[]
+function THIS_LOCO_HANDLER:Render3D(index, pathElements)
+	local pathElement = pathElements[index]
 	local pathFragment = pathElement.PathFragment
 	local fromPos, toPos = pathFragment.FromPos, pathFragment.ToPos
 	render.DrawBeam(fromPos, toPos, 5, 0, 1, Color(0, 255, 0, 255))

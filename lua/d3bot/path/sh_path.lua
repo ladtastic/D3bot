@@ -33,7 +33,7 @@ local PRIORITY_QUEUE = D3bot.PRIORITY_QUEUE
 ---@field LocomotionType string @Locomotion type.
 ---@field PathDirection GVector @Vector from start position to dest position.
 ---@field Distance number @Distance from start to dest.
----@field OrthogonalOutside GVector @Vector for the end condition of this path element. It should point outside of triangle edges or similar things
+---@field OrthogonalOutside GVector @Vector for the end condition of this path element. It is used to build a plane that the bot has to pass in order to get to the next path element.
 
 ---@class D3botPATH_ELEMENT @An atomic part of a path. It is used by locomotion handlers to control bots.
 ---@field PathFragment D3botPATH_FRAGMENT @Precalculated values of a path, don't modify.
@@ -102,7 +102,7 @@ function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 		-- Iterate from the found destination to the start entity and push path to pathElements.
 		while entity do
 			-- Debug end condition
-			--if iterCounter > 10000 then return ERROR:New("Maximum amount of iterations in path reconstructions exceeded") end
+			--if iterCounter > 10000 then return ERROR:New("Exceeded maximum number of path reconstruction iterations") end
 			--iterCounter = iterCounter + 1
 
 			local entityInfo = entityData[entity]
@@ -135,9 +135,8 @@ function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 		local fScore = tentative_gScore + heuristic(pathFragment.ToPos) -- Best guess as to how cheap a path can be that goes through this entity.
 		entityData[pathFragment.To] = {
 			GScore = tentative_gScore, -- The cheapest path from start to this entity.
-			From = pathFragment.From, -- The previous entity.
-			Via = pathFragment.Via, -- The navmesh entity that connects the previous and current entity.
-			PathFragment = pathFragment -- Store the full neighbor metadata (aka path fragment) table for later use.
+			From = pathFragment.From, -- The previous entity for path reconstruction.
+			PathFragment = pathFragment -- Reference to the path fragment from the navmesh entity for later use. Do not modify the content!
 		}
 		openList:Enqueue(pathFragment.To, fScore)
 	end
@@ -154,7 +153,7 @@ function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 	-- Get next entity from queue and expand it.
 	for entity in openList.Dequeue, openList do
 		-- Debug end condition
-		--if iterCounter > 10000 then return ERROR:New("Maximum amount of iterations in pathfinding exceeded") end
+		--if iterCounter > 10000 then return ERROR:New("Exceeded maximum number of pathfinding iterations") end
 		--iterCounter = iterCounter + 1
 
 		-- Add to closed list.

@@ -171,7 +171,7 @@ function NAV_TRIANGLE:GetCache()
 	local cache = {}
 	self.Cache = cache
 
-	-- A signal that the cache contains correct or malformed data.
+	-- A flag indicating if the cache contains correct or malformed data.
 	-- Changing this to false will not cause the cache to be rebuilt.
 	cache.IsValid = true
 

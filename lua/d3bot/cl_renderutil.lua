@@ -118,7 +118,6 @@ function RENDER_UTIL.Draw2DArrowPos(from, to, width, color)
 
 	local mat = Matrix()
 	mat:Translate(from)
-	
 	mat:Rotate(diff:Angle())
 	mat:Scale(Vector(size, width, size))
 
