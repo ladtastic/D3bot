@@ -21,6 +21,7 @@ local UTIL = D3bot.Util
 local ERROR = D3bot.ERROR
 local NAV_EDGE = D3bot.NAV_EDGE
 local NAV_TRIANGLE = D3bot.NAV_TRIANGLE
+local NAV_AIR_CONNECTION = D3bot.NAV_AIR_CONNECTION
 
 ------------------------------------------------------
 --		Static
@@ -29,6 +30,7 @@ local NAV_TRIANGLE = D3bot.NAV_TRIANGLE
 ---@class D3botNAV_MESH
 ---@field Edges D3botNAV_EDGE[]
 ---@field Triangles D3botNAV_TRIANGLE[]
+---@field AirConnections D3botNAV_AIR_CONNECTION[]
 ---@field PubSub D3botNAV_PUBSUB
 ---@field UniqueIDCounter integer
 local NAV_MESH = D3bot.NAV_MESH
@@ -42,6 +44,7 @@ function NAV_MESH:New()
 	local obj = setmetatable({
 		Edges = {},
 		Triangles = {},
+		AirConnections = {},
 		PubSub = nil,
 		UniqueIDCounter = 1
 	}, self)
@@ -54,18 +57,33 @@ end
 ---@return D3botNAV_MESH
 ---@return D3botERROR | nil err
 function NAV_MESH:NewFromTable(t)
-	local obj = self:New()
+	local obj, err = self:New()
+	if err then return nil, err end
 
-	-- Restore edges
-	for _, edgeTable in ipairs(t.Edges) do
-		local _, err = NAV_EDGE:NewFromTable(obj, edgeTable)
-		if err then print(string.format("%s Failed to restore edge %s: %s", D3bot.PrintPrefix, edgeTable.ID, err)) end
+	-- Ignore but print any errors, so faulty navmeshes are still loaded.
+
+	-- Restore edges.
+	if t.Edges then
+		for _, edgeTable in ipairs(t.Edges) do
+			local _, err = NAV_EDGE:NewFromTable(obj, edgeTable)
+			if err then print(string.format("%s Failed to restore edge %s: %s", D3bot.PrintPrefix, edgeTable.ID, err)) end
+		end
 	end
 
-	-- Restore triangles
-	for _, triangleTable in ipairs(t.Triangles) do
-		local _, err = NAV_TRIANGLE:NewFromTable(obj, triangleTable)
-		if err then print(string.format("%s Failed to restore triangle %s: %s", D3bot.PrintPrefix, triangleTable.ID, err)) end
+	-- Restore triangles.
+	if t.Triangles then
+		for _, triangleTable in ipairs(t.Triangles) do
+			local _, err = NAV_TRIANGLE:NewFromTable(obj, triangleTable)
+			if err then print(string.format("%s Failed to restore triangle %s: %s", D3bot.PrintPrefix, triangleTable.ID, err)) end
+		end
+	end
+
+	-- Restore air connections.
+	if t.AirConnections then
+		for _, airConnectionTable in ipairs(t.AirConnections) do
+			local _, err = NAV_AIR_CONNECTION:NewFromTable(obj, airConnectionTable)
+			if err then print(string.format("%s Failed to restore air connection %s: %s", D3bot.PrintPrefix, airConnectionTable.ID, err)) end
+		end
 	end
 
 	return obj, nil
@@ -82,14 +100,20 @@ function NAV_MESH:MarshalToTable()
 
 	-- Get data table of each edge and store it in an array. Ignore the key/id, it's stored in each object.
 	t.Edges = {}
-	for k, edge in UTIL.kpairs(self.Edges) do
+	for _, edge in UTIL.kpairs(self.Edges) do
 		table.insert(t.Edges, edge:MarshalToTable())
 	end
 
 	-- Get data table of each triangle and store it in an array. Ignore the key/id, it's stored in each object.
 	t.Triangles = {}
-	for k, triangle in UTIL.kpairs(self.Triangles) do
+	for _, triangle in UTIL.kpairs(self.Triangles) do
 		table.insert(t.Triangles, triangle:MarshalToTable())
+	end
+
+	-- Get data table of each air connection and store it in an array. Ignore the key/id, it's stored in each object.
+	t.AirConnections = {}
+	for _, airConnection in UTIL.kpairs(self.AirConnections) do
+		table.insert(t.AirConnections, airConnection:MarshalToTable())
 	end
 
 	return t
@@ -102,7 +126,7 @@ function NAV_MESH:GetUniqueID()
 	local idKey = self.UniqueIDCounter
 
 	-- Check if key is already in use, iteratively increase
-	while self.Edges[idKey] or self.Triangles[idKey] do
+	while self.Edges[idKey] or self.Triangles[idKey] or self.AirConnections[idKey] do
 		idKey = idKey + 1
 		self.UniqueIDCounter = idKey
 	end
@@ -146,7 +170,7 @@ end
 ---@param id number | string
 ---@return D3botNAV_EDGE | D3botNAV_TRIANGLE | nil
 function NAV_MESH:FindByID(id)
-	return self.Edges[id] or self.Triangles[id] or nil
+	return self.Edges[id] or self.Triangles[id] or self.AirConnections[id] or nil
 end
 
 ---Returns the edge with the given ID, or nil if doesn't exist.
@@ -259,6 +283,42 @@ function NAV_MESH:FindOrCreateTriangle3E(e1, e2, e3)
 	return triangle, nil
 end
 
+---Returns the air connection with the given ID, or nil if doesn't exist.
+---@param id number | string
+---@return D3botNAV_AIR_CONNECTION | nil
+function NAV_MESH:FindAirConnectionByID(id)
+	return self.AirConnections[id]
+end
+
+---Will return the air connection that is built with the two given edges, if there is one.
+---@param e1 D3botNAV_EDGE
+---@param e2 D3botNAV_EDGE
+---@return D3botNAV_AIR_CONNECTION | nil
+---@return D3botERROR | nil err
+function NAV_MESH:FindAirConnection2E(e1, e2)
+	for _, airConnection in pairs(self.AirConnections) do
+		if airConnection:ConsistsOfEdges(e1, e2) then return airConnection, nil end
+	end
+
+	return nil, ERROR:New("No air connection found with the given edges %s, %s", e1, e2)
+end
+
+---Will create a new air connection with the given three edges, or return an already existing air connection.
+---@param e1 D3botNAV_EDGE
+---@param e2 D3botNAV_EDGE
+---@return D3botNAV_AIR_CONNECTION | nil
+---@return D3botERROR | nil err
+function NAV_MESH:FindOrCreateAirConnection2E(e1, e2)
+	local airConnection = self:FindAirConnection2E(e1, e2)
+	if airConnection then return airConnection, nil end
+
+	-- Create new air connection.
+	local airConnection, err = NAV_AIR_CONNECTION:New(self, nil, e1, e2)
+	if err then return nil, err end
+
+	return airConnection, nil
+end
+
 ---Set where to publish change events to.
 ---Use nil to disable publishing.
 ---Make sure that there is only one navmesh that is linked with a PubSub at a time.
@@ -273,15 +333,21 @@ end
 
 ---Draw the navmesh into a 3D rendering context.
 function NAV_MESH:Render3D()
-	-- Draw edges
+	-- Draw edges.
 	if CONVARS.NavmeshZCulling:GetBool() then render.SetColorMaterial()	else render.SetColorMaterialIgnoreZ() end
 	for _, edge in pairs(self.Edges) do
 		edge:Render3D()
 	end
 
-	-- Draw triangles
+	-- Draw triangles.
 	if CONVARS.NavmeshZCulling:GetBool() then render.SetColorMaterial()	else render.SetColorMaterialIgnoreZ() end
 	for _, triangle in pairs(self.Triangles) do
 		triangle:Render3D()
+	end
+
+	-- Draw air connections.
+	if CONVARS.NavmeshZCulling:GetBool() then render.SetColorMaterial()	else render.SetColorMaterialIgnoreZ() end
+	for _, airConnection in pairs(self.AirConnections) do
+		airConnection:Render3D()
 	end
 end

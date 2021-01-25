@@ -23,6 +23,7 @@ local NAV_MAIN = D3bot.NavMain
 local NAV_MESH = D3bot.NAV_MESH
 local NAV_EDGE = D3bot.NAV_EDGE
 local NAV_TRIANGLE = D3bot.NAV_TRIANGLE
+local NAV_AIR_CONNECTION = D3bot.NAV_AIR_CONNECTION
 
 ---@class D3botNAV_PUBSUB @Static class or just a collection of functions with a global state.
 ---@field Subscribers GPlayer[]
@@ -110,17 +111,6 @@ if SERVER then
 	end
 	util.AddNetworkString("D3bot_Nav_PubSub_Edge")
 
-	---Deletes a given edge from all the subscribers.
-	---@param id number | string
-	function NAV_PUBSUB:DeleteEdgeFromSubs(id)
-		if not self.Subscribers then return end
-
-		net.Start("D3bot_Nav_PubSub_EdgeDelete")
-		net.WriteTable({id})
-		net.Send(self.Subscribers)
-	end
-	util.AddNetworkString("D3bot_Nav_PubSub_EdgeDelete")
-
 	---Sends a given triangle to all the subscribers.
 	---@param triangle D3botNAV_TRIANGLE
 	function NAV_PUBSUB:SendTriangleToSubs(triangle)
@@ -132,16 +122,27 @@ if SERVER then
 	end
 	util.AddNetworkString("D3bot_Nav_PubSub_Triangle")
 
-	---Deletes a given triangle from all the subscribers.
-	---@param id number | string
-	function NAV_PUBSUB:DeleteTriangleFromSubs(id)
+	---Sends a given air connection to all the subscribers.
+	---@param airConnection D3botNAV_AIR_CONNECTION
+	function NAV_PUBSUB:SendAirConnectionToSubs(airConnection)
 		if not self.Subscribers then return end
 
-		net.Start("D3bot_Nav_PubSub_TriangleDelete")
+		net.Start("D3bot_Nav_PubSub_AirConnection")
+		net.WriteTable(airConnection:MarshalToTable())
+		net.Send(self.Subscribers)
+	end
+	util.AddNetworkString("D3bot_Nav_PubSub_AirConnection")
+
+	---Deletes a given navmesh entity from all the subscribers.
+	---@param id number | string
+	function NAV_PUBSUB:DeleteByIDFromSubs(id)
+		if not self.Subscribers then return end
+
+		net.Start("D3bot_Nav_PubSub_Delete")
 		net.WriteTable({id})
 		net.Send(self.Subscribers)
 	end
-	util.AddNetworkString("D3bot_Nav_PubSub_TriangleDelete")
+	util.AddNetworkString("D3bot_Nav_PubSub_Delete")
 end
 
 ------------------------------------------------------
@@ -172,15 +173,6 @@ if CLIENT then
 		end
 	)
 
-	net.Receive("D3bot_Nav_PubSub_EdgeDelete",
-		function(len)
-			local navmesh = NAV_MAIN:GetNavmesh()
-			local id = unpack(net.ReadTable())
-			local edge = navmesh:FindEdgeByID(id)
-			if edge then edge:Delete() end
-		end
-	)
-
 	net.Receive("D3bot_Nav_PubSub_Triangle",
 		function(len)
 			local navmesh = NAV_MAIN:GetNavmesh()
@@ -189,12 +181,20 @@ if CLIENT then
 		end
 	)
 
-	net.Receive("D3bot_Nav_PubSub_TriangleDelete",
+	net.Receive("D3bot_Nav_PubSub_AirConnection",
+		function(len)
+			local navmesh = NAV_MAIN:GetNavmesh()
+			local _, err = NAV_AIR_CONNECTION:NewFromTable(navmesh, net.ReadTable())
+			if err then print(string.format("%s Failed to recreate air connection that the server sent: %s", D3bot.PrintPrefix, err)) end
+		end
+	)
+
+	net.Receive("D3bot_Nav_PubSub_Delete",
 		function(len)
 			local navmesh = NAV_MAIN:GetNavmesh()
 			local id = unpack(net.ReadTable())
-			local triangle = navmesh:FindTriangleByID(id)
-			if triangle then triangle:Delete() end
+			local entity = navmesh:FindByID(id)
+			if entity then entity:Delete() end
 		end
 	)
 end

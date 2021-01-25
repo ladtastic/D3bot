@@ -57,6 +57,7 @@ D3bot.CONCOMMAND = D3bot.CONCOMMAND or {} -- Console command class, to replicate
 D3bot.NAV_MESH = D3bot.NAV_MESH or {} -- NAV_MESH class
 D3bot.NAV_EDGE = D3bot.NAV_EDGE or {} -- NAV_EDGE class
 D3bot.NAV_TRIANGLE = D3bot.NAV_TRIANGLE or {} -- NAV_TRIANGLE class
+D3bot.NAV_AIR_CONNECTION = D3bot.NAV_AIR_CONNECTION or {} -- NAV_AIR_CONNECTION class
 D3bot.PATH = D3bot.PATH or {} -- PATH class that handles pathfinding
 D3bot.PATH_POINT = D3bot.PATH_POINT or {} -- PATH_POINT helper class for start and destination points
 
@@ -82,6 +83,7 @@ UTIL.IncludeRealm("navmesh/sh_main.lua", UTIL.REALM_SHARED)
 UTIL.IncludeRealm("navmesh/sh_navmesh.lua", UTIL.REALM_SHARED)
 UTIL.IncludeRealm("navmesh/sh_edge.lua", UTIL.REALM_SHARED)
 UTIL.IncludeRealm("navmesh/sh_triangle.lua", UTIL.REALM_SHARED)
+UTIL.IncludeRealm("navmesh/sh_air_connection.lua", UTIL.REALM_SHARED)
 UTIL.IncludeRealm("navmesh/sh_pubsub.lua", UTIL.REALM_SHARED)
 UTIL.IncludeRealm("navmesh/sh_edit.lua", UTIL.REALM_SHARED)
 UTIL.IncludeRealm("navmesh/sv_file.lua", UTIL.REALM_SERVER)

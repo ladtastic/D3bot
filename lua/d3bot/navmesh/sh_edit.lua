@@ -34,15 +34,15 @@ local NAV_EDIT = D3bot.NavEdit
 ---@param p3 GVector
 function NAV_EDIT.CreateTriangle3P(ply, p1, p2, p3)
 	if SERVER then
-		-- Only he who wields the weapon has the power
+		-- Only he who wields the weapon has the power.
 		if not ply:HasWeapon("weapon_d3_navmesher") then return end
-		-- Get or create navmesh
+		-- Get or create navmesh.
 		local navmesh = NAV_MAIN:ForceNavmesh()
 
 		local _, err = navmesh:FindOrCreateTriangle3P(p1, p2, p3)
 		if err then ply:ChatPrint(string.format("%s Failed to create triangle: %s", D3bot.PrintPrefix, err)) end
 
-		-- Try to garbage collect entities
+		-- Try to garbage collect entities.
 		navmesh:_GC()
 
 	elseif CLIENT then
@@ -65,6 +65,50 @@ if SERVER then
 end
 
 ------------------------------------------------------
+--		CreateAirConnection2E
+------------------------------------------------------
+
+---Create an air connection in the main navmesh.
+---@param ply GPlayer
+---@param e1ID number | string
+---@param e2ID number | string
+function NAV_EDIT.CreateAirConnection2E(ply, e1ID, e2ID)
+	if SERVER then
+		-- Only he who wields the weapon has the power.
+		if not ply:HasWeapon("weapon_d3_navmesher") then return end
+		-- Get or create navmesh.
+		local navmesh = NAV_MAIN:ForceNavmesh()
+
+		local e1, e2 = navmesh:FindEdgeByID(e1ID), navmesh:FindEdgeByID(e2ID)
+		if not e1 or not e2 then
+			ply:ChatPrint(string.format("%s Failed to create air connection: Can't find all needed edges", D3bot.PrintPrefix))
+			return
+		end
+
+		local _, err = navmesh:FindOrCreateAirConnection2E(e1, e2)
+		if err then ply:ChatPrint(string.format("%s Failed to create air connection: %s", D3bot.PrintPrefix, err)) end
+
+		-- Try to garbage collect entities.
+		navmesh:_GC()
+
+	elseif CLIENT then
+		net.Start("D3bot_Nav_Edit_CreateAirConnection2E")
+		net.WriteTable({e1ID, e2ID})
+		net.SendToServer()
+	end
+end
+
+if SERVER then
+	util.AddNetworkString("D3bot_Nav_Edit_CreateAirConnection2E")
+	net.Receive("D3bot_Nav_Edit_CreateAirConnection2E",
+		function(len, ply)
+			local e1ID, e2ID = unpack(net.ReadTable())
+			NAV_EDIT.CreateAirConnection2E(ply, e1ID, e2ID)
+		end
+	)
+end
+
+------------------------------------------------------
 --		RemoveByID
 ------------------------------------------------------
 
@@ -73,9 +117,9 @@ end
 ---@param id number | string
 function NAV_EDIT.RemoveByID(ply, id)
 	if SERVER then
-		-- Only he who wields the weapon has the power
+		-- Only he who wields the weapon has the power.
 		if not ply:HasWeapon("weapon_d3_navmesher") then return end
-		-- Get or create navmesh
+		-- Get or create navmesh.
 		local navmesh = NAV_MAIN:ForceNavmesh()
 
 		local entity = navmesh:FindByID(id)
@@ -111,9 +155,9 @@ end
 ---@param state boolean
 function NAV_EDIT.SetFlipNormalByID(ply, id, state)
 	if SERVER then
-		-- Only he who wields the weapon has the power
+		-- Only he who wields the weapon has the power.
 		if not ply:HasWeapon("weapon_d3_navmesher") then return end
-		-- Get or create navmesh
+		-- Get or create navmesh.
 		local navmesh = NAV_MAIN:ForceNavmesh()
 
 		local triangle = navmesh:FindTriangleByID(id)
@@ -149,9 +193,9 @@ end
 ---@param id number | string
 function NAV_EDIT.RecalcFlipNormalByID(ply, id)
 	if SERVER then
-		-- Only he who wields the weapon has the power
+		-- Only he who wields the weapon has the power.
 		if not ply:HasWeapon("weapon_d3_navmesher") then return end
-		-- Get or create navmesh
+		-- Get or create navmesh.
 		local navmesh = NAV_MAIN:ForceNavmesh()
 
 		local triangle = navmesh:FindTriangleByID(id)

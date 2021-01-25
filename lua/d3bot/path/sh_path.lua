@@ -253,10 +253,10 @@ function PATH:Render3D()
 	cam.IgnoreZ(true)
 
 	---@type D3botPATH_ELEMENT
-	for _, pathElement in pairs(self.Path) do
+	for i, pathElement in pairs(self.Path) do
 		local locomotionHandler = pathElement.LocomotionHandler
 		-- Let the locomotion handler render the path element.
-		locomotionHandler:Render3D(pathElement)
+		locomotionHandler:Render3D(i, self.Path)
 	end
 
 	cam.IgnoreZ(false)

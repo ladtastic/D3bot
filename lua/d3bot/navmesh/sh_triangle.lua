@@ -38,7 +38,7 @@ NAV_TRIANGLE.MinHeight = 10
 
 ---Get new instance of a triangle object.
 ---This represents a triangle that is defined by 3 edges that are connected in a loop.
----If a triangle with the same id already exists, it will be overwritten.
+---If a triangle with the same id already exists, it will be replaced.
 ---It's possible to get invalid triangles, therefore this needs to be checked.
 ---@param navmesh D3botNAV_MESH
 ---@param id number | string
@@ -58,6 +58,12 @@ function NAV_TRIANGLE:New(navmesh, id, e1, e2, e3, flipNormal)
 		UI = {}
 	}, self)
 
+	-- General parameter checks. -- TODO: Check parameters for types and other stuff
+	if not navmesh then return nil, ERROR:New("Invalid value of parameter %q", "navmesh") end
+	if not e1 then return nil, ERROR:New("Invalid value of parameter %q", "e1") end
+	if not e2 then return nil, ERROR:New("Invalid value of parameter %q", "e2") end
+	if not e3 then return nil, ERROR:New("Invalid value of parameter %q", "e3") end
+
 	-- Check if the edges form a triangle shape
 	local trianglePoints, err = UTIL.EdgesToTrianglePoints(obj.Edges)
 	if err then
@@ -75,12 +81,20 @@ function NAV_TRIANGLE:New(navmesh, id, e1, e2, e3, flipNormal)
 	table.insert(e2.Triangles, obj)
 	table.insert(e3.Triangles, obj)
 
-	-- Invalidate the cache of the neighbor triangles and their edges.
+	-- Invalidate the cache of the neighbor triangles/air connections and their edges.
 	-- It's ugly but has to be done.
 	for _, edge in ipairs(obj.Edges) do
 		for _, triangle in ipairs(edge.Triangles) do
+			triangle:InvalidateCache()
 			for _, edge2 in ipairs(triangle.Edges) do
-				-- This may be run twice on some edges, but it's a fast operation
+				-- This may be run several times on some edges, but it's a fast operation
+				edge2:InvalidateCache()
+			end
+		end
+		for _, airConnection in ipairs(edge.AirConnections) do
+			airConnection:InvalidateCache()
+			for _, edge2 in ipairs(airConnection.Edges) do
+				-- This may be run several times on some edges, but it's a fast operation
 				edge2:InvalidateCache()
 			end
 		end
@@ -226,7 +240,7 @@ function NAV_TRIANGLE:GetCache()
 	cache.PathFragments = {}
 	if cache.IsValid then
 		for _, edge in ipairs(self.Edges) do
-			if #edge.Triangles > 1 then
+			if #edge.Triangles + #edge.AirConnections > 1 then
 				local edgeCenter = (edge.Points[1] + edge.Points[2]) / 2
 				local edgeVector = edge.Points[2] - edge.Points[1]
 				local edgeOrthogonal = cache.Normal:Cross(edgeVector) -- Vector that is orthogonal to the edge and parallel to the triangle plane.
@@ -260,7 +274,7 @@ end
 function NAV_TRIANGLE:Delete()
 	-- Publish change event
 	if self.Navmesh.PubSub then
-		self.Navmesh.PubSub:DeleteTriangleFromSubs(self:GetID())
+		self.Navmesh.PubSub:DeleteByIDFromSubs(self:GetID())
 	end
 
 	self:_Delete()
@@ -273,9 +287,12 @@ function NAV_TRIANGLE:_Delete()
 		table.RemoveByValue(edge.Triangles, self)
 		-- Invalidate cache of the edge
 		edge:InvalidateCache()
-		-- Invalidate cache of the (other) connected triangles
+		-- Invalidate cache of the (other) connected triangles and air connections.
 		for _, triangle in ipairs(edge.Triangles) do
 			triangle:InvalidateCache()
+		end
+		for _, airConnection in ipairs(edge.AirConnections) do
+			airConnection:InvalidateCache()
 		end
 	end
 

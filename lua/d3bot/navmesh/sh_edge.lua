@@ -28,6 +28,7 @@ local ERROR = D3bot.ERROR
 ---@field ID number | string
 ---@field Points GVector[]
 ---@field Triangles D3botNAV_TRIANGLE[] @This points to triangles that this edge is part of. There should be at most 2 triangles.
+---@field AirConnections D3botNAV_AIR_CONNECTION[] @This points to air connections that this edge is part of.
 ---@field Cache table | nil @Contains connected neighbor edges and other cached values.
 ---@field UI table @General structure for UI related properties like selection status
 local NAV_EDGE = D3bot.NAV_EDGE
@@ -41,7 +42,7 @@ NAV_EDGE.MinLength = 10
 
 ---Get new instance of an edge object with the two given points.
 ---This represents an edge that is defined with two points.
----If an edge with the same id already exists, it will be overwritten.
+---If an edge with the same id already exists, it will be replaced.
 ---The point coordinates will be rounded to a single engine unit.
 ---@param navmesh D3botNAV_MESH
 ---@param id number | string
@@ -55,9 +56,15 @@ function NAV_EDGE:New(navmesh, id, p1, p2)
 		ID = id or navmesh:GetUniqueID(),
 		Points = {UTIL.RoundVector(p1), UTIL.RoundVector(p2)},
 		Triangles = {},
+		AirConnections = {},
 		Cache = nil,
 		UI = {}
 	}, self)
+
+	-- General parameter checks. -- TODO: Check parameters for types and other stuff
+	if not navmesh then return nil, ERROR:New("Invalid value of parameter %q", "navmesh") end
+	if not p1 then return nil, ERROR:New("Invalid value of parameter %q", "p1") end
+	if not p2 then return nil, ERROR:New("Invalid value of parameter %q", "p2") end
 
 	-- Make sure that length is >= self.MinLength
 	local length = (p2-p1):Length()
@@ -69,6 +76,8 @@ function NAV_EDGE:New(navmesh, id, p1, p2)
 	local old = navmesh.Edges[obj.ID]
 	if old then
 		obj.Triangles = old.Triangles
+		obj.AirConnections = old.AirConnections
+
 		-- Iterate over linked triangles
 		for _, triangle in ipairs(obj.Triangles) do
 			-- Correct the edge references of these triangles
@@ -78,13 +87,27 @@ function NAV_EDGE:New(navmesh, id, p1, p2)
 				end
 			end
 		end
+		-- Iterate over linked air connections
+		for _, airConnection in ipairs(obj.AirConnections) do
+			-- Correct the edge references of these triangles
+			for i, edge in ipairs(airConnection.Edges) do
+				if edge == old then
+					airConnection.Edges[i] = obj
+				end
+			end
+		end
+
 		old.Triangles = {}
+		old.AirConnections = {}
 		old:_Delete()
 	end
 
-	-- Invalidate cache of connected triangles
+	-- Invalidate cache of connected triangles and air connections.
 	for _, triangle in ipairs(obj.Triangles) do
 		triangle:InvalidateCache()
+	end
+	for _, airConnection in ipairs(obj.AirConnections) do
+		airConnection:InvalidateCache()
 	end
 
 	-- Add object to the navmesh
@@ -164,7 +187,7 @@ function NAV_EDGE:GetCache()
 			end
 
 			for _, edge in ipairs(triangle.Edges) do
-				if edge ~= self and #edge.Triangles > 1 then
+				if edge ~= self and #edge.Triangles + #edge.AirConnections > 1 then
 					local neighborEdgeCenter = (edge.Points[1] + edge.Points[2]) / 2
 					local edgeVector = edge.Points[2] - edge.Points[1]
 					local edgeOrthogonal = triangleNormal:Cross(edgeVector) -- Vector that is orthogonal to the edge and parallel to the triangle plane.
@@ -177,6 +200,29 @@ function NAV_EDGE:GetCache()
 						To = edge,
 						ToPos = neighborEdgeCenter,
 						LocomotionType = triangle:GetLocomotionType(), -- Not optimal as it makes a cache query and has potential for infinite recursion.
+						PathDirection = pathDirection, -- Vector from start position to dest position.
+						Distance = pathDirection:Length(), -- Distance from start to dest.
+						OrthogonalOutside = (edgeOrthogonal * (edgeOrthogonal:Dot(pathDirection))):GetNormalized() -- Vector for path end condition that is orthogonal to the edge and parallel to the triangle plane, additionally it always points outside the triangle.
+					}
+					table.insert(cache.PathFragments, pathFragment)
+				end
+			end
+		end
+		for _, airConnection in ipairs(self.AirConnections) do
+			for _, edge in ipairs(airConnection.Edges) do
+				if edge ~= self and #edge.Triangles + #edge.AirConnections > 1 then
+					local edgeCenter = (edge.Points[1] + edge.Points[2]) / 2
+					local edgeVector = edge.Points[2] - edge.Points[1]
+					local pathDirection = edgeCenter - cache.Center -- Basically the walking direction.
+					local edgeOrthogonal = pathDirection:Cross(edgeVector):Cross(edgeVector) -- Vector that is orthogonal to the edge.
+					---@type D3botPATH_FRAGMENT
+					local pathFragment = {
+						From = self,
+						FromPos = cache.Center,
+						Via = airConnection,
+						To = edge,
+						ToPos = edgeCenter,
+						LocomotionType = airConnection:GetLocomotionType(), -- Not optimal as it makes a cache query and has potential for infinite recursion.
 						PathDirection = pathDirection, -- Vector from start position to dest position.
 						Distance = pathDirection:Length(), -- Distance from start to dest.
 						OrthogonalOutside = (edgeOrthogonal * (edgeOrthogonal:Dot(pathDirection))):GetNormalized() -- Vector for path end condition that is orthogonal to the edge and parallel to the triangle plane, additionally it always points outside the triangle.
@@ -199,7 +245,7 @@ end
 function NAV_EDGE:Delete()
 	-- Publish change event
 	if self.Navmesh.PubSub then
-		self.Navmesh.PubSub:DeleteEdgeFromSubs(self:GetID())
+		self.Navmesh.PubSub:DeleteByIDFromSubs(self:GetID())
 	end
 
 	return self:_Delete()
@@ -207,9 +253,12 @@ end
 
 ---Internal method.
 function NAV_EDGE:_Delete()
-	-- Delete the (one or two) triangles that use this edge
+	-- Delete the triangles and air connections that are connected.
 	for _, triangle in ipairs(self.Triangles) do
 		triangle:_Delete()
+	end
+	for _, airConnection in ipairs(self.AirConnections) do
+		airConnection:_Delete()
 	end
 
 	self.Navmesh.Edges[self.ID] = nil
@@ -219,7 +268,7 @@ end
 ---Internal method: Deletes the edge, if there is nothing that references it.
 ---Only call GC from the server side and let it sync the result to all clients.
 function NAV_EDGE:_GC()
-	if #self.Triangles == 0 then
+	if #self.Triangles + #self.AirConnections == 0 then
 		self:Delete()
 	end
 end
@@ -280,6 +329,7 @@ function NAV_EDGE:GetClosestPointToLine(origin, dir)
 end
 
 ---Returns whether a ray from the given origin in the given direction dir intersects with the edge.
+---The result is either nil or the distance from the origin as a fraction of dir length.
 ---This will not return anything behind the origin, or beyond the length of dir.
 ---@param origin GVector @Origin of the line or ray.
 ---@param dir GVector @Direction of the line or ray.

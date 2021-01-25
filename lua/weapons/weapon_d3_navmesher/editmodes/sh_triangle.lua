@@ -137,9 +137,8 @@ function THIS_EDIT_MODE:SecondaryAttack(wep)
 	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())
 
 	local tracedTriangle = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Triangles)
-	-- Set highlighted state of traced element
 	if tracedTriangle then
-		-- Edit server side navmesh
+		-- Remove triangle on the server side.
 		NAV_EDIT.RemoveByID(LocalPlayer(), tracedTriangle:GetID())
 
 		wep.Weapon:EmitSound("buttons/blip2.wav")

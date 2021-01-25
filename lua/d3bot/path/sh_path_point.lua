@@ -62,7 +62,7 @@ function PATH_POINT:New(navmesh, pos)
 	---@type D3botPATH_FRAGMENT[]
 	obj.PathFragments = {}
 	for _, edge in ipairs(obj.Triangle.Edges) do
-		if #edge.Triangles > 1 then
+		if #edge.Triangles + #edge.AirConnections > 1 then
 			local edgeCenter = edge:GetCentroid() -- Use cache as it may be faster.
 			local edgeVector = edge.Points[2] - edge.Points[1]
 			local edgeOrthogonal = triangleNormal:Cross(edgeVector) -- Vector that is orthogonal to the edge and parallel to the triangle plane.
