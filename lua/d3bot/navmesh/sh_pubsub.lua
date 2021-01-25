@@ -1,4 +1,4 @@
--- Copyright (C) 2020 David Vogel
+-- Copyright (C) 2020-2021 David Vogel
 --
 -- This file is part of D3bot.
 --
@@ -46,7 +46,7 @@ if SERVER then
 
 		table.insert(self.Subscribers, ply)
 
-		-- Send main navmesh to new subscriber
+		-- Send main navmesh to new subscriber.
 		local navmesh = NAV_MAIN:ForceNavmesh()
 		if navmesh then
 			self:SendNavmeshToSubs(navmesh, ply)

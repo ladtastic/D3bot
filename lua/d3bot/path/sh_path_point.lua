@@ -1,4 +1,4 @@
--- Copyright (C) 2020 David Vogel
+-- Copyright (C) 2020-2021 David Vogel
 --
 -- This file is part of D3bot.
 --
@@ -44,18 +44,18 @@ function PATH_POINT:New(navmesh, pos)
 		Pos = pos,
 	}, self)
 
-	-- Check if there is even a position
+	-- Check if there is even a position.
 	if not pos then
 		return nil, ERROR:New("Invalid position given")
 	end
 
-	-- Get triangle that the point is on
+	-- Get triangle that the point is on.
 	obj.Triangle = UTIL.GetClosestToPos(pos, navmesh.Triangles)
 	if not obj.Triangle then
 		return nil, ERROR:New("Can't find closest triangle for point %s", pos)
 	end
 
-	-- Triangle normal
+	-- Triangle normal.
 	local triangleNormal = obj.Triangle:GetCache().Normal
 
 	---A list of possible paths to take from this point.

@@ -1,4 +1,4 @@
--- Copyright (C) 2020 David Vogel
+-- Copyright (C) 2020-2021 David Vogel
 --
 -- This file is part of D3bot.
 --
@@ -101,7 +101,7 @@ function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 
 		-- Iterate from the found destination to the start entity and push path to pathElements.
 		while entity do
-			-- Debug end condition
+			-- Debug end condition.
 			--if iterCounter > 10000 then return ERROR:New("Exceeded maximum number of path reconstruction iterations") end
 			--iterCounter = iterCounter + 1
 
@@ -152,7 +152,7 @@ function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 
 	-- Get next entity from queue and expand it.
 	for entity in openList.Dequeue, openList do
-		-- Debug end condition
+		-- Debug end condition.
 		--if iterCounter > 10000 then return ERROR:New("Exceeded maximum number of pathfinding iterations") end
 		--iterCounter = iterCounter + 1
 
@@ -218,7 +218,7 @@ function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 		end
 	end
 
-	-- No path found
+	-- No path found.
 	return ERROR:New("Couldn't find a path from %s to %s", startPoint, destPoint)
 end
 
@@ -238,7 +238,7 @@ function PATH:UpdatePathToPos(startPos, destPos)
 	-- Also, if the current path is long enough, there is no need to regenerate the path every time the destPos moves from one triangle to another.
 	-- In this case it could do a search from the old "end" position of the path to the new destPos.
 
-	-- Regenerate path
+	-- Regenerate path.
 	local startPoint, err = PATH_POINT:New(navmesh, startPos)
 	if err then return err end
 	local destPoint, err = PATH_POINT:New(navmesh, destPos)

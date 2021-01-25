@@ -37,16 +37,16 @@ function RELOAD_MENU:Create()
 end
 
 function RELOAD_MENU:Open()
-	-- Prevent Spam
+	-- Prevent Spam.
 	if self.IsOpen then return end
 	self.IsOpen = true
 
-	-- Make sure that there is a panel instance
+	-- Make sure that there is a panel instance.
 	if not IsValid(self.PanelInstance) then
 		self:Create()
 	end
 
-	-- Only open menu if the player has the SWEP in his hand
+	-- Only open menu if the player has the SWEP in his hand.
 	local wep = LocalPlayer():GetActiveWeapon()
 	if not IsValid(wep) or not wep:GetClass() == "weapon_d3_navmesher" then return end
 
@@ -54,11 +54,11 @@ function RELOAD_MENU:Open()
 end
 
 function RELOAD_MENU:Close()
-	-- Prevent Spam
+	-- Prevent Spam.
 	if not self.IsOpen then return end
 	self.IsOpen = nil
 
-	-- Check if there is a panel instance
+	-- Check if there is a panel instance.
 	if not IsValid(self.PanelInstance) then
 		return
 	end
@@ -68,16 +68,16 @@ end
 
 -- Stupid hack: Check if the reload key is hold, and open the menu accordingly.
 local reloadMenuOpener = function()
-	-- Only open menu if the player has the SWEP in his hand
+	-- Only open menu if the player has the SWEP in his hand.
 	local wep = LocalPlayer():GetActiveWeapon()
 	if not IsValid(wep) or wep:GetClass() ~= "weapon_d3_navmesher" then return end
 
-	-- Reset edit mode every time the player reloads the SWEP
+	-- Reset edit mode every time the player reloads the SWEP.
 	if LocalPlayer():KeyPressed(IN_RELOAD) and CONVARS.SWEPResetOnReloadKey:GetBool() then
 		wep:ResetEditMode()
 	end
 
-	-- Spam open or close calls
+	-- Spam open or close calls.
 	if LocalPlayer():KeyDown(IN_RELOAD) then
 		RELOAD_MENU:Open()
 	else
@@ -90,6 +90,6 @@ hook.Add("Think", D3bot.HookPrefix .. "ReloadMenuOpener", reloadMenuOpener)
 concommand.Add("+d3bot_menu_reload", function() RELOAD_MENU:Open() end, nil, "Opens the D3bot reload menu", FCVAR_DONTRECORD)
 concommand.Add("-d3bot_menu_reload", function() if (input.IsKeyTrapping()) then return end RELOAD_MENU:Close() end, nil, "Closes the D3bot reload menu", FCVAR_DONTRECORD)
 
--- For debugging: Recreate panel every time the file loads
+-- For debugging: Recreate panel every time the file loads.
 -- TODO: Don't call RELOAD_MENU:Create from here
 RELOAD_MENU:Create()

@@ -1,4 +1,4 @@
--- Copyright (C) 2020 David Vogel
+-- Copyright (C) 2020-2021 David Vogel
 --
 -- This file is part of D3bot.
 --
@@ -21,7 +21,7 @@ local ACTIONS = D3bot.Actions
 -- Let the bot jump a single time.
 -- Takes 1 second in total.
 function ACTIONS.JumpUp(bot, mem)
-	-- Press jump button
+	-- Press jump button.
 	mem.ControlCallback = function(bot, mem, cUserCmd)
 		cUserCmd:ClearButtons()
 		cUserCmd:ClearMovement()
@@ -30,7 +30,7 @@ function ACTIONS.JumpUp(bot, mem)
 
 	coroutine.wait(0.2)
 
-	-- Release jump button
+	-- Release jump button.
 	mem.ControlCallback = nil
 
 	coroutine.wait(0.8)

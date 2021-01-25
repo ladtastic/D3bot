@@ -1,4 +1,4 @@
--- Copyright (C) 2020 David Vogel
+-- Copyright (C) 2020-2021 David Vogel
 --
 -- This file is part of D3bot.
 --
@@ -95,7 +95,7 @@ function NAV_AIR_CONNECTION:New(navmesh, id, e1, e2)
 	local old = navmesh.AirConnections[obj.ID]
 	if old then old:_Delete() end
 
-	-- Add object to the navmesh
+	-- Add object to the navmesh.
 	navmesh.AirConnections[obj.ID] = obj
 
 	-- Check if cache is valid, if not abort and delete.
@@ -176,7 +176,7 @@ function NAV_AIR_CONNECTION:GetCache()
 	-- Calculate "centroid" center.
 	cache.Centroid = (point1 + point2) / 3
 
-	-- Determine locomotion type (Hardcoded locomotion types).
+	-- Determine locomotion type. (Hardcoded locomotion types)
 	cache.LocomotionType = "AirHorizontal" -- Default type
 	local direction = (point2 - point1)
 	local angle = direction:Angle()
@@ -236,7 +236,7 @@ function NAV_AIR_CONNECTION:_Delete()
 	-- Delete any reference to this air connection from edges.
 	for _, edge in ipairs(self.Edges) do
 		table.RemoveByValue(edge.AirConnections, self)
-		-- Invalidate cache of the edge
+		-- Invalidate cache of the edge.
 		edge:InvalidateCache()
 		-- Invalidate cache of the (other) connected triangles and air connections.
 		for _, triangle in ipairs(edge.Triangles) do

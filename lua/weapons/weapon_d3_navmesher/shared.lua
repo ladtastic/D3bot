@@ -1,4 +1,4 @@
--- Copyright (C) 2020 David Vogel
+-- Copyright (C) 2020-2021 David Vogel
 --
 -- This file is part of D3bot.
 --
@@ -34,7 +34,7 @@ SWEP.ViewModel = "models/weapons/c_toolgun.mdl"
 SWEP.WorldModel = "models/weapons/w_toolgun.mdl"
 SWEP.UseHands = true
 
--- Be nice, precache the models
+-- Be nice, precache the models.
 util.PrecacheModel(SWEP.ViewModel)
 util.PrecacheModel(SWEP.WorldModel)
 
@@ -53,18 +53,18 @@ SWEP.Secondary.Ammo = "none"
 SWEP.CanHolster = true
 SWEP.CanDeploy = true
 
--- Load edit modes
+-- Load edit modes.
 include("editmodes/sh_triangle.lua")
 include("editmodes/sh_air_connection.lua")
 include("editmodes/sh_flip_normal.lua")
 include("editmodes/sh_path_test.lua")
 
 function SWEP:Initialize()
-	-- Starting edit mode
+	-- Starting edit mode.
 	self:ChangeEditMode("TriangleAddRemove")
 end
 
--- Server realm only
+-- Server realm only.
 function SWEP:Equip(ent)
 	local editMode = self.EditMode
 
@@ -78,7 +78,7 @@ function SWEP:Equip(ent)
 	return editMode:Equip(self)
 end
 
--- Server realm only
+-- Server realm only.
 function SWEP:OnDrop()
 	local editMode = self.EditMode
 
@@ -96,12 +96,12 @@ end
 function SWEP:OnRemove()
 	local editMode = self.EditMode
 
-	-- Hide UI
+	-- Hide UI.
 	if CLIENT then
 		RELOAD_MENU:Close()
 	end
 
-	-- Unsubscribe from navmesh PubSub
+	-- Unsubscribe from navmesh PubSub.
 	if SERVER then
 		local owner = self.Owner
 		if IsValid(owner) and owner:IsPlayer() then
@@ -131,7 +131,7 @@ end
 function SWEP:Holster()
 	local editMode = self.EditMode
 
-	-- Hide UI when holstering
+	-- Hide UI when holstering.
 	if CLIENT then
 		RELOAD_MENU:Close()
 	end

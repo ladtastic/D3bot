@@ -1,4 +1,4 @@
--- Copyright (C) 2020 David Vogel
+-- Copyright (C) 2020-2021 David Vogel
 --
 -- This file is part of D3bot.
 --
@@ -67,7 +67,7 @@ end
 ---@param args string[]
 ---@param argStr string
 function CONCOMMAND:_Callback(ply, cmd, args, argStr)
-	-- Call any user supplied method to handle the concommand
+	-- Call any user supplied method to handle the concommand.
 	if SERVER then
 		self:OnServer(ply, cmd, args, argStr)
 	end
@@ -76,9 +76,9 @@ function CONCOMMAND:_Callback(ply, cmd, args, argStr)
 	end
 	self:OnShared(ply, cmd, args, argStr)
 
-	-- Replicate concommand in server realm
+	-- Replicate concommand in server realm.
 	if CLIENT then
-		-- Ignore ply, and call the server side concommand
+		-- Ignore ply, and call the server side concommand.
 		LocalPlayer():ConCommand(self.NameServer .. " " .. argStr)
 	end
 end

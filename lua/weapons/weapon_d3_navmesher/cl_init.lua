@@ -1,4 +1,4 @@
--- Copyright (C) 2020 David Vogel
+-- Copyright (C) 2020-2021 David Vogel
 --
 -- This file is part of D3bot.
 --
@@ -21,7 +21,7 @@ include("vgui/cl_panel_navmeshing_options.lua")
 include("vgui/cl_panel_reload_menu.lua")
 include("vgui/cl_ui_reload_menu.lua")
 
-function SWEP:PreDrawViewModel(vm) -- ZS doesn't call this with the weapon and ply parameters
+function SWEP:PreDrawViewModel(vm) -- ZS doesn't call this with the weapon and ply parameters.
 	local editMode = self.EditMode
 
 	if not editMode then return true end
@@ -30,7 +30,7 @@ function SWEP:PreDrawViewModel(vm) -- ZS doesn't call this with the weapon and p
 	return editMode:PreDrawViewModel(self, vm)
 end
 
-function SWEP:PostDrawViewModel(vm) -- ZS doesn't call this with the weapon and ply parameters
+function SWEP:PostDrawViewModel(vm) -- ZS doesn't call this with the weapon and ply parameters.
 	local editMode = self.EditMode
 
 	if not editMode then return true end

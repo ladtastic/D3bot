@@ -1,4 +1,4 @@
--- Copyright (C) 2020 David Vogel
+-- Copyright (C) 2020-2021 David Vogel
 --
 -- This file is part of D3bot.
 --
@@ -64,19 +64,19 @@ function NAV_TRIANGLE:New(navmesh, id, e1, e2, e3, flipNormal)
 	if not e2 then return nil, ERROR:New("Invalid value of parameter %q", "e2") end
 	if not e3 then return nil, ERROR:New("Invalid value of parameter %q", "e3") end
 
-	-- Check if the edges form a triangle shape
+	-- Check if the edges form a triangle shape.
 	local trianglePoints, err = UTIL.EdgesToTrianglePoints(obj.Edges)
 	if err then
 		return nil, err
 	end
 
-	-- Check the resulting triangle's min height
+	-- Check the resulting triangle's min height.
 	local h1, h2, h3 = UTIL.GetTriangleHeights(trianglePoints[1], trianglePoints[2], trianglePoints[3])
 	if math.min(h1, h2, h3) < obj.MinHeight then
 		return nil, ERROR:New("The triangle's smallest height is below allowed min. height (%s < %s)", math.min(h1, h2, h3), obj.MinHeight)
 	end
 
-	-- Add reference to this triangle to all edges
+	-- Add reference to this triangle to all edges.
 	table.insert(e1.Triangles, obj)
 	table.insert(e2.Triangles, obj)
 	table.insert(e3.Triangles, obj)
@@ -87,27 +87,27 @@ function NAV_TRIANGLE:New(navmesh, id, e1, e2, e3, flipNormal)
 		for _, triangle in ipairs(edge.Triangles) do
 			triangle:InvalidateCache()
 			for _, edge2 in ipairs(triangle.Edges) do
-				-- This may be run several times on some edges, but it's a fast operation
+				-- This may be run several times on some edges, but it's a fast operation.
 				edge2:InvalidateCache()
 			end
 		end
 		for _, airConnection in ipairs(edge.AirConnections) do
 			airConnection:InvalidateCache()
 			for _, edge2 in ipairs(airConnection.Edges) do
-				-- This may be run several times on some edges, but it's a fast operation
+				-- This may be run several times on some edges, but it's a fast operation.
 				edge2:InvalidateCache()
 			end
 		end
 	end
 
-	-- Check if there was a previous element. If so, delete it
+	-- Check if there was a previous element. If so, delete it.
 	local old = navmesh.Triangles[obj.ID]
 	if old then old:_Delete() end
 
-	-- Add object to the navmesh
+	-- Add object to the navmesh.
 	navmesh.Triangles[obj.ID] = obj
 
-	-- Check if there are at most 2 triangles connected to each edge
+	-- Check if there are at most 2 triangles connected to each edge.
 	for _, edge in ipairs(obj.Edges) do
 		if #edge.Triangles > 2 then
 			obj:_Delete()
@@ -115,14 +115,14 @@ function NAV_TRIANGLE:New(navmesh, id, e1, e2, e3, flipNormal)
 		end
 	end
 
-	-- Check if cache is valid, if not abort and delete
+	-- Check if cache is valid, if not abort and delete.
 	local cache = obj:GetCache()
 	if not cache.IsValid then
 		obj:_Delete()
 		return nil, ERROR:New("Failed to generate valid cache")
 	end
 
-	-- Publish change event
+	-- Publish change event.
 	if navmesh.PubSub then
 		navmesh.PubSub:SendTriangleToSubs(obj)
 	end
@@ -172,7 +172,7 @@ function NAV_TRIANGLE:MarshalToTable()
 		FlipNormal = self.FlipNormal,
 	}
 
-	return t -- Make sure that any object returned here is a deep copy of its original
+	return t -- Make sure that any object returned here is a deep copy of its original.
 end
 
 ---Get the cached values, if needed this will regenerate the cache.
@@ -181,7 +181,7 @@ function NAV_TRIANGLE:GetCache()
 	local cache = self.Cache
 	if cache then return cache end
 
-	-- Regenerate cache
+	-- Regenerate cache.
 	local cache = {}
 	self.Cache = cache
 
@@ -189,7 +189,7 @@ function NAV_TRIANGLE:GetCache()
 	-- Changing this to false will not cause the cache to be rebuilt.
 	cache.IsValid = true
 
-	-- Get 3 corner points from the edges and check for validity
+	-- Get 3 corner points from the edges and check for validity.
 	local points, err = UTIL.EdgesToTrianglePoints(self.Edges)
 	if err then
 		print(string.format("%s Failed to generate valid cache for triangle %s: %s", D3bot.PrintPrefix, self, err))
@@ -209,7 +209,7 @@ function NAV_TRIANGLE:GetCache()
 		end
 	end
 
-	-- Calculate normal
+	-- Calculate normal.
 	if cache.IsValid then
 		cache.Normal = (points[1] - points[2]):Cross(points[3] - points[1]):GetNormalized()
 	else
@@ -217,18 +217,18 @@ function NAV_TRIANGLE:GetCache()
 	end
 	if self.FlipNormal then cache.Normal = cache.Normal * -1 end
 
-	-- Calculate "centroid" center
+	-- Calculate "centroid" center.
 	if cache.IsValid then
 		cache.Centroid = (points[1] + points[2] + points[3]) / 3
 	else
 		cache.Centroid = Vector(0, 0, 0)
 	end
 
-	-- Determine locomotion type (Hardcoded locomotion types)
-	cache.LocomotionType = "Ground" -- Default type
+	-- Determine locomotion type. (Hardcoded locomotion types)
+	cache.LocomotionType = "Ground" -- Default type.
 	if cache.Normal then
 		local angle = cache.Normal:Angle()
-		-- Everything steeper than 45 deg is considered a wall
+		-- Everything steeper than 45 deg is considered a wall.
 		if angle.pitch < 45 then
 			cache.LocomotionType = "Wall"
 		end
@@ -272,7 +272,7 @@ end
 
 ---Deletes the triangle from the navmesh and makes sure that there is nothing left that references it.
 function NAV_TRIANGLE:Delete()
-	-- Publish change event
+	-- Publish change event.
 	if self.Navmesh.PubSub then
 		self.Navmesh.PubSub:DeleteByIDFromSubs(self:GetID())
 	end
@@ -282,10 +282,10 @@ end
 
 ---Internal method.
 function NAV_TRIANGLE:_Delete()
-	-- Delete any reference to this triangle from edges
+	-- Delete any reference to this triangle from edges.
 	for _, edge in ipairs(self.Edges) do
 		table.RemoveByValue(edge.Triangles, self)
-		-- Invalidate cache of the edge
+		-- Invalidate cache of the edge.
 		edge:InvalidateCache()
 		-- Invalidate cache of the (other) connected triangles and air connections.
 		for _, triangle in ipairs(edge.Triangles) do
@@ -355,12 +355,12 @@ function NAV_TRIANGLE:WindingOrderToEdge(edge)
 
 	local p1, p2, p3 = cache.CornerPoints[1], cache.CornerPoints[2], cache.CornerPoints[3]
 
-	-- Aligned with edge
+	-- Aligned with edge.
 	if p1 == edge.Points[1] and p2 == edge.Points[2] then return true end
 	if p2 == edge.Points[1] and p3 == edge.Points[2] then return true end
 	if p3 == edge.Points[1] and p1 == edge.Points[2] then return true end
 
-	-- Aligned against edge
+	-- Aligned against edge.
 	if p1 == edge.Points[1] and p3 == edge.Points[2] then return false end
 	if p2 == edge.Points[1] and p1 == edge.Points[2] then return false end
 	if p3 == edge.Points[1] and p2 == edge.Points[2] then return false end
@@ -387,13 +387,13 @@ function NAV_TRIANGLE:RecalcFlipNormal()
 	end
 
 	if FlipCounter > 0 then
-		-- Most neighbor triangles are flipped in this direction
+		-- Most neighbor triangles are flipped in this direction.
 		self:SetFlipNormal(true)
 	elseif FlipCounter < 0 then
-		-- Most neighbor triangles are flipped in the other direction
+		-- Most neighbor triangles are flipped in the other direction.
 		self:SetFlipNormal(false)
 	else
-		-- Neighbor triangle normals are indecisive: Assume upwards is more likely to be correct
+		-- Neighbor triangle normals are indecisive: Assume upwards is more likely to be correct.
 		if cache.Normal[3] < 0 then
 			self:SetFlipNormal(not self.FlipNormal)
 		end
@@ -411,10 +411,10 @@ function NAV_TRIANGLE:SetFlipNormal(state)
 		self.FlipNormal = nil
 	end
 
-	-- Recalc normal and other stuff
+	-- Recalc normal and other stuff.
 	self:InvalidateCache()
 
-	-- Publish change event
+	-- Publish change event.
 	if navmesh and navmesh.PubSub then
 		navmesh.PubSub:SendTriangleToSubs(self)
 	end
@@ -430,13 +430,13 @@ function NAV_TRIANGLE:GetClosestPointToPoint(p)
 	local normal = cache.Normal
 	local p1, p2, p3 = cache.CornerPoints[1], cache.CornerPoints[2], cache.CornerPoints[3]
 
-	-- Project the point p onto the plane
+	-- Project the point p onto the plane.
 	--local projected = p + normal:Cross(p1 - p) * normal
 
-	-- Get clamped barycentric coordinates
+	-- Get clamped barycentric coordinates.
 	local u, v, w = UTIL.GetBarycentric3DClamped(p1, p2, p3, p)
 
-	-- Transform barycentric back to cartesian
+	-- Transform barycentric back to cartesian.
 	return p1 * u + p2 * v + p3 * w
 end
 
@@ -461,19 +461,19 @@ function NAV_TRIANGLE:IntersectsRay(origin, dir)
 	local normal = cache.Normal
 	local p1, p2, p3 = cache.CornerPoints[1], cache.CornerPoints[2], cache.CornerPoints[3]
 
-	-- Ignore all cases where the ray and the plane are parallel
+	-- Ignore all cases where the ray and the plane are parallel.
 	local denominator = dir:Dot(normal)
 	if denominator == 0 then return nil end
 
-	-- Get intersection distance and point
+	-- Get intersection distance and point.
 	local d = (p1 - origin):Dot(normal) / denominator
 	local point = origin + dir * d
 
-	-- Ignore if the element is behind the origin or beyond dir length
+	-- Ignore if the element is behind the origin or beyond dir length.
 	if d <= 0 then return nil end
 	if d > 1 then return nil end
 
-	-- Check if intersection point is outside the triangle
+	-- Check if intersection point is outside the triangle.
 	local u, v, w = UTIL.GetBarycentric3D(p1, p2, p3, point)
 	if u < 0 or v < 0 or w < 0 then return nil end
 

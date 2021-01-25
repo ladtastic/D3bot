@@ -1,4 +1,4 @@
--- Copyright (C) 2020 David Vogel
+-- Copyright (C) 2020-2021 David Vogel
 --
 -- This file is part of D3bot.
 --
@@ -92,9 +92,6 @@ function NAV_FILE.SaveMainNavmesh()
 		end
 	end
 end
-
--- Test
---NAV_FILE.SaveMainNavmesh()
 
 -- Load the navmesh for the map, if possible.
 NAV_FILE.LoadMainNavmesh()

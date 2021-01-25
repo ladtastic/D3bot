@@ -1,4 +1,4 @@
--- Copyright (C) 2020 David Vogel
+-- Copyright (C) 2020-2021 David Vogel
 --
 -- This file is part of D3bot.
 --
@@ -125,7 +125,7 @@ end
 function NAV_MESH:GetUniqueID()
 	local idKey = self.UniqueIDCounter
 
-	-- Check if key is already in use, iteratively increase
+	-- Check if key is already in use, iteratively increase.
 	while self.Edges[idKey] or self.Triangles[idKey] or self.AirConnections[idKey] do
 		idKey = idKey + 1
 		self.UniqueIDCounter = idKey
@@ -137,7 +137,7 @@ end
 ---Internal method: Deletes all elements that are not needed anymore.
 ---Only call GC from the server side and let it sync the result to all clients.
 function NAV_MESH:_GC()
-	-- Try to GC all free floating edges
+	-- Try to GC all free floating edges.
 	for _, edge in pairs(self.Edges) do
 		edge:_GC()
 	end
@@ -149,8 +149,8 @@ end
 ---@param r number
 ---@return GVector | nil
 function NAV_MESH:GetNearestPoint(p, r)
-	-- Stupid linear search for the closest point
-	-- Also, it will go over points several times, as some edges share points
+	-- Stupid linear search for the closest point.
+	-- Also, it will go over points several times, as some edges share points.
 	local minDistSqr = (r and r * r) or math.huge
 	local resultPoint
 	for _, edge in pairs(self.Edges) do
@@ -202,7 +202,7 @@ function NAV_MESH:FindOrCreateEdge2P(p1, p2)
 	local edge, _ = self:FindEdge2P(p1, p2)
 	if edge then return edge, nil end
 
-	-- Create new edge
+	-- Create new edge.
 	return NAV_EDGE:New(self, nil, p1, p2)
 end
 
@@ -273,11 +273,11 @@ function NAV_MESH:FindOrCreateTriangle3E(e1, e2, e3)
 	local triangle = self:FindTriangle3E(e1, e2, e3)
 	if triangle then return triangle, nil end
 
-	-- Create new triangle
+	-- Create new triangle.
 	local triangle, err = NAV_TRIANGLE:New(self, nil, e1, e2, e3, nil)
 	if err then return nil, err end
 
-	-- Determine FlipNormal state
+	-- Determine FlipNormal state.
 	triangle:RecalcFlipNormal()
 
 	return triangle, nil

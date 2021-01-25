@@ -1,4 +1,4 @@
--- Copyright (C) 2020 David Vogel
+-- Copyright (C) 2020-2021 David Vogel
 --
 -- This file is part of D3bot.
 --
@@ -22,7 +22,7 @@ local ACTIONS = D3bot.Actions
 function ACTIONS.RandomWalkTest(bot, mem, duration)
 	local direction = Vector(math.Rand(-1, 1), math.Rand(-1, 1), 0):GetNormalized()
 
-	-- Add control callback to bot
+	-- Add control callback to bot.
 	mem.ControlCallback = function(bot, mem, cUserCmd)
 		cUserCmd:ClearButtons()
 		cUserCmd:ClearMovement()
@@ -32,9 +32,9 @@ function ACTIONS.RandomWalkTest(bot, mem, duration)
 		bot:SetEyeAngles(direction:Angle())
 	end
 
-	-- Wait for x amount of time
+	-- Wait for x amount of time.
 	coroutine.wait(duration)
 
-	-- Reset control
+	-- Reset control.
 	mem.ControlCallback = nil
 end

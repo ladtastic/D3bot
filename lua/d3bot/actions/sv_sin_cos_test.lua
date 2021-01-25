@@ -1,4 +1,4 @@
--- Copyright (C) 2020 David Vogel
+-- Copyright (C) 2020-2021 David Vogel
 --
 -- This file is part of D3bot.
 --
@@ -20,7 +20,7 @@ local ACTIONS = D3bot.Actions
 
 -- Let the bot walk in an circular arc without rotating their view.
 function ACTIONS.SinCosTest(bot, mem, duration)
-	-- Add control callback to bot
+	-- Add control callback to bot.
 	mem.ControlCallback = function(bot, mem, cUserCmd)
 		cUserCmd:ClearButtons()
 		cUserCmd:ClearMovement()
@@ -28,9 +28,9 @@ function ACTIONS.SinCosTest(bot, mem, duration)
 		cUserCmd:SetSideMove(math.cos(CurTime()) * 100)
 	end
 
-	-- Wait for x amount of time
+	-- Wait for x amount of time.
 	coroutine.wait(duration)
 
-	-- Reset control
+	-- Reset control.
 	mem.ControlCallback = nil
 end

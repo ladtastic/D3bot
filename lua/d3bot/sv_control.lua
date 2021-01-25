@@ -1,4 +1,4 @@
--- Copyright (C) 2020 David Vogel
+-- Copyright (C) 2020-2021 David Vogel
 --
 -- This file is part of D3bot.
 --
@@ -25,15 +25,15 @@ local function ControlDistributor(bot, cUserCmd)
 
 	-- BUG: This is not called for dead bots for some reason. So there is need for gamemode specific code to bring back players.
 
-	-- Don't take control if there is no D3bot structure
+	-- Don't take control if there is no D3bot structure.
 	if not mem then
 		return
 	end
 
-	-- Assign brain to bot, if needed
+	-- Assign brain to bot, if needed.
 	if not mem.Brain then
-		-- "Insane in the membrane"
-		-- "Crazy insane, got no brain"
+		-- "Insane in the membrane".
+		-- "Crazy insane, got no brain".
 		if D3bot.AssignBrain then
 			D3bot.AssignBrain(bot, mem)
 		end
@@ -45,14 +45,14 @@ local function ControlDistributor(bot, cUserCmd)
 		end
 	end
 
-	-- Check if there is a bot control callback (For pushing buttons and stuff)
+	-- Check if there is a bot control callback (For pushing buttons and stuff).
 	if mem.ControlCallback == nil then
 		cUserCmd:ClearButtons()
 		cUserCmd:ClearMovement()
 		return
 	end
 
-	-- Call bot control callback, duh
+	-- Call bot control callback, duh.
 	mem.ControlCallback(bot, mem, cUserCmd)
 end
 hook.Add("StartCommand", D3bot.HookPrefix .. "ControlDistributor", ControlDistributor)

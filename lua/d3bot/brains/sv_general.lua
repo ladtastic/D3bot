@@ -1,4 +1,4 @@
--- Copyright (C) 2020 David Vogel
+-- Copyright (C) 2020-2021 David Vogel
 --
 -- This file is part of D3bot.
 --
@@ -36,7 +36,7 @@ THIS_BRAIN.__index = THIS_BRAIN
 function THIS_BRAIN:AssignToBot(bot, mem)
 	local brain = setmetatable({Bot = bot, Mem = mem}, self)
 
-	-- Add main handler
+	-- Add main handler.
 	brain.MainCoroutine = coroutine.create(function() brain:_ThinkCoroutine(bot, mem) end)
 
 	mem.Brain = brain
@@ -50,31 +50,31 @@ end
 -- Think coroutine. Put all the important stuff in here.
 function THIS_BRAIN:_ThinkCoroutine(bot, mem)
 
-	-- Walk in an arc for 3 seconds
+	-- Walk in an arc for 3 seconds.
 	ACTIONS.SinCosTest(bot, mem, 3)
 
-	-- Walk in some random direction for 3 seconds
+	-- Walk in some random direction for 3 seconds.
 	ACTIONS.RandomWalkTest(bot, mem, 3)
 
-	-- Wait 2 seconds
+	-- Wait 2 seconds.
 	coroutine.wait(2)
 
-	-- A new brain will be assigned automatically after here
+	-- A new brain will be assigned automatically after here.
 end
 
 -- Think callback. Ideally this will resume coroutine(s).
 function THIS_BRAIN:Callback(bot, mem)
-	-- Resume coroutine, catch and print any error
+	-- Resume coroutine, catch and print any error.
 	local succ, msg = coroutine.resume(self.MainCoroutine)
 	if not succ then
-		-- Coroutine ended unexpectedly
+		-- Coroutine ended unexpectedly.
 		print(string.format("%s %s of bot %s failed: %s", D3bot.PrintPrefix, self.MainCoroutine, bot:Nick(), msg))
-		-- Assign ON_ERROR brain that does some stupid animations to prevent the erroneous brain to be assigned again immediately (Spam prevention)
+		-- Assign ON_ERROR brain that does some stupid animations to prevent the erroneous brain to be assigned again immediately (Spam prevention).
 		BRAINS.ON_ERROR:AssignToBot(bot, mem)
 		return false
 	end
 
-	-- Delete brain when the coroutine ends
+	-- Delete brain when the coroutine ends.
 	if coroutine.status(self.MainCoroutine) == "dead" then
 		mem.Brain = nil
 	end

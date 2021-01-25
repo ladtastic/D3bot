@@ -34,7 +34,7 @@ function PANEL:Init()
 	self:ShowCloseButton(false)
 	self:SetMinimumSize(200, 300)
 
-	-- Restore its previous size and pos
+	-- Restore its previous size and pos.
 	self:SetCookieName(D3bot.VGUIPrefix .. "NavmeshingOptions")
 	local x, y, width, height = self:GetCookieNumber("x", 100), self:GetCookieNumber("y", 100), self:GetCookieNumber("width", 300), self:GetCookieNumber("height", 400)
 	self:SetPos(x, y)
@@ -82,13 +82,13 @@ function PANEL:Init()
 	list:DockMargin(5, 5, 5, 0)
 	list:Dock(TOP)
 	list:AddColumn("Name")
-	-- Fill with edit modes sorted by their name
+	-- Fill with edit modes sorted by their name.
 	for _, editMode in UTIL.kpairs(EDIT_MODES) do
 		list:AddLine(editMode.Name)
 	end
 
 	list.OnRowSelected = function(lst, index, pnl)
-		-- Dirty way to get the edit mode
+		-- Dirty way to get the edit mode.
 		local i = 0
 		for _, editMode in UTIL.kpairs(EDIT_MODES) do
 			i = i + 1
@@ -137,21 +137,21 @@ function PANEL:Init()
 end
 
 function PANEL:OnMouseReleased()
-	-- Store current window position
+	-- Store current window position.
 	local x, y = self:GetPos()
 	self:SetCookie("x", tostring(x))
 	self:SetCookie("y", tostring(y))
 
-	-- Call method of base class, if it exists
+	-- Call method of base class, if it exists.
 	if self.BaseClass.OnMouseReleased then return self.BaseClass.OnMouseReleased(self) end
 end
 
 function PANEL:OnSizeChanged(newWidth, newHeight)
-	-- Store current window size
+	-- Store current window size.
 	self:SetCookie("width", tostring(newWidth))
 	self:SetCookie("height", tostring(newHeight))
 
-	-- Call method of base class, if it exists
+	-- Call method of base class, if it exists.
 	if self.BaseClass.OnSizeChanged then return self.BaseClass.OnSizeChanged(self) end
 end
 

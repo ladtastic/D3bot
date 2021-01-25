@@ -1,4 +1,4 @@
--- Copyright (C) 2020 David Vogel
+-- Copyright (C) 2020-2021 David Vogel
 --
 -- This file is part of D3bot.
 --
@@ -116,16 +116,16 @@ end
 ---@param m table @The table to be iterated over.
 ---@return function iterator @The iterator function.
 function UTIL.kpairs(m)
-	-- Get keys of m
+	-- Get keys of m.
 	local keys = {}
 	for k in pairs(m) do
 		table.insert(keys, k)
 	end
 
-	-- Sort keys
+	-- Sort keys.
 	table.sort(keys)
 
-	-- Return iterator
+	-- Return iterator.
 	local i = 0
 	return function()
 		i = i + 1
@@ -142,10 +142,10 @@ end
 ---@param r number
 ---@return GVector | nil @Resulting closest point, or nil.
 function UTIL.GetNearestPoint(points, p, r)
-	-- Stupid linear search for the closest point
+	-- Stupid linear search for the closest point.
 	local minDistSqr = (r and r * r) or math.huge
 	local resultPoint
-	for _, point in pairs(points) do ---@type GVector @Needs to be pairs, as it needs to support sparse arrays/maps
+	for _, point in pairs(points) do ---@type GVector @Needs to be pairs, as it needs to support sparse arrays/maps.
 		local distSqr = p:DistToSqr(point)
 		if minDistSqr > distSqr then
 			minDistSqr = distSqr
@@ -192,26 +192,26 @@ function UTIL.GetBarycentric3DClamped(p1, p2, p3, p)
 
 	local u, v, w = UTIL.GetBarycentric3D(p1, p2, p3, p)
 
-	-- The point is outside of the triangle at the edge between p2 and p3
+	-- The point is outside of the triangle at the edge between p2 and p3.
 	if u < 0 and u <= v and u <= w then
 		local t = (p - p2):Dot(p3 - p2) / (p3 - p2):Dot(p3 - p2)
 		t = math.Clamp(t, 0, 1)
 		return 0, 1 - t, t
 	end
-	-- The point is outside of the triangle at the edge between p1 and p3
+	-- The point is outside of the triangle at the edge between p1 and p3.
 	if v < 0 and v <= u and v <= w then
 		local t = (p - p3):Dot(p1 - p3) / (p1 - p3):Dot(p1 - p3)
 		t = math.Clamp(t, 0, 1)
 		return t, 0, 1 - t
 	end
-	-- The point is outside of the triangle at the edge between p1 and p2
+	-- The point is outside of the triangle at the edge between p1 and p2.
 	if w < 0 and w <= u and w <= v then
 		local t = (p - p1):Dot(p2 - p1) / (p2 - p1):Dot(p2 - p1)
 		t = math.Clamp(t, 0, 1)
 		return 1 - t, t, 0
 	end
 
-	-- Point is inside of the triangle
+	-- Point is inside of the triangle.
 	return u, v, w
 end
 
@@ -307,7 +307,7 @@ function UTIL.EdgesToPoints(edges)
 	for _, edge in ipairs(edges) do
 		for _, newPoint in ipairs(edge.Points) do
 			local found = false
-			-- Check if point is already in the list
+			-- Check if point is already in the list.
 			for _, point in ipairs(points) do
 				if point == newPoint then
 					found = true
@@ -350,15 +350,15 @@ end
 function UTIL.SWEPLineTrace(ply)
 	local shouldHitWater = CONVARS.SWEPHitWater:GetBool()
 
-	-- Get normal player eye trace
+	-- Get normal player eye trace.
 	local tr = util.GetPlayerTrace(ply)
 
-	-- Add water to trace mask
+	-- Add water to trace mask.
 	if shouldHitWater then
 		tr.mask = tr.mask or MASK_SOLID + MASK_WATER
 	end
 
-	-- Trace, duh
+	-- Trace, duh.
 	local trRes = util.TraceLine(tr)
 
 	-- Edge case for water traces: Redo trace without water mask, if trace starts inside a sold/water brush.

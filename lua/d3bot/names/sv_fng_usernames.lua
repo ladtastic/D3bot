@@ -1,4 +1,4 @@
--- Copyright (C) 2020 David Vogel
+-- Copyright (C) 2020-2021 David Vogel
 -- 
 -- This file is part of D3bot.
 -- 
@@ -541,7 +541,7 @@ function D3bot.GetBotName()
 	end
 	local name = table.remove(tempNames, math.random(#tempNames))
 
-	-- Check if the username already exists
+	-- Check if the username already exists.
 	local usernames = UTIL.GetUsernamesMap()
 	if usernames[name] then
 		local number = 2

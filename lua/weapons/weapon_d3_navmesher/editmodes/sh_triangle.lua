@@ -1,4 +1,4 @@
--- Copyright (C) 2020 David Vogel
+-- Copyright (C) 2020-2021 David Vogel
 --
 -- This file is part of D3bot.
 --
@@ -31,7 +31,7 @@ local UI = D3bot.NavSWEP.UI
 
 local key = "TriangleAddRemove"
 
--- Add edit mode to list
+-- Add edit mode to list.
 EDIT_MODES[key] = EDIT_MODES[key] or {}
 
 ------------------------------------------------------
@@ -68,7 +68,7 @@ function THIS_EDIT_MODE:PrimaryAttack(wep)
 	if not IsFirstTimePredicted() then return true end
 	if not CLIENT then return true end
 
-	-- If there is no navmesh, stop
+	-- If there is no navmesh, stop.
 	-- TODO: Make it possible to place triangles without a valid navmesh.
 	local navmesh = NAV_MAIN:GetNavmesh()
 	if not navmesh then
@@ -76,23 +76,23 @@ function THIS_EDIT_MODE:PrimaryAttack(wep)
 		return true
 	end
 
-	-- Store points that are used to create triangles
+	-- Store points that are used to create triangles.
 	self.TempPoints = self.TempPoints or {}
 
-	-- Get map line trace result and navmesh tracing ray
+	-- Get map line trace result and navmesh tracing ray.
 	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())
 
-	-- An edge entity that the player points on
+	-- An edge entity that the player points on.
 	local tracedEdge
 
-	-- Get 3D cursor that snaps to either map geometry or navmesh points
+	-- Get 3D cursor that snaps to either map geometry or navmesh points.
 	local snapToMap = CONVARS.SWEPSnapToMapGeometry:GetBool()
 	local snapToNav = CONVARS.SWEPSnapToNavmeshGeometry:GetBool()
 	local snappedPos, snapped = UTIL.GetSnappedPosition(snapToNav and navmesh or nil, snapToMap and MAPGEOMETRY or nil, trRes.HitPos, 10)
 
 	-- Check if any edge can be selected, if so add the two edge points to the temp points list.
 	if not snapped and (3 - #self.TempPoints) >= 2 then
-		-- Trace closest edge
+		-- Trace closest edge.
 		tracedEdge = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Edges)
 
 		if tracedEdge then
@@ -101,16 +101,16 @@ function THIS_EDIT_MODE:PrimaryAttack(wep)
 		end
 	end
 
-	-- If there is no traced edge, and there are still more points needed, get one
+	-- If there is no traced edge, and there are still more points needed, get one.
 	if not tracedEdge and trRes.Hit and (3 - #self.TempPoints) >= 1 then
 		table.insert(self.TempPoints, snappedPos)
 	end
 
 	if #self.TempPoints == 3 then
-		-- Edit server side navmesh
+		-- Edit server side navmesh.
 		NAV_EDIT.CreateTriangle3P(LocalPlayer(), self.TempPoints[1], self.TempPoints[2], self.TempPoints[3])
 
-		-- Reset build mode and its state
+		-- Reset build mode and its state.
 		THIS_EDIT_MODE:AssignToWeapon(wep)
 
 		wep.Weapon:EmitSound("buttons/blip2.wav")
@@ -126,14 +126,14 @@ function THIS_EDIT_MODE:SecondaryAttack(wep)
 	if not IsFirstTimePredicted() then return true end
 	if not CLIENT then return true end
 
-	-- If there is no navmesh, stop
+	-- If there is no navmesh, stop.
 	local navmesh = NAV_MAIN:GetNavmesh()
 	if not navmesh then
 		wep.Weapon:EmitSound("buttons/button1.wav")
 		return true
 	end
 
-	-- Get map line trace result and navmesh tracing ray
+	-- Get map line trace result and navmesh tracing ray.
 	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())
 
 	local tracedTriangle = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Triangles)
@@ -151,31 +151,31 @@ end
 
 -- Reload button action.
 function THIS_EDIT_MODE:Reload(wep)
-	-- Reset build mode and its state
+	-- Reset build mode and its state.
 	--THIS_EDIT_MODE:AssignToWeapon(wep)
 
 	return true
 end
 
--- Client side drawing
+-- Client side drawing.
 function THIS_EDIT_MODE:PreDrawViewModel(wep, vm)
 	local navmesh = NAV_MAIN:GetNavmesh()
 	if not navmesh then return end
 
-	-- Triangle points that are used to draw a ghost of the current triangle
+	-- Triangle points that are used to draw a ghost of the current triangle.
 	local trianglePoints = table.Copy(self.TempPoints or {})
 
-	-- Get map line trace result and navmesh tracing ray
+	-- Get map line trace result and navmesh tracing ray.
 	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())
 
-	-- Setup rendering context
+	-- Setup rendering context.
 	cam.Start3D()
 	render.SetColorMaterial()
 
-	-- An edge entity that the player points on
+	-- An edge entity that the player points on.
 	local tracedEdge
 
-	-- Get 3D cursor pos that snaps to either map geometry or navmesh points
+	-- Get 3D cursor pos that snaps to either map geometry or navmesh points.
 	local snapToMap = CONVARS.SWEPSnapToMapGeometry:GetBool()
 	local snapToNav = CONVARS.SWEPSnapToNavmeshGeometry:GetBool()
 	local snappedPos, snapped = UTIL.GetSnappedPosition(snapToNav and navmesh or nil, snapToMap and MAPGEOMETRY or nil, trRes.HitPos, 10)
@@ -183,10 +183,10 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm)
 	-- Highlighting of navmesh edges.
 	-- Check if any edge can be selected (based on the temp points needed), if so highlight it.
 	if not snapped and (3 - #trianglePoints) >= 2 then
-		-- Trace closest edge
+		-- Trace closest edge.
 		tracedEdge = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Edges)
 
-		-- Set highlighted state of traced element
+		-- Set highlighted state of traced element.
 		if tracedEdge then
 			tracedEdge.UI.Highlighted = true
 			table.insert(trianglePoints, tracedEdge.Points[1])
@@ -194,22 +194,22 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm)
 		end
 	end
 
-	-- Add point to temp triangle points, so it draws the 3D cursors and the ghost of the triangle if possible
+	-- Add point to temp triangle points, so it draws the 3D cursors and the ghost of the triangle if possible.
 	if not tracedEdge and trRes.Hit and (3 - #trianglePoints) >= 1 then
 		table.insert(trianglePoints, snappedPos)
 	end
 
-	-- Highlighting of navmesh triangles
+	-- Highlighting of navmesh triangles.
 	local tracedTriangle = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Triangles)
-	-- Set highlighted state of traced element
+	-- Set highlighted state of traced element.
 	if tracedTriangle then
 		tracedTriangle.UI.Highlighted = true
 	end
 
-	-- Draw client side navmesh
+	-- Draw client side navmesh.
 	navmesh:Render3D()
 
-	-- Draw ghost of triangle
+	-- Draw ghost of triangle.
 	for _, point in ipairs(trianglePoints) do
 		render.SetColorMaterialIgnoreZ()
 		RENDER_UTIL.Draw3DCursorPos(point, 2, Color(255, 255, 255, 31), Color(0, 0, 0, 31))
@@ -228,7 +228,7 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm)
 
 	cam.End3D()
 
-	-- "Restore" IgnoreZ for the original rendering context
+	-- "Restore" IgnoreZ for the original rendering context.
 	cam.IgnoreZ(true)
 end
 

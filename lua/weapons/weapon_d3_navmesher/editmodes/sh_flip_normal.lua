@@ -1,4 +1,4 @@
--- Copyright (C) 2020 David Vogel
+-- Copyright (C) 2020-2021 David Vogel
 --
 -- This file is part of D3bot.
 --
@@ -31,7 +31,7 @@ local UI = D3bot.NavSWEP.UI
 
 local key = "FlipNormal"
 
--- Add edit mode to list
+-- Add edit mode to list.
 EDIT_MODES[key] = EDIT_MODES[key] or {}
 
 ------------------------------------------------------
@@ -67,20 +67,20 @@ function THIS_EDIT_MODE:PrimaryAttack(wep)
 	if not IsFirstTimePredicted() then return true end
 	if not CLIENT then return true end
 
-	-- If there is no navmesh, stop
+	-- If there is no navmesh, stop.
 	local navmesh = NAV_MAIN:GetNavmesh()
 	if not navmesh then
 		wep.Weapon:EmitSound("buttons/button1.wav")
 		return true
 	end
 
-	-- Get map line trace result and navmesh tracing ray
+	-- Get map line trace result and navmesh tracing ray.
 	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())
 
-	-- Trace triangle
+	-- Trace triangle.
 	local tracedTriangle = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Triangles)
 	if tracedTriangle then
-		-- Edit server side navmesh
+		-- Edit server side navmesh.
 		NAV_EDIT.RecalcFlipNormalByID(LocalPlayer(), tracedTriangle:GetID())
 
 		wep.Weapon:EmitSound("buttons/blip2.wav")
@@ -96,20 +96,20 @@ function THIS_EDIT_MODE:SecondaryAttack(wep)
 	if not IsFirstTimePredicted() then return true end
 	if not CLIENT then return true end
 
-	-- If there is no navmesh, stop
+	-- If there is no navmesh, stop.
 	local navmesh = NAV_MAIN:GetNavmesh()
 	if not navmesh then
 		wep.Weapon:EmitSound("buttons/button1.wav")
 		return true
 	end
 
-	-- Get map line trace result and navmesh tracing ray
+	-- Get map line trace result and navmesh tracing ray.
 	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())
 
-	-- Trace triangle
+	-- Trace triangle.
 	local tracedTriangle = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Triangles)
 	if tracedTriangle then
-		-- Edit server side navmesh
+		-- Edit server side navmesh.
 		NAV_EDIT.SetFlipNormalByID(LocalPlayer(), tracedTriangle:GetID(), not tracedTriangle.FlipNormal)
 
 		wep.Weapon:EmitSound("buttons/blip2.wav")
@@ -125,30 +125,30 @@ function THIS_EDIT_MODE:Reload(wep)
 	return true
 end
 
--- Client side drawing
+-- Client side drawing.
 function THIS_EDIT_MODE:PreDrawViewModel(wep, vm)
 	local navmesh = NAV_MAIN:GetNavmesh()
 	if not navmesh then return end
 
-	-- Get map line trace result and navmesh tracing ray
+	-- Get map line trace result and navmesh tracing ray.
 	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())
 
-	-- Highlighting of navmesh triangles
+	-- Highlighting of navmesh triangles.
 	local tracedTriangle = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Triangles)
-	-- Set highlighted state of traced element
+	-- Set highlighted state of traced element.
 	if tracedTriangle then
 		tracedTriangle.UI.Highlighted = true
 	end
 
-	-- Setup rendering context
+	-- Setup rendering context.
 	cam.Start3D()
 
-	-- Draw client side navmesh
+	-- Draw client side navmesh.
 	navmesh:Render3D()
 
 	cam.End3D()
 
-	-- "Restore" IgnoreZ for the original rendering context
+	-- "Restore" IgnoreZ for the original rendering context.
 	cam.IgnoreZ(true)
 end
 

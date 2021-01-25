@@ -1,4 +1,4 @@
--- Copyright (C) 2020 David Vogel
+-- Copyright (C) 2020-2021 David Vogel
 --
 -- This file is part of D3bot.
 --
@@ -124,7 +124,7 @@ function THIS_LOCO_HANDLER:CanNavigate(pathFragment, entityData)
 end
 
 ---Draw the pathElement (from pathElements at index) into a 3D rendering context.
----@param index integer @pathElements index
+---@param index integer @pathElements index.
 ---@param pathElements D3botPATH_ELEMENT[]
 function THIS_LOCO_HANDLER:Render3D(index, pathElements)
 	local pathElement = pathElements[index]
@@ -132,6 +132,6 @@ function THIS_LOCO_HANDLER:Render3D(index, pathElements)
 	local fromPos, toPos = pathFragment.FromPos, pathFragment.ToPos
 	render.DrawBeam(fromPos, toPos, 5, 0, 1, Color(0, 255, 0, 255))
 
-	-- Draw end condition planes
+	-- Draw end condition planes.
 	render.DrawQuadEasy(toPos, -pathFragment.OrthogonalOutside, 50, 50, Color(255, 0, 255, 128))
 end

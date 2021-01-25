@@ -1,4 +1,4 @@
--- Copyright (C) 2020 David Vogel
+-- Copyright (C) 2020-2021 David Vogel
 --
 -- This file is part of D3bot.
 --
@@ -34,7 +34,7 @@ local UI = D3bot.NavSWEP.UI
 
 local key = "PathTest"
 
--- Add edit mode to list
+-- Add edit mode to list.
 EDIT_MODES[key] = EDIT_MODES[key] or {}
 
 ------------------------------------------------------
@@ -71,25 +71,25 @@ end
 -- Generate a path from the current edit mode state and store it.
 function THIS_EDIT_MODE:GeneratePath(navmesh, debugOutput)
 
-	-- Can't generate a path if start and end point are not defined
+	-- Can't generate a path if start and end point are not defined.
 	if not self.StartPos or not self.DestPos then return true end
 
-	-- Add some virtual locomotion handlers
+	-- Add some virtual locomotion handlers.
 	local abilities = {
 		Ground = LOCOMOTION_HANDLERS.WALKING:New(200),
 		Wall = LOCOMOTION_HANDLERS.JUMP_AND_FALL:New(56, 1000),
 		AirVertical = LOCOMOTION_HANDLERS.JUMP_AND_FALL:New(56, 1000),
 	}
 
-	-- Create path object
+	-- Create path object.
 	self.Path = PATH:New(navmesh, abilities)
 
-	-- Get triangles of start and end pos
+	-- Get triangles of start and end pos.
 	local startPoint = PATH_POINT:New(navmesh, self.StartPos)
 	local destPoint = PATH_POINT:New(navmesh, self.DestPos)
 	if not startPoint or not destPoint then return end
 
-	-- Calculate path (Several times for average)
+	-- Calculate path. (Several times for average)
 	local iterations = debugOutput and 1000 or 1
 	local startTime = SysTime()
 	for i = 1, iterations do
@@ -111,20 +111,20 @@ function THIS_EDIT_MODE:PrimaryAttack(wep)
 	if not IsFirstTimePredicted() then return true end
 	if not CLIENT then return true end
 
-	-- If there is no navmesh, stop
+	-- If there is no navmesh, stop.
 	local navmesh = NAV_MAIN:GetNavmesh()
 	if not navmesh then
 		wep.Weapon:EmitSound("buttons/button1.wav")
 		return true
 	end
 
-	-- Get map line trace result and navmesh tracing ray
+	-- Get map line trace result and navmesh tracing ray.
 	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())
 
-	-- Set start pos
+	-- Set start pos.
 	self.StartPos = trRes.HitPos
 
-	-- (Re)generate path
+	-- (Re)generate path.
 	self:GeneratePath(navmesh, true)
 
 	wep.Weapon:EmitSound("buttons/blip2.wav")
@@ -137,20 +137,20 @@ function THIS_EDIT_MODE:SecondaryAttack(wep)
 	if not IsFirstTimePredicted() then return true end
 	if not CLIENT then return true end
 
-	-- If there is no navmesh, stop
+	-- If there is no navmesh, stop.
 	local navmesh = NAV_MAIN:GetNavmesh()
 	if not navmesh then
 		wep.Weapon:EmitSound("buttons/button1.wav")
 		return true
 	end
 
-	-- Get map line trace result and navmesh tracing ray
+	-- Get map line trace result and navmesh tracing ray.
 	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())
 
-	-- Set end pos
+	-- Set end pos.
 	self.DestPos = trRes.HitPos
 
-	-- (Re)generate path
+	-- (Re)generate path.
 	self:GeneratePath(navmesh, true)
 
 	wep.Weapon:EmitSound("buttons/blip2.wav")
@@ -160,41 +160,41 @@ end
 
 -- Reload button action.
 function THIS_EDIT_MODE:Reload(wep)
-	-- Reset build mode and its state
+	-- Reset build mode and its state.
 	--THIS_EDIT_MODE:AssignToWeapon(wep)
 
 	return true
 end
 
--- Client side drawing
+-- Client side drawing.
 function THIS_EDIT_MODE:PreDrawViewModel(wep, vm)
 	local navmesh = NAV_MAIN:GetNavmesh()
 	if not navmesh then return end
 
-	-- Get map line trace result and navmesh tracing ray
+	-- Get map line trace result and navmesh tracing ray.
 	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())
 
-	-- Setup rendering context
+	-- Setup rendering context.
 	cam.Start3D()
 	render.SetColorMaterial()
 
-	-- Draw 3D cursor
+	-- Draw 3D cursor.
 	render.SetColorMaterialIgnoreZ()
 	RENDER_UTIL.Draw3DCursorPos(trRes.HitPos, Color(255, 255, 255, 255), Color(0, 0, 0, 255))
 
-	-- Draw client side navmesh
+	-- Draw client side navmesh.
 	navmesh:Render3D()
 
-	-- Debug: Live path regeneration
+	-- Debug: Live path regeneration.
 	self.DestPos = trRes.HitPos
 	self:GeneratePath(navmesh, false)
 
-	-- Draw path
+	-- Draw path.
 	if self.Path then
 		self.Path:Render3D()
 	end
 
-	-- Draw start and end pos
+	-- Draw start and end pos.
 	render.SetColorMaterialIgnoreZ()
 	if self.StartPos then
 		RENDER_UTIL.Draw3DCursorPos(self.StartPos, 2, Color(255, 0, 0, 255), Color(0, 0, 0, 255))
@@ -206,7 +206,7 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm)
 
 	cam.End3D()
 
-	-- "Restore" IgnoreZ for the original rendering context
+	-- "Restore" IgnoreZ for the original rendering context.
 	cam.IgnoreZ(true)
 end
 

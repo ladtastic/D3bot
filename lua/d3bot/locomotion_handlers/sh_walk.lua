@@ -1,4 +1,4 @@
--- Copyright (C) 2020 David Vogel
+-- Copyright (C) 2020-2021 David Vogel
 --
 -- This file is part of D3bot.
 --
@@ -37,7 +37,7 @@ THIS_LOCO_HANDLER.__index = THIS_LOCO_HANDLER
 ---@return table
 function THIS_LOCO_HANDLER:New(speed)
 	local handler = setmetatable({
-		Speed = speed, -- Speed for normal (unmodified) walking in engine units per second
+		Speed = speed, -- Speed for normal (unmodified) walking in engine units per second.
 	}, self)
 
 	return handler
@@ -57,7 +57,7 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 	local cache = pathElement.Cache
 	if cache then return cache end
 
-	-- Regenerate cache
+	-- Regenerate cache.
 	local cache = {}
 	pathElement.Cache = cache
 
@@ -97,9 +97,9 @@ function THIS_LOCO_HANDLER:Render3D(index, pathElements)
 	local pathFragment = pathElement.PathFragment
 	local fromPos, toPos = pathFragment.FromPos, pathFragment.ToPos
 
-	-- Draw arrow as the main movement direction
+	-- Draw arrow as the main movement direction.
 	RENDER_UTIL.Draw2DArrowPos(fromPos, toPos, 50, Color(0, 0, 255, 128))
 
-	-- Draw end condition planes
+	-- Draw end condition planes.
 	render.DrawQuadEasy(toPos, -pathFragment.OrthogonalOutside, 50, 50, Color(255, 0, 255, 128))
 end

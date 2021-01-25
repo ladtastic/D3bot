@@ -1,4 +1,4 @@
--- Copyright (C) 2020 David Vogel
+-- Copyright (C) 2020-2021 David Vogel
 --
 -- This file is part of D3bot.
 --
@@ -61,35 +61,35 @@ function NAV_EDGE:New(navmesh, id, p1, p2)
 		UI = {},
 	}, self)
 
-	-- General parameter checks. -- TODO: Check parameters for types and other stuff
+	-- General parameter checks. -- TODO: Check parameters for types and other stuff.
 	if not navmesh then return nil, ERROR:New("Invalid value of parameter %q", "navmesh") end
 	if not p1 then return nil, ERROR:New("Invalid value of parameter %q", "p1") end
 	if not p2 then return nil, ERROR:New("Invalid value of parameter %q", "p2") end
 
-	-- Make sure that length is >= self.MinLength
+	-- Make sure that length is >= self.MinLength.
 	local length = (p2-p1):Length()
 	if length < self.MinLength then
 		return nil, ERROR:New("The edge is shorter than the allowed min. length (%s < %s)", length, self.MinLength)
 	end
 
-	-- Check if there was a previous element. If so, change references to/from it
+	-- Check if there was a previous element. If so, change references to/from it.
 	local old = navmesh.Edges[obj.ID]
 	if old then
 		obj.Triangles = old.Triangles
 		obj.AirConnections = old.AirConnections
 
-		-- Iterate over linked triangles
+		-- Iterate over linked triangles.
 		for _, triangle in ipairs(obj.Triangles) do
-			-- Correct the edge references of these triangles
+			-- Correct the edge references of these triangles.
 			for i, edge in ipairs(triangle.Edges) do
 				if edge == old then
 					triangle.Edges[i] = obj
 				end
 			end
 		end
-		-- Iterate over linked air connections
+		-- Iterate over linked air connections.
 		for _, airConnection in ipairs(obj.AirConnections) do
-			-- Correct the edge references of these triangles
+			-- Correct the edge references of these triangles.
 			for i, edge in ipairs(airConnection.Edges) do
 				if edge == old then
 					airConnection.Edges[i] = obj
@@ -110,10 +110,10 @@ function NAV_EDGE:New(navmesh, id, p1, p2)
 		airConnection:InvalidateCache()
 	end
 
-	-- Add object to the navmesh
+	-- Add object to the navmesh.
 	navmesh.Edges[obj.ID] = obj
 
-	-- Publish change event
+	-- Publish change event.
 	if navmesh.PubSub then
 		navmesh.PubSub:SendEdgeToSubs(obj)
 	end
@@ -153,7 +153,7 @@ function NAV_EDGE:MarshalToTable()
 		}
 	}
 
-	return t -- Make sure that any object returned here is a deep copy of its original
+	return t -- Make sure that any object returned here is a deep copy of its original.
 end
 
 ---Get the cached values, if needed this will regenerate the cache.
@@ -162,7 +162,7 @@ function NAV_EDGE:GetCache()
 	local cache = self.Cache
 	if cache then return cache end
 
-	-- Regenerate cache
+	-- Regenerate cache.
 	local cache = {}
 	self.Cache = cache
 
@@ -243,7 +243,7 @@ end
 
 ---Deletes the edge from the navmesh and makes sure that there is nothing left that references it.
 function NAV_EDGE:Delete()
-	-- Publish change event
+	-- Publish change event.
 	if self.Navmesh.PubSub then
 		self.Navmesh.PubSub:DeleteByIDFromSubs(self:GetID())
 	end
@@ -315,12 +315,12 @@ function NAV_EDGE:GetClosestPointToLine(origin, dir)
 	local w0 = p1 - origin
 	local a, b, c, d, e = u:Dot(u), u:Dot(dir), dir:Dot(dir), u:Dot(w0), dir:Dot(w0)
 
-	-- Ignore the cases where the two lines are parallel
+	-- Ignore the cases where the two lines are parallel.
 	local denominator = a * c - b * b
 	if denominator <= 0 then return p1, origin end
 
-	local sc = (b*e - c*d) / denominator -- Position on the edge (self) between p1 and p2 and beyond
-	local tc = (a*e - b*d) / denominator -- Position on the given line between origin and (origin + dir) and beyond
+	local sc = (b*e - c*d) / denominator -- Position on the edge (self) between p1 and p2 and beyond.
+	local tc = (a*e - b*d) / denominator -- Position on the given line between origin and (origin + dir) and beyond.
 
 	-- Clamp
 	local scClamped = math.Clamp(sc, 0, 1)
@@ -346,31 +346,31 @@ function NAV_EDGE:IntersectsRay(origin, dir)
 	local w0 = p1 - origin
 	local a, b, c, d, e = u:Dot(u), u:Dot(dir), dir:Dot(dir), u:Dot(w0), dir:Dot(w0)
 
-	-- Ignore the cases where the two lines are parallel
+	-- Ignore the cases where the two lines are parallel.
 	local denominator = a*c - b*b
 	if denominator <= 0 then return nil end
 
-	local sc = (b*e - c*d) / denominator -- Position on the edge (self) between p1 and p2 and beyond
-	local tc = (a*e - b*d) / denominator -- Position on the given line between origin and (origin + dir) and beyond
+	local sc = (b*e - c*d) / denominator -- Position on the edge (self) between p1 and p2 and beyond.
+	local tc = (a*e - b*d) / denominator -- Position on the given line between origin and (origin + dir) and beyond.
 
-	-- Ignore if the element is behind the origin
+	-- Ignore if the element is behind the origin.
 	if tc <= 0 then return nil end
 
-	-- Clamp
+	-- Clamp.
 	local scClamped = math.Clamp(sc, 0, 1)
 
-	-- Get resulting closest points
+	-- Get resulting closest points.
 	local res1, res2 = p1 + u*scClamped, origin + dir*tc
 
-	-- Check if ray is not intersecting with the "capsule shape"
+	-- Check if ray is not intersecting with the "capsule shape".
 	local radiusSqr = self.DisplayRadius * self.DisplayRadius
 	local distSqr = (res1 - res2):LengthSqr()
 	if distSqr > radiusSqr then return nil end
 
-	-- Subtract distance to sphere hull, to give the fake capsule its round shell
+	-- Subtract distance to sphere hull, to give the fake capsule its round shell.
 	local d = tc - math.sqrt(radiusSqr - distSqr) / dir:Length()
 
-	-- Ignore if the element is beyond dir length
+	-- Ignore if the element is beyond dir length.
 	if d > 1 then return nil end
 
 	return d

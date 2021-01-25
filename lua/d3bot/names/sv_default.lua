@@ -1,4 +1,4 @@
--- Copyright (C) 2020 David Vogel
+-- Copyright (C) 2020-2021 David Vogel
 -- 
 -- This file is part of D3bot.
 -- 
@@ -21,7 +21,7 @@ local UTIL = D3bot.Util
 function D3bot.GetBotName()
 	local name = "D3bot"
 
-	-- Check if the username already exists
+	-- Check if the username already exists.
 	local usernames = UTIL.GetUsernamesMap()
 	if usernames[name] then
 		local number = 2

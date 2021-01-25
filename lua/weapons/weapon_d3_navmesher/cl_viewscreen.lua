@@ -4,7 +4,7 @@ local matScreen = Material("models/weapons/v_toolgun/screen")
 local txBackground = surface.GetTextureID("models/weapons/v_toolgun/screen_bg")
 local TEX_SIZE = 256
 
--- GetRenderTarget returns the texture if it exists, or creates it if it doesn't
+-- GetRenderTarget returns the texture if it exists, or creates it if it doesn't.
 local RTTexture = GetRenderTarget("GModToolgunScreen", TEX_SIZE, TEX_SIZE)
 
 surface.CreateFont(
@@ -20,7 +20,7 @@ local function DrawScrollingText(text, y, texwide)
 	local w, h = surface.GetTextSize(text)
 	w = w + 64
 
-	y = y - h / 2 -- Center text to y position
+	y = y - h / 2 -- Center text to y position.
 
 	local x = RealTime() * 250 % w * -1
 
@@ -44,14 +44,14 @@ end
 function SWEP:RenderScreen()
 	local editMode = self.EditMode
 
-	-- Set the material of the screen to our render target
+	-- Set the material of the screen to our render target.
 	matScreen:SetTexture("$basetexture", RTTexture)
 
-	-- Set up our view for drawing to the texture
+	-- Set up our view for drawing to the texture.
 	render.PushRenderTarget(RTTexture)
 	cam.Start2D()
 
-	-- Background
+	-- Background.
 	surface.SetDrawColor(255, 255, 255, 255)
 	surface.SetTexture(txBackground)
 	surface.DrawTexturedRect(0, 0, TEX_SIZE, TEX_SIZE)

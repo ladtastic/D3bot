@@ -1,4 +1,4 @@
--- Copyright (C) 2020 David Vogel
+-- Copyright (C) 2020-2021 David Vogel
 --
 -- This file is part of D3bot.
 --
@@ -28,7 +28,7 @@ function MAPGEOMETRY:GetCache()
 	local cache = {}
 	self.Cache = cache
 
-	-- Get all vertices
+	-- Get all vertices.
 	cache.Vertices = {}
 	local world = Entity(0)
 	local surfaces = world:GetBrushSurfaces()
@@ -45,7 +45,7 @@ end
 ---Returns the nearest corner of any world surface to the given point p with a search radius of r.
 ---@param p GVector
 ---@param r number
----@return GVector | nil @Result is either a vector or nil
+---@return GVector | nil @Result is either a vector or nil.
 function MAPGEOMETRY:GetNearestPoint(p, r)
 	local cache = self:GetCache()
 

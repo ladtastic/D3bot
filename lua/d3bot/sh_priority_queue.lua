@@ -1,4 +1,4 @@
--- Copyright (C) 2020 David Vogel
+-- Copyright (C) 2020-2021 David Vogel
 --
 -- This file is part of D3bot.
 --
@@ -19,7 +19,7 @@
 
 local D3bot = D3bot
 
--- Some optimization stuff
+-- Some optimization stuff.
 local table_RemoveByValue = table.RemoveByValue
 local table_insert = table.insert
 local table_remove = table.remove
@@ -61,38 +61,38 @@ end
 function PRIORITY_QUEUE:Enqueue(elem, priValue)
 	local list = self.List
 
-	-- Check if element already exists and if its priority is smaller
+	-- Check if element already exists and if its priority is smaller.
 	local oldPriValue = self.Map[elem]
 	if oldPriValue and oldPriValue > priValue then
-		-- It exists and is lower priority
+		-- It exists and is lower priority.
 		-- Stupid linear search, but at least it's more likely to find the element in the lower half of the list.
 		-- Alternatively it's possible to just return here and ignore the new element, this will slightly change the outcome, though.
 		for i, v in ipairs(list) do
 			if v[1] == elem then
-				table_remove(list, i) -- "Slow" operation
+				table_remove(list, i) -- "Slow" operation.
 				break
 			end
 		end
 	elseif oldPriValue then
-		-- It exists and is higher priority
+		-- It exists and is higher priority.
 		return false
 	end
 	self.Map[elem] = priValue
 
-	-- TODO: Reverse priority queue insert search order, or find another faster way
+	-- TODO: Reverse priority queue insert search order, or find another faster way.
 
 	-- Insert elem at position that preserves the priority order.
 	-- Stupid linear search, it would be slightly better to search from the top. But only slightly.
 	local entry = {elem, priValue}
 	for i, v in ipairs(list) do
 		if priValue >= v[2] then
-			table_insert(list, i, entry) -- "Slow" operation
+			table_insert(list, i, entry) -- "Slow" operation.
 			return true
 		end
 	end
 
-	-- Append to list if nothing was found
-	table_insert(list, entry) -- Fast operation
+	-- Append to list if nothing was found.
+	table_insert(list, entry) -- Fast operation.
 	return true
 end
 
@@ -100,13 +100,13 @@ end
 ---Will return nil if there is no element.
 ---@return any | nil
 function PRIORITY_QUEUE:Dequeue()
-	-- Get and remove element from the end of the list
-	local entry = table_remove(self.List) -- Fast operation
+	-- Get and remove element from the end of the list.
+	local entry = table_remove(self.List) -- Fast operation.
 	if not entry then return nil end
 
 	local elem = entry[1]
 
-	-- Remove element from map/set
+	-- Remove element from map/set.
 	self.Map[elem] = nil
 
 	return elem
