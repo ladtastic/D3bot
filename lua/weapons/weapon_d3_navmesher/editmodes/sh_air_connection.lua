@@ -95,7 +95,11 @@ function THIS_EDIT_MODE:PrimaryAttack(wep)
 
 		wep.Weapon:EmitSound("buttons/blip2.wav")
 	else
-		wep.Weapon:EmitSound("buttons/blip1.wav")
+		if tracedEdge then
+			wep.Weapon:EmitSound("buttons/blip1.wav")
+		else
+			wep.Weapon:EmitSound("common/wpn_denyselect.wav")
+		end
 	end
 
 	return true

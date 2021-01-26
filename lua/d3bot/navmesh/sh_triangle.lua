@@ -76,6 +76,19 @@ function NAV_TRIANGLE:New(navmesh, id, e1, e2, e3, flipNormal)
 		return nil, ERROR:New("The triangle's smallest height is below allowed min. height (%s < %s)", math.min(h1, h2, h3), obj.MinHeight)
 	end
 
+	-- Check if there is already an air connection connecting any of the three edges.
+	for _, airConnection in pairs(navmesh.AirConnections) do
+		if airConnection:ConsistsOfEdges(e1, e2) then
+			return nil, ERROR:New("There is already a similar connection between %s and %s via %s", e1, e2, airConnection)
+		end
+		if airConnection:ConsistsOfEdges(e1, e3) then
+			return nil, ERROR:New("There is already a similar connection between %s and %s via %s", e1, e3, airConnection)
+		end
+		if airConnection:ConsistsOfEdges(e2, e3) then
+			return nil, ERROR:New("There is already a similar connection between %s and %s via %s", e2, e3, airConnection)
+		end
+	end
+
 	-- Add reference to this triangle to all edges.
 	table.insert(e1.Triangles, obj)
 	table.insert(e2.Triangles, obj)

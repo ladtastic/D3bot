@@ -107,7 +107,7 @@ function RENDER_UTIL.Draw2DArrow(color)
 end
 
 ---Draws a 2D arrow between two given positions.
----The arrow will be pointing upwards.
+---The arrow plane will be kept horizontal as much as possible.
 ---@param from GVector
 ---@param to GVector
 ---@param width number
@@ -124,4 +124,49 @@ function RENDER_UTIL.Draw2DArrowPos(from, to, width, color)
 	cam.PushModelMatrix(mat, true)
 	RENDER_UTIL.Draw2DArrow(color)
 	cam.PopModelMatrix()
+end
+
+---Draws a two sided 2D arrow between two given positions.
+---@param from GVector
+---@param to GVector
+---@param width number
+---@param color GColor
+function RENDER_UTIL.Draw2DArrow2SidedPos(from, to, width, color)
+	local diff = to - from
+	local size = diff:Length()
+
+	for i = 0, 180, 180 do
+		local mat = Matrix()
+		mat:Translate(from)
+		mat:Rotate(diff:Angle())
+		mat:Rotate(Angle(0, 0, i))
+		mat:Scale(Vector(size, width, size))
+		cam.PushModelMatrix(mat, true)
+		RENDER_UTIL.Draw2DArrow(color)
+		cam.PopModelMatrix()
+	end
+end
+
+---Draws a 2D arrow between two given positions.
+---The arrow rotates around its axis.
+---@param from GVector
+---@param to GVector
+---@param width number
+---@param rotSpeed number @Rotational speed in full rotations per second.
+---@param color GColor
+function RENDER_UTIL.Draw2DArrow2SidedRotatingPos(from, to, width, rotSpeed, color)
+	local diff = to - from
+	local size = diff:Length()
+	local angleOffset = CurTime() * 360 * rotSpeed
+
+	for i = 0, 180, 180 do
+		local mat = Matrix()
+		mat:Translate(from)
+		mat:Rotate(diff:Angle())
+		mat:Rotate(Angle(0, 0, i + angleOffset))
+		mat:Scale(Vector(size, width, size))
+		cam.PushModelMatrix(mat, true)
+		RENDER_UTIL.Draw2DArrow(color)
+		cam.PopModelMatrix()
+	end
 end

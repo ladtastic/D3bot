@@ -17,6 +17,7 @@
 
 local D3bot = D3bot
 local UTIL = D3bot.Util
+local RENDER_UTIL = D3bot.RenderUtil
 local ERROR = D3bot.ERROR
 
 ------------------------------------------------------
@@ -33,7 +34,7 @@ local NAV_AIR_CONNECTION = D3bot.NAV_AIR_CONNECTION
 NAV_AIR_CONNECTION.__index = NAV_AIR_CONNECTION
 
 -- Radius of the air connection used for drawing and mouse click tracing.
-NAV_AIR_CONNECTION.DisplayRadius = 5
+NAV_AIR_CONNECTION.DisplayRadius = 10
 
 -- Min length of the connection.
 NAV_AIR_CONNECTION.MinLength = 10
@@ -66,6 +67,13 @@ function NAV_AIR_CONNECTION:New(navmesh, id, e1, e2)
 	-- Check if it's below min length.
 	if e1Centroid:Distance(e2Centroid) < obj.MinLength then
 		return nil, ERROR:New("Distance between edges is too short: %s < %s", e1Centroid:Distance(e2Centroid), obj.MinLength)
+	end
+
+	-- Check if there is already a triangle connecting the two edges.
+	for _, triangle in ipairs(e1.Triangles) do
+		if triangle.Edges[1] == e2 or triangle.Edges[2] == e2 or triangle.Edges[3] == e2 then
+			return nil, ERROR:New("There is already a similar connection between %s and %s via %s", e1, e2, triangle)
+		end
 	end
 
 	-- Add reference to this air connection to its edges.
@@ -370,15 +378,20 @@ function NAV_AIR_CONNECTION:Render3D()
 	local cache = self:GetCache()
 	local ui = self.UI
 	local p1, p2 = cache.Point1, cache.Point2
+	local center = (p1 + p2) / 2
+	local color = Color(255, 255, 0, 127)
+
+	if ui.Highlighted then
+		color = Color(255, 255, 255, 255)
+		cam.IgnoreZ(true)
+	end
+
+	RENDER_UTIL.Draw2DArrow2SidedRotatingPos(center, p1, self.DisplayRadius*6, -0.5, color)
+	RENDER_UTIL.Draw2DArrow2SidedRotatingPos(center, p2, self.DisplayRadius*6, 0.5, color)
 
 	if ui.Highlighted then
 		ui.Highlighted = nil
-		cam.IgnoreZ(true)
-		render.DrawBeam(p1, p2, self.DisplayRadius*2, 0, 1, Color(255, 255, 255, 127))
 		cam.IgnoreZ(false)
-	else
-		--render.DrawLine(p1, p2, Color(255, 255, 255, 16), false)
-		render.DrawLine(p1, p2, Color(255, 0, 0, 255), true)
 	end
 end
 
