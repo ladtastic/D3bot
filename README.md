@@ -31,7 +31,6 @@ There will be importers/converters for the old navmeshes at some later point in 
 - [ ] Give triangles an optional volume (along the normal, as it's really easy to calculate)
 - [ ] Simplify and unify logging and text output to player (console and chat)
 - [X] Path-Finding
-- [X] Locomotion controller base
 - [ ] Path-generation and simplification with locomotion controllers
 - [ ] Controller callback for locomotion controllers (Button pressing logic)
 - [ ] Behavior/Action controllers (Let bot do specific actions, they run locomotion controllers)
