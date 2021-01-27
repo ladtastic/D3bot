@@ -241,9 +241,10 @@ function NAV_TRIANGLE:GetCache()
 	cache.LocomotionType = "Ground" -- Default type.
 	if cache.Normal then
 		local angle = cache.Normal:Angle()
-		-- Everything steeper than 45 deg is considered a wall.
-		if angle.pitch < 45 then
-			cache.LocomotionType = "Wall"
+		if angle.pitch < 15 then
+			cache.LocomotionType = "Wall" -- Everything steeper than 80 deg is considered a wall.
+		elseif angle.pitch < 45 then
+			cache.LocomotionType = "SteepGround" -- Everything steeper than 45 deg is considered a steep ground (That is not walkable normally).
 		end
 		-- TODO: Add user defined locomotion type override to triangles
 	end

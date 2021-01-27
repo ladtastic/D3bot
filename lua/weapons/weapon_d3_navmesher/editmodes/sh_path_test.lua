@@ -75,10 +75,11 @@ function THIS_EDIT_MODE:GeneratePath(navmesh, debugOutput)
 	if not self.StartPos or not self.DestPos then return true end
 
 	-- Add some virtual locomotion handlers.
+	local standingHull = Vector(32, 32, 72)
 	local abilities = {
-		Ground = LOCOMOTION_HANDLERS.WALKING:New(200),
-		Wall = LOCOMOTION_HANDLERS.JUMP_AND_FALL:New(56, 1000),
-		AirVertical = LOCOMOTION_HANDLERS.JUMP_AND_FALL:New(56, 1000),
+		Ground = LOCOMOTION_HANDLERS.WALKING:New(standingHull, 200),
+		Wall = LOCOMOTION_HANDLERS.JUMP_AND_FALL:New(standingHull, 56, 1000),
+		AirVertical = LOCOMOTION_HANDLERS.JUMP_AND_FALL:New(standingHull, 56, 1000),
 	}
 
 	-- Create path object.

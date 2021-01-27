@@ -33,11 +33,13 @@ THIS_LOCO_HANDLER.__index = THIS_LOCO_HANDLER
 
 ---Creates a new instance of a general locomotion handler for bots that can walk.
 ---Works best with locomotion types: "Ground".
----@param speed number
+---@param hullSize GVector @The bot's/player's standing hull box size as a vector.
+---@param speed number @Speed for normal (unmodified) walking in engine units per second.
 ---@return table
-function THIS_LOCO_HANDLER:New(speed)
+function THIS_LOCO_HANDLER:New(hullSize, speed)
 	local handler = setmetatable({
-		Speed = speed, -- Speed for normal (unmodified) walking in engine units per second.
+		HullSize = hullSize,
+		Speed = speed,
 	}, self)
 
 	return handler
@@ -49,11 +51,12 @@ end
 
 ---Returns the cache for the given pathElement (from pathElements at index), if needed this will regenerate the cache.
 ---The cache contains all values to easily control the bot through the pathElement.
----@param index integer @pathElements index
+---@param index integer @pathElements index.
 ---@param pathElements D3botPATH_ELEMENT[]
 ---@return table
 function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 	local pathElement = pathElements[index]
+	local pathFragment = pathElement.PathFragment
 	local cache = pathElement.Cache
 	if cache then return cache end
 
@@ -64,6 +67,28 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 	-- A flag indicating if the cache contains correct or malformed data.
 	-- Changing this to false will not cause the cache to be rebuilt.
 	cache.IsValid = true
+
+	-- End condition. (As a plane that the bot has to cross)
+	cache.EndPlaneOrigin = pathFragment.ToPos
+	cache.EndPlaneNormal = pathFragment.OrthogonalOutside
+
+	-- Move end plane along its normal if the successive path element is a wall.
+	local endPlaneOffset = -5
+	local nextPathElement = pathElements[index-1] -- The previous index is the next path element.
+	if nextPathElement then
+		local nextPathFragment = nextPathElement.PathFragment
+		local locType = nextPathFragment.LocomotionType
+		if locType == "Wall" or locType == "SteepGround" or locType == "AirVertical" then
+			-- If the next path element is of a type that doesn't allow ground based locomotion, make sure the end condition is offset accordingly.
+			-- We don't want the bot to try to move inside a wall.
+			if nextPathFragment.PathDirection[3] > 0 then
+				endPlaneOffset = endPlaneOffset - self.HullSize[1] / 2
+			else
+				endPlaneOffset = self.HullSize[1] / 2
+			end
+		end
+	end
+	cache.EndPlaneOrigin = cache.EndPlaneOrigin + endPlaneOffset * cache.EndPlaneNormal
 
 	return cache
 end
@@ -93,6 +118,7 @@ end
 ---@param index integer @pathElements index
 ---@param pathElements D3botPATH_ELEMENT[]
 function THIS_LOCO_HANDLER:Render3D(index, pathElements)
+	local cache = self:GetPathElementCache(index, pathElements)
 	local pathElement = pathElements[index]
 	local pathFragment = pathElement.PathFragment
 	local fromPos, toPos = pathFragment.FromPos, pathFragment.ToPos
@@ -101,5 +127,5 @@ function THIS_LOCO_HANDLER:Render3D(index, pathElements)
 	RENDER_UTIL.Draw2DArrowPos(fromPos, toPos, 50, Color(0, 0, 255, 128))
 
 	-- Draw end condition planes.
-	render.DrawQuadEasy(toPos, -pathFragment.OrthogonalOutside, 50, 50, Color(255, 0, 255, 128))
+	render.DrawQuadEasy(cache.EndPlaneOrigin, -cache.EndPlaneNormal, 50, 50, Color(255, 0, 255, 128))
 end
