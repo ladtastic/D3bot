@@ -152,8 +152,10 @@ function THIS_LOCO_HANDLER:Render3D(index, pathElements)
 	local pathElement = pathElements[index]
 	local pathFragment = pathElement.PathFragment
 	local fromPos, toPos = pathFragment.FromPos, pathFragment.ToPos
+	cam.IgnoreZ(true)
 	render.DrawBeam(fromPos, toPos, 5, 0, 1, Color(0, 255, 0, 255))
 
 	-- Draw end condition planes.
+	cam.IgnoreZ(false)
 	render.DrawQuadEasy(cache.EndPlaneOrigin, -cache.EndPlaneNormal, 50, 50, Color(255, 0, 255, 128))
 end

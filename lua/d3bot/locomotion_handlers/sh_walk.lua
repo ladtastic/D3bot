@@ -72,7 +72,7 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 	cache.EndPlaneOrigin = pathFragment.ToPos
 	cache.EndPlaneNormal = pathFragment.OrthogonalOutside
 
-	-- Move end plane along its normal if the successive path element is a wall.
+	-- Move end plane along its normal if the successive path element is a wall or something similar.
 	local endPlaneOffset = -5
 	local nextPathElement = pathElements[index-1] -- The previous index is the next path element.
 	if nextPathElement then
@@ -89,6 +89,48 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 		end
 	end
 	cache.EndPlaneOrigin = cache.EndPlaneOrigin + endPlaneOffset * cache.EndPlaneNormal
+
+	-- Get the points from the start and dest NAV_EDGE (or PATH_POINT).
+	local from, via, to = pathFragment.From, pathFragment.Via, pathFragment.To
+	local fromPoints, toPoints = from.Points or {from:GetCentroid()}, to.Points or {to:GetCentroid()}
+	local viaNormal = via:GetCache().Normal
+	local pathDirection = pathFragment.PathDirection
+
+	-- A vector that points "to the right" direction as seen from the path direction.
+	local pathRight = pathDirection:Cross(viaNormal)
+
+	-- Invert the (edge) points, if they point into the wrong direction.
+	-- This basically makes sure that the edge vectors are pointing "to the right" as seen from the path direction.
+	-- TODO: Put this stuff into the pathFragment, as it can be precalculated.
+	if #fromPoints == 2 and pathRight:Dot(fromPoints[2]-fromPoints[1]) < 0 then
+		fromPoints[2], fromPoints[1] = fromPoints[1], fromPoints[2]
+	end
+	if #toPoints == 2 and pathRight:Dot(toPoints[2]-toPoints[1]) < 0 then
+		toPoints[2], toPoints[1] = toPoints[1], toPoints[2]
+	end
+
+	-- All points that are needed to calculate the right/left limitation planes.
+	local fromLeft, fromRight, toLeft, toRight = fromPoints[1], fromPoints[2] or fromPoints[1], toPoints[1], toPoints[2] or toPoints[1]
+	cache.fromLeft, cache.fromRight, cache.toLeft, cache.toRight = fromLeft, fromRight, toLeft, toRight
+	-- TODO: Use wall flag and move the points along their edge
+
+	-- Limitation plane on the right side that prevents the bot from dropping down cliffs or scrubbing along walls.
+	-- It's pointing to the outside.
+	cache.RightPlaneOrigin = toRight
+	if (toRight - fromRight):IsZero() then
+		cache.RightPlaneNormal = pathDirection:Cross(viaNormal):GetNormalized()
+	else
+		cache.RightPlaneNormal = (toRight - fromRight):Cross(viaNormal):GetNormalized()
+	end
+
+	-- Limitation plane on the left side that prevents the bot from dropping down cliffs or scrubbing along walls.
+	-- It's pointing to the outside.
+	cache.LeftPlaneOrigin = toLeft
+	if (fromLeft - toLeft):IsZero() then
+		cache.LeftPlaneNormal = -pathDirection:Cross(viaNormal):GetNormalized()
+	else
+		cache.LeftPlaneNormal = (fromLeft - toLeft):Cross(viaNormal):GetNormalized()
+	end
 
 	return cache
 end
@@ -124,8 +166,22 @@ function THIS_LOCO_HANDLER:Render3D(index, pathElements)
 	local fromPos, toPos = pathFragment.FromPos, pathFragment.ToPos
 
 	-- Draw arrow as the main movement direction.
+	cam.IgnoreZ(true)
 	RENDER_UTIL.Draw2DArrowPos(fromPos, toPos, 50, Color(0, 0, 255, 128))
 
 	-- Draw end condition planes.
+	cam.IgnoreZ(false)
 	render.DrawQuadEasy(cache.EndPlaneOrigin, -cache.EndPlaneNormal, 50, 50, Color(255, 0, 255, 128))
+
+	-- Draw right limitation plane.
+	cam.IgnoreZ(false)
+	render.DrawQuadEasy(cache.RightPlaneOrigin, -cache.RightPlaneNormal, 50, 50, Color(255, 0, 0, 128))
+
+	-- Draw left limitation plane.
+	cam.IgnoreZ(false)
+	render.DrawQuadEasy(cache.LeftPlaneOrigin, -cache.LeftPlaneNormal, 50, 50, Color(0, 255, 0, 128))
+
+	-- Draw plane the the bot is able to walk on.
+	cam.IgnoreZ(true)
+	render.DrawQuad(cache.fromLeft, cache.toLeft, cache.toRight, cache.fromRight, Color(0, 0, 255, 63))
 end

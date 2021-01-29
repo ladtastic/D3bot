@@ -249,7 +249,7 @@ end
 
 ---Draw the path into a 3D rendering context.
 function PATH:Render3D()
-	render.SetColorMaterialIgnoreZ()
+	render.SetColorMaterial()
 	cam.IgnoreZ(true)
 
 	---@type D3botPATH_ELEMENT
