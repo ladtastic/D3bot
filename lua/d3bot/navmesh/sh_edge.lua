@@ -195,6 +195,7 @@ function NAV_EDGE:GetCache()
 			end
 			-- TODO: Move the "Is edge walled" (#edge.Triangles < 2) logic into a method, and call it from here
 			-- TODO: Add case for when a neighbor triangle has a "Wall", "SteepGround" or similar locomotion type. And then check if the angle along the walkable side of the triangles is greater or smaller than 180 deg
+			-- TODO: Cache is not invalidated correctly for "WallPoints"
 		end
 	end
 

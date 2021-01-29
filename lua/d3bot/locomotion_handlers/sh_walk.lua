@@ -64,6 +64,9 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 	local cache = {}
 	pathElement.Cache = cache
 
+	-- Half hull width.
+	local halfHullWidth = self.HullSize[1] / 2
+
 	-- A flag indicating if the cache contains correct or malformed data.
 	-- Changing this to false will not cause the cache to be rebuilt.
 	cache.IsValid = true
@@ -82,22 +85,39 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 			-- If the next path element is of a type that doesn't allow ground based locomotion, make sure the end condition is offset accordingly.
 			-- We don't want the bot to try to move inside a wall.
 			if nextPathFragment.PathDirection[3] > 0 then
-				endPlaneOffset = endPlaneOffset - self.HullSize[1] / 2
+				endPlaneOffset = endPlaneOffset - halfHullWidth
 			else
-				endPlaneOffset = self.HullSize[1] / 2
+				endPlaneOffset = halfHullWidth
 			end
 		end
 	end
 	cache.EndPlaneOrigin = cache.EndPlaneOrigin + endPlaneOffset * cache.EndPlaneNormal
 
 	-- Get the points from the start and dest NAV_EDGE (or PATH_POINT).
+	-- This will make copies of any point arrays, but the vectors inside will not be copied, so don't modify.
 	local from, via, to = pathFragment.From, pathFragment.Via, pathFragment.To
-	local fromPoints, toPoints = from.Points or {from:GetCentroid()}, to.Points or {to:GetCentroid()}
+	local fromPoints, toPoints = table.Copy(from.Points) or {from:GetCentroid()}, table.Copy(to.Points) or {to:GetCentroid()}
 	local viaNormal = via:GetCache().Normal
 	local pathDirection = pathFragment.PathDirection
 
 	-- A vector that points "to the right" direction as seen from the path direction.
-	local pathRight = pathDirection:Cross(viaNormal)
+	local pathRight = pathDirection:Cross(viaNormal):GetNormalized()
+
+	-- Check wall state of the edge vertices and move the points so that they keep enough distance to the wall.
+	local fromCache, toCache = from.GetCache and from:GetCache() or nil, to.GetCache and to:GetCache() or nil
+	local fromNormVector, toNormVector = ((fromPoints[2] or fromPoints[1]) - fromPoints[1]):GetNormalized(), ((toPoints[2] or toPoints[1]) - toPoints[1]):GetNormalized()
+	if fromCache and fromCache.WallPoint and fromCache.WallPoint[1] then
+		fromPoints[1] = fromPoints[1] + fromNormVector * ((halfHullWidth + 5) / math.abs(pathRight:Dot(fromNormVector)))
+	end
+	if fromCache and fromCache.WallPoint and fromCache.WallPoint[2] then
+		fromPoints[2] = fromPoints[2] - fromNormVector * ((halfHullWidth + 5) / math.abs(pathRight:Dot(fromNormVector)))
+	end
+	if toCache and toCache.WallPoint and toCache.WallPoint[1] then
+		toPoints[1] = toPoints[1] + toNormVector * ((halfHullWidth + 5) / math.abs(pathRight:Dot(toNormVector)))
+	end
+	if toCache and toCache.WallPoint and toCache.WallPoint[2] then
+		toPoints[2] = toPoints[2] - toNormVector * ((halfHullWidth + 5) / math.abs(pathRight:Dot(toNormVector)))
+	end
 
 	-- Invert the (edge) points, if they point into the wrong direction.
 	-- This basically makes sure that the edge vectors are pointing "to the right" as seen from the path direction.
@@ -112,24 +132,23 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 	-- All points that are needed to calculate the right/left limitation planes.
 	local fromLeft, fromRight, toLeft, toRight = fromPoints[1], fromPoints[2] or fromPoints[1], toPoints[1], toPoints[2] or toPoints[1]
 	cache.fromLeft, cache.fromRight, cache.toLeft, cache.toRight = fromLeft, fromRight, toLeft, toRight
-	-- TODO: Use wall flag and move the points along their edge
 
 	-- Limitation plane on the right side that prevents the bot from dropping down cliffs or scrubbing along walls.
 	-- It's pointing to the outside.
 	cache.RightPlaneOrigin = toRight
 	if (toRight - fromRight):IsZero() then
-		cache.RightPlaneNormal = pathDirection:Cross(viaNormal):GetNormalized()
+		cache.RightPlaneNormal = pathDirection:Cross(viaNormal)--:GetNormalized()
 	else
-		cache.RightPlaneNormal = (toRight - fromRight):Cross(viaNormal):GetNormalized()
+		cache.RightPlaneNormal = (toRight - fromRight):Cross(viaNormal)--:GetNormalized()
 	end
 
 	-- Limitation plane on the left side that prevents the bot from dropping down cliffs or scrubbing along walls.
 	-- It's pointing to the outside.
 	cache.LeftPlaneOrigin = toLeft
 	if (fromLeft - toLeft):IsZero() then
-		cache.LeftPlaneNormal = -pathDirection:Cross(viaNormal):GetNormalized()
+		cache.LeftPlaneNormal = -pathDirection:Cross(viaNormal)--:GetNormalized()
 	else
-		cache.LeftPlaneNormal = (fromLeft - toLeft):Cross(viaNormal):GetNormalized()
+		cache.LeftPlaneNormal = (fromLeft - toLeft):Cross(viaNormal)--:GetNormalized()
 	end
 
 	return cache
