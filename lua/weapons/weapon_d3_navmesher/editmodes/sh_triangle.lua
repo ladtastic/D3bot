@@ -68,13 +68,9 @@ function THIS_EDIT_MODE:PrimaryAttack(wep)
 	if not IsFirstTimePredicted() then return true end
 	if not CLIENT then return true end
 
-	-- If there is no navmesh, stop.
-	-- TODO: Make it possible to place triangles without a valid navmesh.
+	-- Get navmesh, but it's also fine if there is none.
+	-- In this case the navmesh will be created when the first triangle gets created.
 	local navmesh = NAV_MAIN:GetNavmesh()
-	if not navmesh then
-		wep.Weapon:EmitSound("buttons/button1.wav")
-		return true
-	end
 
 	-- Store points that are used to create triangles.
 	self.TempPoints = self.TempPoints or {}
@@ -160,8 +156,9 @@ end
 
 -- Client side drawing.
 function THIS_EDIT_MODE:PreDrawViewModel(wep, vm)
+	-- Get navmesh, but it's also fine if there is none.
+	-- In this case the navmesh will be created when the first triangle gets created.
 	local navmesh = NAV_MAIN:GetNavmesh()
-	if not navmesh then return end
 
 	-- Triangle points that are used to draw a ghost of the current triangle.
 	local trianglePoints = table.Copy(self.TempPoints or {})
@@ -183,7 +180,7 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm)
 
 	-- Highlighting of navmesh edges.
 	-- Check if any edge can be selected (based on the temp points needed), if so highlight it.
-	if not snapped and (3 - #trianglePoints) >= 2 then
+	if navmesh and not snapped and (3 - #trianglePoints) >= 2 then
 		-- Trace closest edge.
 		tracedEdge = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Edges)
 
@@ -202,14 +199,18 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm)
 	end
 
 	-- Highlighting of navmesh triangles.
-	local tracedTriangle = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Triangles)
-	-- Set highlighted state of traced element.
-	if tracedTriangle then
-		tracedTriangle.UI.Highlighted = true
+	if navmesh then
+		local tracedTriangle = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Triangles)
+		-- Set highlighted state of traced element.
+		if tracedTriangle then
+			tracedTriangle.UI.Highlighted = true
+		end
 	end
 
 	-- Draw client side navmesh.
-	navmesh:Render3D()
+	if navmesh then
+		navmesh:Render3D()
+	end
 
 	-- Draw ghost of triangle.
 	for _, point in ipairs(trianglePoints) do
