@@ -108,7 +108,10 @@ function NAV_EDGE:New(navmesh, id, v1, v2)
 		old:_Delete()
 	end
 
-	-- Invalidate cache of connected triangles and air connections.
+	-- Invalidate cache of any connected entities.
+	for _, vertex in ipairs(obj.Vertices) do
+		vertex:InvalidateCache()
+	end
 	for _, triangle in ipairs(obj.Triangles) do
 		triangle:InvalidateCache()
 	end

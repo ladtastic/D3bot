@@ -100,6 +100,9 @@ function NAV_TRIANGLE:New(navmesh, id, e1, e2, e3, flipNormal)
 	-- Invalidate the cache of the neighbor triangles/air connections and their edges.
 	-- It's ugly but has to be done.
 	for _, edge in ipairs(obj.Edges) do
+		for _, vertex in ipairs(edge.Vertices) do
+			vertex:InvalidateCache()
+		end
 		for _, triangle in ipairs(edge.Triangles) do
 			triangle:InvalidateCache()
 			for _, edge2 in ipairs(triangle.Edges) do
@@ -310,6 +313,10 @@ function NAV_TRIANGLE:_Delete()
 		table.RemoveByValue(edge.Triangles, self)
 		-- Invalidate cache of the edge.
 		edge:InvalidateCache()
+		-- Invalidate cache of vertices of the edge.
+		for _, vertex in ipairs(edge.Vertices) do
+			vertex:InvalidateCache()
+		end
 		-- Invalidate cache of the (other) connected triangles and air connections.
 		for _, triangle in ipairs(edge.Triangles) do
 			triangle:InvalidateCache()
