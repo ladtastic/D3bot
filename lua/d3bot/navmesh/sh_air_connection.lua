@@ -62,9 +62,8 @@ function NAV_AIR_CONNECTION:New(navmesh, id, e1, e2)
 	if not e1 then return nil, ERROR:New("Invalid value of parameter %q", "e1") end
 	if not e2 then return nil, ERROR:New("Invalid value of parameter %q", "e2") end
 
-	local e1Centroid, e2Centroid = e1:GetCentroid(), e2:GetCentroid()
-
 	-- Check if it's below min length.
+	local e1Centroid, e2Centroid = e1:_GetCentroid(), e2:_GetCentroid()
 	if e1Centroid:Distance(e2Centroid) < obj.MinLength then
 		return nil, ERROR:New("Distance between edges is too short: %s < %s", e1Centroid:Distance(e2Centroid), obj.MinLength)
 	end
@@ -143,7 +142,7 @@ end
 ------------------------------------------------------
 
 ---Returns the object's ID, which is most likely a number object.
----It can be anything else, though.
+---It can also be a string, though.
 ---@return number | string
 function NAV_AIR_CONNECTION:GetID()
 	return self.ID
@@ -178,7 +177,7 @@ function NAV_AIR_CONNECTION:GetCache()
 	cache.IsValid = true
 
 	-- Get the two endpoints of the connection. (Without using the cache)
-	local point1, point2 = (self.Edges[1].Points[1] + self.Edges[1].Points[2])/2, (self.Edges[2].Points[1] + self.Edges[2].Points[2])/2
+	local point1, point2 = self.Edges[1]:_GetCentroid(), self.Edges[2]:_GetCentroid()
 	cache.Point1, cache.Point2 = point1, point2
 
 	-- Calculate "centroid" center.
@@ -200,8 +199,9 @@ function NAV_AIR_CONNECTION:GetCache()
 	if cache.IsValid then
 		for _, edge in ipairs(self.Edges) do
 			if #edge.Triangles + #edge.AirConnections > 1 then
-				local edgeCenter = (edge.Points[1] + edge.Points[2]) / 2
-				local edgeVector = edge.Points[2] - edge.Points[1]
+				local eP1, eP2 = edge:_GetPoints()
+				local edgeCenter = edge:_GetCentroid()
+				local edgeVector = eP2 - eP1
 				local pathDirection = edgeCenter - cache.Centroid -- Basically the walking direction.
 				local edgeOrthogonal = pathDirection:Cross(edgeVector):Cross(edgeVector) -- Vector that is orthogonal to the edge.
 				---@type D3botPATH_FRAGMENT

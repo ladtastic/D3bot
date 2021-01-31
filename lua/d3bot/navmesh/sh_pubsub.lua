@@ -21,6 +21,7 @@
 local D3bot = D3bot
 local NAV_MAIN = D3bot.NavMain
 local NAV_MESH = D3bot.NAV_MESH
+local NAV_VERTEX = D3bot.NAV_VERTEX
 local NAV_EDGE = D3bot.NAV_EDGE
 local NAV_TRIANGLE = D3bot.NAV_TRIANGLE
 local NAV_AIR_CONNECTION = D3bot.NAV_AIR_CONNECTION
@@ -100,6 +101,17 @@ if SERVER then
 	end
 	util.AddNetworkString("D3bot_Nav_PubSub_NavmeshDelete")
 
+	---Sends a given vertex to all the subscribers.
+	---@param vertex D3botNAV_VERTEX
+	function NAV_PUBSUB:SendVertexToSubs(vertex)
+		if not self.Subscribers then return end
+
+		net.Start("D3bot_Nav_PubSub_Vertex")
+		net.WriteTable(vertex:MarshalToTable())
+		net.Send(self.Subscribers)
+	end
+	util.AddNetworkString("D3bot_Nav_PubSub_Vertex")
+
 	---Sends a given edge to all the subscribers.
 	---@param edge D3botNAV_EDGE
 	function NAV_PUBSUB:SendEdgeToSubs(edge)
@@ -155,13 +167,23 @@ if CLIENT then
 			local navTableJSONCompressed = net.ReadData(net.ReadUInt(16))
 			local navTableJSON = util.Decompress(navTableJSONCompressed)
 			local navTable = util.JSONToTable(navTableJSON)
-			NAV_MAIN:SetNavmesh(NAV_MESH:NewFromTable(navTable))
+			local navmesh, err = NAV_MESH:NewFromTable(navTable)
+			if err then print(string.format("%s Failed to recreate navmesh that the server sent: %s", D3bot.PrintPrefix, err)) end
+			NAV_MAIN:SetNavmesh(navmesh)
 		end
 	)
 
 	net.Receive("D3bot_Nav_PubSub_NavmeshDelete",
 		function(len)
 			NAV_MAIN:SetNavmesh(nil)
+		end
+	)
+
+	net.Receive("D3bot_Nav_PubSub_Vertex",
+		function(len)
+			local navmesh = NAV_MAIN:GetNavmesh()
+			local _, err = NAV_VERTEX:NewFromTable(navmesh, net.ReadTable())
+			if err then print(string.format("%s Failed to recreate vertex that the server sent: %s", D3bot.PrintPrefix, err)) end
 		end
 	)
 

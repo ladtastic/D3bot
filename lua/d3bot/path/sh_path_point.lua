@@ -63,8 +63,9 @@ function PATH_POINT:New(navmesh, pos)
 	obj.PathFragments = {}
 	for _, edge in ipairs(obj.Triangle.Edges) do
 		if #edge.Triangles + #edge.AirConnections > 1 then
+			local eP1, eP2 = edge:GetPoints()
 			local edgeCenter = edge:GetCentroid() -- Use cache as it may be faster.
-			local edgeVector = edge.Points[2] - edge.Points[1]
+			local edgeVector = eP2 - eP1
 			local edgeOrthogonal = triangleNormal:Cross(edgeVector) -- Vector that is orthogonal to the edge and parallel to the triangle plane.
 			local pathDirection = edgeCenter - pos -- Basically the walking direction.
 			---@type D3botPATH_FRAGMENT
@@ -93,6 +94,25 @@ end
 ---Returns the average of all points that are contained in this geometry, or nil.
 ---@return GVector
 function PATH_POINT:GetCentroid()
+	return self.Pos
+end
+
+---Returns the points (vectors) that this entity is made of.
+---May use the cache.
+---@return GVector
+function PATH_POINT:GetPoints()
+	return self.Pos
+end
+
+---Internal and uncached version of GetPoints.
+---@return GVector
+function PATH_POINT:_GetPoints()
+	return self.Pos
+end
+
+---Returns the vector that describes this path point.
+---@return GVector
+function PATH_POINT:GetPoint()
 	return self.Pos
 end
 

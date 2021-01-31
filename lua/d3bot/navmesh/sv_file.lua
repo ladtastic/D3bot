@@ -16,6 +16,7 @@
 -- along with D3bot.  If not, see <http://www.gnu.org/licenses/>.
 
 local D3bot = D3bot
+local ERROR = D3bot.ERROR
 local NAV_FILE = D3bot.NavFile
 local NAV_MAIN = D3bot.NavMain
 local NAV_MESH = D3bot.NAV_MESH
@@ -60,24 +61,27 @@ end
 
 ---Loads the main navmesh from a file.
 ---This will try to load the navmesh from several directories, see NAV_FILE.BasePaths.
+---@return D3botERROR | nil err
 function NAV_FILE.LoadMainNavmesh()
 	local mapName = game.GetMap()
 	local filePath, gamePath = findValidFilePath(NAV_FILE.BasePaths, mapName)
 	if filePath and gamePath then
 		local tJSON = file.Read(filePath, gamePath)
 		local t = util.JSONToTable(tJSON)
-		local navmesh = NAV_MESH:NewFromTable(t)
-		if navmesh then
-			navmesh:_GC()
-			NAV_MAIN:SetNavmesh(navmesh)
-		end
+		local navmesh, err = NAV_MESH:NewFromTable(t)
+		if err then return ERROR:New("Couldn't load navmesh from file %q in gamePath %q: %s", filePath, gamePath, err) end
+		navmesh:_GC()
+		NAV_MAIN:SetNavmesh(navmesh)
 	else
 		NAV_MAIN:SetNavmesh(nil)
 	end
+
+	return nil
 end
 
 ---Stores the main navmesh in a file.
 ---This will store the navmesh in gmod's data directory.
+---@return D3botERROR | nil err
 function NAV_FILE.SaveMainNavmesh()
 	local mapName = game.GetMap()
 	local filePath, gamePath = getFilePath(NAV_FILE.BasePaths[1], mapName)
@@ -91,7 +95,10 @@ function NAV_FILE.SaveMainNavmesh()
 			file.Delete(filePath)
 		end
 	end
+
+	return nil
 end
 
 -- Load the navmesh for the map, if possible.
-NAV_FILE.LoadMainNavmesh()
+local err = NAV_FILE.LoadMainNavmesh()
+if err then print(string.format("%s Failed to load navmesh for the current map: %s", D3bot.PrintPrefix, err)) end

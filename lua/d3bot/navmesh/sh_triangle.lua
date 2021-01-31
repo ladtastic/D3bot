@@ -64,13 +64,16 @@ function NAV_TRIANGLE:New(navmesh, id, e1, e2, e3, flipNormal)
 	if not e2 then return nil, ERROR:New("Invalid value of parameter %q", "e2") end
 	if not e3 then return nil, ERROR:New("Invalid value of parameter %q", "e3") end
 
+	-- TODO: Check if ID is used by a different entity type
+
 	-- Check if the edges form a triangle shape.
-	local trianglePoints, err = UTIL.EdgesToTrianglePoints(obj.Edges)
+	local triangleVertices, err = UTIL.EdgesToTriangleVertices(obj.Edges)
 	if err then
 		return nil, err
 	end
 
 	-- Check the resulting triangle's min height.
+	local trianglePoints = {triangleVertices[1]:GetPoint(), triangleVertices[2]:GetPoint(), triangleVertices[3]:GetPoint()}
 	local h1, h2, h3 = UTIL.GetTriangleHeights(trianglePoints[1], trianglePoints[2], trianglePoints[3])
 	if math.min(h1, h2, h3) < obj.MinHeight then
 		return nil, ERROR:New("The triangle's smallest height is below allowed min. height (%s < %s)", math.min(h1, h2, h3), obj.MinHeight)
@@ -150,6 +153,8 @@ end
 ---@return D3botNAV_TRIANGLE | nil
 ---@return D3botERROR | nil err
 function NAV_TRIANGLE:NewFromTable(navmesh, t)
+	if not t.Edges then return nil, ERROR:New("The field %q is missing from the table", "Edges") end
+
 	local e1 = navmesh:FindEdgeByID(t.Edges[1])
 	local e2 = navmesh:FindEdgeByID(t.Edges[2])
 	local e3 = navmesh:FindEdgeByID(t.Edges[3])
@@ -157,7 +162,6 @@ function NAV_TRIANGLE:NewFromTable(navmesh, t)
 	if not e1 or not e2 or not e3 then return nil, ERROR:New("Couldn't find all edges by their reference") end
 
 	local obj, err = self:New(navmesh, t.ID, e1, e2, e3, t.FlipNormal)
-
 	return obj, err
 end
 
@@ -166,7 +170,7 @@ end
 ------------------------------------------------------
 
 ---Returns the object's ID, which is most likely a number object.
----It can be anything else, though.
+---It can also be a string, though.
 ---@return number | string
 function NAV_TRIANGLE:GetID()
 	return self.ID
@@ -202,12 +206,16 @@ function NAV_TRIANGLE:GetCache()
 	-- Changing this to false will not cause the cache to be rebuilt.
 	cache.IsValid = true
 
-	-- Get 3 corner points from the edges and check for validity.
-	local points, err = UTIL.EdgesToTrianglePoints(self.Edges)
+	-- Get 3 corner vertices from the edges and check for validity.
+	local vertices, err = UTIL.EdgesToTriangleVertices(self.Edges)
 	if err then
 		print(string.format("%s Failed to generate valid cache for triangle %s: %s", D3bot.PrintPrefix, self, err))
 		cache.IsValid = false
 	end
+	cache.CornerVertices = vertices
+
+	-- Get points (vectors) from the vertices.
+	local points = {vertices[1]:GetPoint(), vertices[2]:GetPoint(), vertices[3]:GetPoint()}
 	cache.CornerPoints = points
 
 	-- Get neighbor triangles that are connected via edges.
@@ -255,8 +263,9 @@ function NAV_TRIANGLE:GetCache()
 	if cache.IsValid then
 		for _, edge in ipairs(self.Edges) do
 			if #edge.Triangles + #edge.AirConnections > 1 then
-				local edgeCenter = (edge.Points[1] + edge.Points[2]) / 2
-				local edgeVector = edge.Points[2] - edge.Points[1]
+				local eP1, eP2 = edge:_GetPoints()
+				local edgeCenter = edge:_GetCentroid()
+				local edgeVector = eP2 - eP1
 				local edgeOrthogonal = cache.Normal:Cross(edgeVector) -- Vector that is orthogonal to the edge and parallel to the triangle plane.
 				local pathDirection = edgeCenter - cache.Centroid -- Basically the walking direction.
 				---@type D3botPATH_FRAGMENT
@@ -367,17 +376,17 @@ function NAV_TRIANGLE:WindingOrderToEdge(edge)
 	local cache = self:GetCache()
 	if not cache.IsValid then return nil end
 
-	local p1, p2, p3 = cache.CornerPoints[1], cache.CornerPoints[2], cache.CornerPoints[3]
+	local v1, v2, v3 = cache.CornerVertices[1], cache.CornerVertices[2], cache.CornerVertices[3]
 
 	-- Aligned with edge.
-	if p1 == edge.Points[1] and p2 == edge.Points[2] then return true end
-	if p2 == edge.Points[1] and p3 == edge.Points[2] then return true end
-	if p3 == edge.Points[1] and p1 == edge.Points[2] then return true end
+	if v1 == edge.Vertices[1] and v2 == edge.Vertices[2] then return true end
+	if v2 == edge.Vertices[1] and v3 == edge.Vertices[2] then return true end
+	if v3 == edge.Vertices[1] and v1 == edge.Vertices[2] then return true end
 
 	-- Aligned against edge.
-	if p1 == edge.Points[1] and p3 == edge.Points[2] then return false end
-	if p2 == edge.Points[1] and p1 == edge.Points[2] then return false end
-	if p3 == edge.Points[1] and p2 == edge.Points[2] then return false end
+	if v1 == edge.Vertices[1] and v3 == edge.Vertices[2] then return false end
+	if v2 == edge.Vertices[1] and v1 == edge.Vertices[2] then return false end
+	if v3 == edge.Vertices[1] and v2 == edge.Vertices[2] then return false end
 
 	return nil
 end

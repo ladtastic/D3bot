@@ -26,7 +26,7 @@ local ERROR = D3bot.ERROR
 ---@class D3botNAV_EDGE
 ---@field Navmesh D3botNAV_MESH
 ---@field ID number | string
----@field Points GVector[]
+---@field Vertices D3botNAV_VERTEX[] @The two vertices that the edge is made of.
 ---@field Triangles D3botNAV_TRIANGLE[] @This points to triangles that this edge is part of. There should be at most 2 triangles.
 ---@field AirConnections D3botNAV_AIR_CONNECTION[] @This points to air connections that this edge is part of.
 ---@field Cache table | nil @Contains connected neighbor edges and other cached values.
@@ -46,15 +46,15 @@ NAV_EDGE.MinLength = 10
 ---The point coordinates will be rounded to a single engine unit.
 ---@param navmesh D3botNAV_MESH
 ---@param id number | string
----@param p1 GVector
----@param p2 GVector
+---@param v1 D3botNAV_VERTEX
+---@param v2 D3botNAV_VERTEX
 ---@return D3botNAV_EDGE | nil
 ---@return D3botERROR | nil err
-function NAV_EDGE:New(navmesh, id, p1, p2)
+function NAV_EDGE:New(navmesh, id, v1, v2)
 	local obj = setmetatable({
 		Navmesh = navmesh,
 		ID = id or navmesh:GetUniqueID(),
-		Points = {UTIL.RoundVector(p1), UTIL.RoundVector(p2)},
+		Vertices = {v1, v2},
 		Triangles = {},
 		AirConnections = {},
 		Cache = nil,
@@ -63,14 +63,20 @@ function NAV_EDGE:New(navmesh, id, p1, p2)
 
 	-- General parameter checks. -- TODO: Check parameters for types and other stuff.
 	if not navmesh then return nil, ERROR:New("Invalid value of parameter %q", "navmesh") end
-	if not p1 then return nil, ERROR:New("Invalid value of parameter %q", "p1") end
-	if not p2 then return nil, ERROR:New("Invalid value of parameter %q", "p2") end
+	if not v1 then return nil, ERROR:New("Invalid value of parameter %q", "v1") end
+	if not v2 then return nil, ERROR:New("Invalid value of parameter %q", "v2") end
+
+	-- TODO: Check if ID is used by a different entity type
 
 	-- Make sure that length is >= self.MinLength.
-	local length = (p2-p1):Length()
+	local length = v1:GetPoint():Distance(v2:GetPoint())
 	if length < self.MinLength then
 		return nil, ERROR:New("The edge is shorter than the allowed min. length (%s < %s)", length, self.MinLength)
 	end
+
+	-- Add edge reference to the two vertices.
+	table.insert(v1.Edges, obj)
+	table.insert(v2.Edges, obj)
 
 	-- Check if there was a previous element. If so, change references to/from it.
 	local old = navmesh.Edges[obj.ID]
@@ -127,7 +133,14 @@ end
 ---@return D3botNAV_EDGE | nil
 ---@return D3botERROR | nil err
 function NAV_EDGE:NewFromTable(navmesh, t)
-	local obj, err = self:New(navmesh, t.ID, t.Points[1], t.Points[2])
+	if not t.Vertices then return nil, ERROR:New("The field %q is missing from the table", "Vertices") end
+
+	local v1 = navmesh:FindVertexByID(t.Vertices[1])
+	local v2 = navmesh:FindVertexByID(t.Vertices[2])
+
+	if not v1 or not v2 then return nil, ERROR:New("Couldn't find all vertices by their reference") end
+
+	local obj, err = self:New(navmesh, t.ID, v1, v2)
 	return obj, err
 end
 
@@ -136,7 +149,7 @@ end
 ------------------------------------------------------
 
 ---Returns the object's ID, which is most likely a number object.
----It can be anything else, though.
+---It can also be a string, though.
 ---@return number | string
 function NAV_EDGE:GetID()
 	return self.ID
@@ -147,9 +160,9 @@ end
 function NAV_EDGE:MarshalToTable()
 	local t = {
 		ID = self:GetID(),
-		Points = {
-			Vector(self.Points[1]),
-			Vector(self.Points[2]),
+		Vertices = {
+			self.Vertices[1]:GetID(),
+			self.Vertices[2]:GetID(),
 		}
 	}
 
@@ -170,24 +183,28 @@ function NAV_EDGE:GetCache()
 	-- Changing this to false will not cause the cache to be rebuilt.
 	cache.IsValid = true
 
+	-- Get the two edge corners/points.
+	local p1, p2 = self:_GetPoints()
+	cache.Point1, cache.Point2 = p1, p2
+
 	---Calculate center
 	---@type GVector
-	cache.Center = (self.Points[1] + self.Points[2]) / 2
+	cache.Center = self:_GetCentroid()
 
 	-- Flags that state if the point of the edge is near a wall or not. This includes walls defined by neighbor edges.
 	cache.WallPoint = {false, false}
-	local p1, p2 = self.Points[1], self.Points[2]
 
 	-- Iterate over all edges, and when there is an edge that shares a vertex and has less than 2 triangles, consider this vertex to be near a wall.
 	-- It's slow, but it is cached. There needs to be a faster query if loading times get problematic. The cleanest solution would be to replace the "self.Points" Vectors with NAV_VERTEX objects, but this will complicate stuff in other places.
 	for _, edge in pairs(self.Navmesh.Edges) do
-		if edge.Points[1] == p1 or edge.Points[2] == p1 then
+		local eP1, eP2 = edge:_GetPoints()
+		if eP1 == p1 or eP2 == p1 then
 			if #edge.Triangles < 2 then
 				cache.WallPoint[1] = true
 				-- Break when both points are considered a wall already.
 				if cache.WallPoint[1] and cache.WallPoint[2] then break end
 			end
-		elseif edge.Points[1] == p2 or edge.Points[2] == p2 then
+		elseif eP1 == p2 or eP2 == p2 then
 			if #edge.Triangles < 2 then
 				cache.WallPoint[2] = true
 				-- Break when both points are considered a wall already.
@@ -205,16 +222,18 @@ function NAV_EDGE:GetCache()
 	if cache.IsValid then
 		for _, triangle in ipairs(self.Triangles) do
 			-- Get an orthogonal vector of the triangle plane, without using the triangle cache.
-			local trianglePoints, err = UTIL.EdgesToTrianglePoints(triangle.Edges)
+			local triangleVertices, err = UTIL.EdgesToTriangleVertices(triangle.Edges)
 			local triangleNormal = Vector(0, 0, 1)
-			if trianglePoints then
+			if triangleVertices then
+				local trianglePoints = {triangleVertices[1]:GetPoint(), triangleVertices[2]:GetPoint(), triangleVertices[3]:GetPoint()}
 				triangleNormal = (trianglePoints[1] - trianglePoints[2]):Cross(trianglePoints[3] - trianglePoints[1]):GetNormalized() -- Has to be normalized, because too large numbers will be interpreted as infinity. Thanks lua.
 			end
 
 			for _, edge in ipairs(triangle.Edges) do
 				if edge ~= self and #edge.Triangles + #edge.AirConnections > 1 then
-					local neighborEdgeCenter = (edge.Points[1] + edge.Points[2]) / 2
-					local edgeVector = edge.Points[2] - edge.Points[1]
+					local eP1, eP2 = edge:_GetPoints()
+					local neighborEdgeCenter = edge:_GetCentroid()
+					local edgeVector = eP2 - eP1
 					local edgeOrthogonal = triangleNormal:Cross(edgeVector) -- Vector that is orthogonal to the edge and parallel to the triangle plane.
 					local pathDirection = neighborEdgeCenter - cache.Center -- Basically the walking direction.
 					---@type D3botPATH_FRAGMENT
@@ -236,8 +255,9 @@ function NAV_EDGE:GetCache()
 		for _, airConnection in ipairs(self.AirConnections) do
 			for _, edge in ipairs(airConnection.Edges) do
 				if edge ~= self and #edge.Triangles + #edge.AirConnections > 1 then
-					local edgeCenter = (edge.Points[1] + edge.Points[2]) / 2
-					local edgeVector = edge.Points[2] - edge.Points[1]
+					local eP1, eP2 = edge:_GetPoints()
+					local edgeCenter = edge:_GetCentroid()
+					local edgeVector = eP2 - eP1
 					local pathDirection = edgeCenter - cache.Center -- Basically the walking direction.
 					local edgeOrthogonal = pathDirection:Cross(edgeVector):Cross(edgeVector) -- Vector that is orthogonal to the edge.
 					---@type D3botPATH_FRAGMENT
@@ -286,6 +306,13 @@ function NAV_EDGE:_Delete()
 		airConnection:_Delete()
 	end
 
+	-- Delete any reference to this edge from its vertices.
+	for _, vertex in ipairs(self.Vertices) do
+		table.RemoveByValue(vertex.Edges, self)
+		-- Invalidate cache of the vertex.
+		vertex:InvalidateCache()
+	end
+
 	self.Navmesh.Edges[self.ID] = nil
 	self.Navmesh = nil
 end
@@ -305,6 +332,27 @@ function NAV_EDGE:GetCentroid()
 	return cache.Center
 end
 
+---Internal and uncached version of GetCentroid.
+---@return GVector
+function NAV_EDGE:_GetCentroid()
+	local p1, p2 = self:_GetPoints()
+	return (p1 + p2) / 2
+end
+
+---Returns the points (vectors) that this entity is made of.
+---May use the cache.
+---@return GVector, GVector
+function NAV_EDGE:GetPoints()
+	local cache = self:GetCache()
+	return cache.Point1, cache.Point2
+end
+
+---Internal and uncached version of GetPoints.
+---@return GVector, GVector
+function NAV_EDGE:_GetPoints()
+	return self.Vertices[1]:GetPoint(), self.Vertices[2]:GetPoint()
+end
+
 ---Returns a list of possible paths to take from this navmesh entity.
 ---The result is a list of path fragment tables that contain the destination entity and some metadata.
 ---This is used for pathfinding.
@@ -314,15 +362,13 @@ function NAV_EDGE:GetPathFragments()
 	return cache.PathFragments
 end
 
----Returns whether the edge consists out of the two given points or not.
----The point coordinates will be rounded to a single engine unit.
----@param p1 GVector
----@param p2 GVector
+---Returns whether the edge consists out of the two given vertices or not.
+---@param v1 D3botNAV_VERTEX
+---@param v2 D3botNAV_VERTEX
 ---@return boolean
-function NAV_EDGE:ConsistsOfPoints(p1, p2)
-	p1, p2 = UTIL.RoundVector(p1), UTIL.RoundVector(p2)
-	if self.Points[1] == p1 and self.Points[2] == p2 then return true end
-	if self.Points[1] == p2 and self.Points[2] == p1 then return true end
+function NAV_EDGE:ConsistsOfVertices(v1, v2)
+	if self.Vertices[1] == v1 and self.Vertices[2] == v2 then return true end
+	if self.Vertices[1] == v2 and self.Vertices[2] == v1 then return true end
 	return false
 end
 
@@ -335,7 +381,7 @@ end
 function NAV_EDGE:GetClosestPointToLine(origin, dir)
 	-- See: http://geomalgorithms.com/a07-_distance.html
 
-	local p1, p2 = self.Points[1], self.Points[2]
+	local p1, p2 = self:GetPoints()
 	local u = p2 - p1
 	local w0 = p1 - origin
 	local a, b, c, d, e = u:Dot(u), u:Dot(dir), dir:Dot(dir), u:Dot(w0), dir:Dot(w0)
@@ -366,7 +412,7 @@ function NAV_EDGE:IntersectsRay(origin, dir)
 	-- Also, subtract some amount ( √(radius² - dist²) ) from the calculated dist to give it some "volume".
 	-- That should be good enough.
 
-	local p1, p2 = self.Points[1], self.Points[2]
+	local p1, p2 = self:GetPoints()
 	local u = p2 - p1
 	local w0 = p1 - origin
 	local a, b, c, d, e = u:Dot(u), u:Dot(dir), dir:Dot(dir), u:Dot(w0), dir:Dot(w0)
@@ -404,7 +450,7 @@ end
 ---Draw the edge into a 3D rendering context.
 function NAV_EDGE:Render3D()
 	local ui = self.UI
-	local p1, p2 = self.Points[1], self.Points[2]
+	local p1, p2 = self:GetPoints()
 
 	if ui.Highlighted then
 		ui.Highlighted = nil

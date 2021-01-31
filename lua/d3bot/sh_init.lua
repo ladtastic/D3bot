@@ -55,6 +55,7 @@ D3bot.ERROR = D3bot.ERROR or {} -- Error handling/signalling class.
 D3bot.PRIORITY_QUEUE = D3bot.PRIORITY_QUEUE or {} -- Prioritized queue class.
 D3bot.CONCOMMAND = D3bot.CONCOMMAND or {} -- Console command class, to replicate and parse client side commands.
 D3bot.NAV_MESH = D3bot.NAV_MESH or {} -- NAV_MESH class.
+D3bot.NAV_VERTEX = D3bot.NAV_VERTEX or {} -- NAV_VERTEX class.
 D3bot.NAV_EDGE = D3bot.NAV_EDGE or {} -- NAV_EDGE class.
 D3bot.NAV_TRIANGLE = D3bot.NAV_TRIANGLE or {} -- NAV_TRIANGLE class.
 D3bot.NAV_AIR_CONNECTION = D3bot.NAV_AIR_CONNECTION or {} -- NAV_AIR_CONNECTION class.
@@ -81,6 +82,7 @@ UTIL.IncludeRealm("cl_renderutil.lua", UTIL.REALM_CLIENT)
 -- Navmesh stuff.
 UTIL.IncludeRealm("navmesh/sh_main.lua", UTIL.REALM_SHARED)
 UTIL.IncludeRealm("navmesh/sh_navmesh.lua", UTIL.REALM_SHARED)
+UTIL.IncludeRealm("navmesh/sh_vertex.lua", UTIL.REALM_SHARED)
 UTIL.IncludeRealm("navmesh/sh_edge.lua", UTIL.REALM_SHARED)
 UTIL.IncludeRealm("navmesh/sh_triangle.lua", UTIL.REALM_SHARED)
 UTIL.IncludeRealm("navmesh/sh_air_connection.lua", UTIL.REALM_SHARED)

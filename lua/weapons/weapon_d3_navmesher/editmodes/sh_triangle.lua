@@ -91,13 +91,14 @@ function THIS_EDIT_MODE:PrimaryAttack(wep)
 	local snappedPos, snapped = UTIL.GetSnappedPosition(snapToNav and navmesh or nil, snapToMap and MAPGEOMETRY or nil, trRes.HitPos, 10)
 
 	-- Check if any edge can be selected, if so add the two edge points to the temp points list.
-	if not snapped and (3 - #self.TempPoints) >= 2 then
+	if navmesh and not snapped and (3 - #self.TempPoints) >= 2 then
 		-- Trace closest edge.
 		tracedEdge = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Edges)
 
 		if tracedEdge then
-			table.insert(self.TempPoints, tracedEdge.Points[1])
-			table.insert(self.TempPoints, tracedEdge.Points[2])
+			local eP1, eP2 = tracedEdge:GetPoints()
+			table.insert(self.TempPoints, eP1)
+			table.insert(self.TempPoints, eP2)
 		end
 	end
 
@@ -189,8 +190,9 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm)
 		-- Set highlighted state of traced element.
 		if tracedEdge then
 			tracedEdge.UI.Highlighted = true
-			table.insert(trianglePoints, tracedEdge.Points[1])
-			table.insert(trianglePoints, tracedEdge.Points[2])
+			local eP1, eP2 = tracedEdge:GetPoints()
+			table.insert(trianglePoints, eP1)
+			table.insert(trianglePoints, eP2)
 		end
 	end
 

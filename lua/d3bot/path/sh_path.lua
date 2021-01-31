@@ -86,7 +86,7 @@ function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 	-- Define some variables for optimization.
 	local navmesh = self.Navmesh
 	local abilities = self.Abilities
-	local startPos, destPos = startPoint:GetCentroid(), destPoint:GetCentroid()
+	local startPos, destPos = startPoint:GetPoint(), destPoint:GetPoint()
 
 	-- Data structures for pathfinding.
 	local entityData = {} -- Contains scores and other information about visited navmesh entities.

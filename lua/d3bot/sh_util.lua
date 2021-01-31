@@ -298,44 +298,44 @@ function UTIL.GetSnappedPosition(navmesh, mapgeometry, pos, proximity)
 	return UTIL.RoundVector(snapped or pos), snapped ~= nil
 end
 
----Takes an array (not map/table) with edges and returns its unique points.
----This will always return the points in a predictable order.
+---Takes an array (not map/table) with edges and returns its unique vertices.
+---This will always return the vertices in a predictable order.
 ---@param edges D3botNAV_EDGE[]
----@return GVector[] points
-function UTIL.EdgesToPoints(edges)
-	local points = {}
+---@return D3botNAV_VERTEX[]
+function UTIL.EdgesToVertices(edges)
+	local vertices = {}
 	for _, edge in ipairs(edges) do
-		for _, newPoint in ipairs(edge.Points) do
+		for _, newVertex in ipairs(edge.Vertices) do
 			local found = false
-			-- Check if point is already in the list.
-			for _, point in ipairs(points) do
-				if point == newPoint then
+			-- Check if vertex is already in the list.
+			for _, vertex in ipairs(vertices) do
+				if vertex == newVertex then
 					found = true
 					break
 				end
 			end
 
 			if not found then
-				table.insert(points, newPoint)
+				table.insert(vertices, newVertex)
 			end
 		end
 	end
 
-	return points
+	return vertices
 end
 
----Takes an array (not map/table) with edges and returns 3 points that form a triangle, or an error if it's impossible.
----This will also return the points as array in a predictable order.
+---Takes an array (not map/table) with edges and returns 3 vertices that form a triangle, or an error if it's impossible.
+---This will also return the vertices as array in a predictable order.
 ---@param edges D3botNAV_EDGE[]
----@return GVector[] points
+---@return D3botNAV_VERTEX[] | nil
 ---@return D3botERROR | nil err
-function UTIL.EdgesToTrianglePoints(edges)
+function UTIL.EdgesToTriangleVertices(edges)
 	if #edges ~= 3 then return nil, ERROR:New("There is an unexpected amount of edges. Want %d, got %d", 3, #edges) end
 
-	local points = UTIL.EdgesToPoints(edges)
-	if #points ~= 3 then return nil, ERROR:New("There is an unexpected amount of points. Want %d, got %d", 3, #points) end
+	local vertices = UTIL.EdgesToVertices(edges)
+	if #vertices ~= 3 then return nil, ERROR:New("There is an unexpected amount of vertices. Want %d, got %d", 3, #vertices) end
 
-	return points, nil
+	return vertices, nil
 end
 
 ---Helper function for SWEPs that does a line trace on the given player.

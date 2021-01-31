@@ -35,7 +35,8 @@ CONCOMMANDS.SaveMesh = CONCOMMAND:New("d3bot_savemesh", nil, "Saves the navmesh 
 function CONCOMMANDS.SaveMesh:OnServer(ply, cmd, args, argStr)
 	if not ply:IsSuperAdmin() then return end
 
-	NAV_FILE.SaveMainNavmesh()
+	local err = NAV_FILE.SaveMainNavmesh()
+	if err then ply:ChatPrint(string.format("%s Couldn't save current main navmesh: %s", D3bot.PrintPrefix, err)) end
 end
 
 -- Load the main navmesh from disk.
@@ -43,7 +44,8 @@ CONCOMMANDS.LoadMesh = CONCOMMAND:New("d3bot_loadmesh", nil, "Loads the navmesh 
 function CONCOMMANDS.LoadMesh:OnServer(ply, cmd, args, argStr)
 	if not ply:IsSuperAdmin() then return end
 
-	NAV_FILE.LoadMainNavmesh()
+	local err = NAV_FILE.LoadMainNavmesh()
+	if err then ply:ChatPrint(string.format("%s Couldn't load navmesh for the current map: %s", D3bot.PrintPrefix, err)) end
 end
 
 -- Changes the current edit mode of the player's navmeshing SWEP to the given mode.

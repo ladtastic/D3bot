@@ -94,9 +94,9 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 	cache.EndPlaneOrigin = cache.EndPlaneOrigin + endPlaneOffset * cache.EndPlaneNormal
 
 	-- Get the points from the start and dest NAV_EDGE (or PATH_POINT).
-	-- This will make copies of any point arrays, but the vectors inside will not be copied, so don't modify.
+	-- The point arrays will either contain one or two points.
 	local from, via, to = pathFragment.From, pathFragment.Via, pathFragment.To
-	local fromPoints, toPoints = table.Copy(from.Points) or {from:GetCentroid()}, table.Copy(to.Points) or {to:GetCentroid()}
+	local fromPoints, toPoints = {from:GetPoints()}, {to:GetPoints()}
 	local viaNormal = via:GetCache().Normal
 	local pathDirection = pathFragment.PathDirection
 
