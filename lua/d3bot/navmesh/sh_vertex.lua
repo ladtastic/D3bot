@@ -143,6 +143,18 @@ function NAV_VERTEX:GetCache()
 	-- Changing this to false will not cause the cache to be rebuilt.
 	cache.IsValid = true
 
+	-- A flag stating if this vertex is located at a wall. Bots will try to keep distance to these vertices.
+	cache.Walled = false
+	for _, edge in pairs(self.Edges) do
+		-- If there are less than 2 triangles connected to this edge, the edge is most likely at a wall.
+		-- TODO: Add user override for edges that are at cliffs
+		if #edge.Triangles < 2 then
+			cache.Walled = true
+		end
+		-- TODO: Move the "Is edge walled" (#edge.Triangles < 2) logic into a method, and call it from here
+		-- TODO: Add case for when a neighbor triangle has a "Wall", "SteepGround" or similar locomotion type. And then check if the angle along the walkable side of the triangles is greater or smaller than 180 deg
+	end
+
 	return cache
 end
 
@@ -199,10 +211,24 @@ function NAV_VERTEX:_GetPoints()
 	return self.Point
 end
 
+---Returns the list of vertices that this entity is made of.
+---@return D3botNAV_VERTEX
+function NAV_VERTEX:GetVertices()
+	return self
+end
+
 ---Returns the vector that describes this vertex.
 ---@return GVector
 function NAV_VERTEX:GetPoint()
 	return self.Point
+end
+
+---Returns whether this vector is places at a wall or not.
+---Locomotion controllers can use this information to give bots more distances in paths that corner this vertex.
+---@return boolean
+function NAV_VERTEX:IsWalled()
+	local cache = self:GetCache()
+	return cache.Walled
 end
 
 ---Returns whether the vertex is made of a single point (vector).
@@ -219,6 +245,7 @@ end
 function NAV_VERTEX:Render3D()
 	local ui = self.UI
 	local p = self.Point
+	local cache = self:GetCache()
 
 	if ui.Highlighted then
 		ui.Highlighted = nil
@@ -226,7 +253,11 @@ function NAV_VERTEX:Render3D()
 		render.DrawSphere(p, self.DisplayRadius, 6, 6, Color(255, 255, 255, 127))
 		cam.IgnoreZ(false)
 	else
-		render.DrawSphere(p, self.DisplayRadius, 6, 6, Color(255, 0, 0, 255))
+		if cache.Walled then
+			render.DrawSphere(p, self.DisplayRadius, 6, 6, Color(127, 0, 0, 255))
+		else
+			render.DrawSphere(p, self.DisplayRadius, 6, 6, Color(255, 0, 0, 255))
+		end
 	end
 end
 

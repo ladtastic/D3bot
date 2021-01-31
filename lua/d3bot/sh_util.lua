@@ -46,6 +46,40 @@ function UTIL.RoundVector(vec)
 	return Vector(math.floor(vec[1] + 0.5), math.floor(vec[2] + 0.5), math.floor(vec[3] + 0.5))
 end
 
+---Scales the vector to hit the border of a square (on the X and Y plane) with the given halfWidth.
+---This will only change the length of a vector, not its direction.
+---@param vec GVector
+---@param halfWidth number
+---@return GVector
+function UTIL.ScaleVectorXYSquare(vec, halfWidth)
+	local max = math.max(math.abs(vec[1]), math.abs(vec[2]))
+	return vec * (halfWidth / max)
+end
+
+---Scales a vector so that one of its components given by dirIndex is equal to dist.
+---This will only change the length of a vector, not its direction.
+---@param vec GVector
+---@param dirIndex integer @The direction/component to compare with dist: X, Y and Z as 1, 2, 3.
+---@param dist number
+---@return GVector
+function UTIL.ScaleVectorByComponent(vec, dirIndex, dist)
+	return vec * (dist / math.abs(vec[dirIndex]))
+end
+
+---Returns the largest absolute component of a vector.
+---@param vec GVector
+---@return integer mainDir @The largest absolute component of the given vector.
+function UTIL.VectorLargestAbsComponent(vec)
+	if math.abs(vec[1]) > math.abs(vec[2]) then
+		if math.abs(vec[3]) > math.abs(vec[1]) then
+			return 3
+		else
+			return 1
+		end
+	end
+	return 2
+end
+
 ---Returns whether a number is positive (including positive 0) or not.
 ---Unlike the mathematical sign function, this only returns a bool.
 ---@param num number

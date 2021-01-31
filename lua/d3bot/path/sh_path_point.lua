@@ -110,6 +110,9 @@ function PATH_POINT:_GetPoints()
 	return self.Pos
 end
 
+---Returns the list of vertices that this entity is made of.
+function PATH_POINT:GetVertices() end
+
 ---Returns the vector that describes this path point.
 ---@return GVector
 function PATH_POINT:GetPoint()

@@ -194,31 +194,6 @@ function NAV_EDGE:GetCache()
 	---@type GVector
 	cache.Center = self:_GetCentroid()
 
-	-- Flags that state if the point of the edge is near a wall or not. This includes walls defined by neighbor edges.
-	cache.WallPoint = {false, false}
-
-	-- Iterate over all edges, and when there is an edge that shares a vertex and has less than 2 triangles, consider this vertex to be near a wall.
-	-- It's slow, but it is cached. There needs to be a faster query if loading times get problematic. The cleanest solution would be to replace the "self.Points" Vectors with NAV_VERTEX objects, but this will complicate stuff in other places.
-	for _, edge in pairs(self.Navmesh.Edges) do
-		local eP1, eP2 = edge:_GetPoints()
-		if eP1 == p1 or eP2 == p1 then
-			if #edge.Triangles < 2 then
-				cache.WallPoint[1] = true
-				-- Break when both points are considered a wall already.
-				if cache.WallPoint[1] and cache.WallPoint[2] then break end
-			end
-		elseif eP1 == p2 or eP2 == p2 then
-			if #edge.Triangles < 2 then
-				cache.WallPoint[2] = true
-				-- Break when both points are considered a wall already.
-				if cache.WallPoint[1] and cache.WallPoint[2] then break end
-			end
-			-- TODO: Move the "Is edge walled" (#edge.Triangles < 2) logic into a method, and call it from here
-			-- TODO: Add case for when a neighbor triangle has a "Wall", "SteepGround" or similar locomotion type. And then check if the angle along the walkable side of the triangles is greater or smaller than 180 deg
-			-- TODO: Cache is not invalidated correctly for "WallPoints"
-		end
-	end
-
 	---A list of possible paths to take from this edge.
 	---@type D3botPATH_FRAGMENT[]
 	cache.PathFragments = {}
@@ -354,6 +329,12 @@ end
 ---@return GVector, GVector
 function NAV_EDGE:_GetPoints()
 	return self.Vertices[1]:GetPoint(), self.Vertices[2]:GetPoint()
+end
+
+---Returns the list of vertices that this entity is made of.
+---@return D3botNAV_VERTEX, D3botNAV_VERTEX
+function NAV_EDGE:GetVertices()
+	return self.Vertices[1], self.Vertices[2]
 end
 
 ---Returns a list of possible paths to take from this navmesh entity.

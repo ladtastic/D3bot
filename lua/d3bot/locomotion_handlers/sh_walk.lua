@@ -97,6 +97,7 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 	-- The point arrays will either contain one or two points.
 	local from, via, to = pathFragment.From, pathFragment.Via, pathFragment.To
 	local fromPoints, toPoints = {from:GetPoints()}, {to:GetPoints()}
+	local fromVertices, toVertices = {from:GetVertices()}, {to:GetVertices()}
 	local viaNormal = via:GetCache().Normal
 	local pathDirection = pathFragment.PathDirection
 
@@ -104,18 +105,17 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 	local pathRight = pathDirection:Cross(viaNormal):GetNormalized()
 
 	-- Check wall state of the edge vertices and move the points so that they keep enough distance to the wall.
-	local fromCache, toCache = from.GetCache and from:GetCache() or nil, to.GetCache and to:GetCache() or nil
 	local fromNormVector, toNormVector = ((fromPoints[2] or fromPoints[1]) - fromPoints[1]):GetNormalized(), ((toPoints[2] or toPoints[1]) - toPoints[1]):GetNormalized()
-	if fromCache and fromCache.WallPoint and fromCache.WallPoint[1] then
+	if #fromVertices == 2 and fromVertices[1]:IsWalled() then
 		fromPoints[1] = fromPoints[1] + fromNormVector * ((halfHullWidth + 5) / math.abs(pathRight:Dot(fromNormVector)))
 	end
-	if fromCache and fromCache.WallPoint and fromCache.WallPoint[2] then
+	if #fromVertices == 2 and fromVertices[2]:IsWalled() then
 		fromPoints[2] = fromPoints[2] - fromNormVector * ((halfHullWidth + 5) / math.abs(pathRight:Dot(fromNormVector)))
 	end
-	if toCache and toCache.WallPoint and toCache.WallPoint[1] then
+	if #toVertices == 2 and toVertices[1]:IsWalled() then
 		toPoints[1] = toPoints[1] + toNormVector * ((halfHullWidth + 5) / math.abs(pathRight:Dot(toNormVector)))
 	end
-	if toCache and toCache.WallPoint and toCache.WallPoint[2] then
+	if #toVertices == 2 and toVertices[2]:IsWalled() then
 		toPoints[2] = toPoints[2] - toNormVector * ((halfHullWidth + 5) / math.abs(pathRight:Dot(toNormVector)))
 	end
 
