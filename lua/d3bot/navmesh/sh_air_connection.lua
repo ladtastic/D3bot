@@ -186,9 +186,9 @@ function NAV_AIR_CONNECTION:GetCache()
 	-- Determine locomotion type. (Hardcoded locomotion types)
 	cache.LocomotionType = "AirHorizontal" -- Default type
 	local direction = (point2 - point1)
-	local angle = direction:Angle()
+	local pitch = UTIL.Pitch180(direction:Angle())
 	-- Everything steeper than 45 deg is considered vertical.
-	if angle.pitch < -45 or angle.pitch > 45 then
+	if pitch < -45 or pitch > 45 then
 		cache.LocomotionType = "AirVertical"
 	end
 	-- TODO: Add user defined locomotion type override to air connections

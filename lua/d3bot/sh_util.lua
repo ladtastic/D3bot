@@ -80,6 +80,20 @@ function UTIL.VectorLargestAbsComponent(vec)
 	return 2
 end
 
+---Returns the pitch of a given angle in the range from [-90;90) degree.
+---A vector pointing upwards has a pitch of -90 deg, if it is pointing downwards it has 90 deg.
+---@param angle table
+---@return number pitch
+function UTIL.Pitch180(angle)
+	local pitch = angle[1]
+	if pitch >= 90 then
+		return pitch - 360
+	elseif pitch < -90 then
+		return pitch + 360
+	end
+	return pitch
+end
+
 ---Returns whether a number is positive (including positive 0) or not.
 ---Unlike the mathematical sign function, this only returns a bool.
 ---@param num number
