@@ -144,15 +144,12 @@ function NAV_VERTEX:GetCache()
 	cache.IsValid = true
 
 	-- A flag stating if this vertex is located at a wall. Bots will try to keep distance to these vertices.
-	cache.Walled = false
+	cache.IsWalled = false
 	for _, edge in pairs(self.Edges) do
-		-- If there are less than 2 triangles connected to this edge, the edge is most likely at a wall.
-		-- TODO: Add user override for edges that are at cliffs
-		if #edge.Triangles < 2 then
-			cache.Walled = true
+		if edge:IsWalled() then
+			cache.IsWalled = true
+			break
 		end
-		-- TODO: Move the "Is edge walled" (#edge.Triangles < 2) logic into a method, and call it from here
-		-- TODO: Add case for when a neighbor triangle has a "Wall", "SteepGround" or similar locomotion type. And then check if the angle along the walkable side of the triangles is greater or smaller than 180 deg
 	end
 
 	return cache
@@ -223,12 +220,12 @@ function NAV_VERTEX:GetPoint()
 	return self.Point
 end
 
----Returns whether this vector is places at a wall or not.
----Locomotion controllers can use this information to give bots more distances in paths that corner this vertex.
+---Returns whether this vector is placed at a wall (or some other non walkable geometry) or not.
+---Locomotion controllers can use this information to give bots more distances in paths so that they corner this vertex.
 ---@return boolean
 function NAV_VERTEX:IsWalled()
 	local cache = self:GetCache()
-	return cache.Walled
+	return cache.IsWalled
 end
 
 ---Returns whether the vertex is made of a single point (vector).
@@ -253,8 +250,8 @@ function NAV_VERTEX:Render3D()
 		render.DrawSphere(p, self.DisplayRadius, 6, 6, Color(255, 255, 255, 127))
 		cam.IgnoreZ(false)
 	else
-		if cache.Walled then
-			render.DrawSphere(p, self.DisplayRadius, 6, 6, Color(127, 0, 0, 255))
+		if cache.IsWalled then
+			render.DrawSphere(p, self.DisplayRadius, 6, 6, Color(255, 255, 0, 255))
 		else
 			render.DrawSphere(p, self.DisplayRadius, 6, 6, Color(255, 0, 0, 255))
 		end

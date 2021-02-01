@@ -530,7 +530,11 @@ function NAV_TRIANGLE:Render3D()
 				render.DrawLine(centroid, centroid + normal * 30, Color(255, 255, 255, 255), true)
 			end
 		else
-			render.DrawQuad(cornerPoints[1] + tinyNormal, cornerPoints[2] + tinyNormal, cornerPoints[3] + tinyNormal, cornerPoints[2] + tinyNormal, Color(255, 0, 0, 31))
+			if self:GetLocomotionType() == "Ground" then
+				render.DrawQuad(cornerPoints[1] + tinyNormal, cornerPoints[2] + tinyNormal, cornerPoints[3] + tinyNormal, cornerPoints[2] + tinyNormal, Color(255, 0, 0, 31))
+			else
+				render.DrawQuad(cornerPoints[1] + tinyNormal, cornerPoints[2] + tinyNormal, cornerPoints[3] + tinyNormal, cornerPoints[2] + tinyNormal, Color(255, 255, 0, 31))
+			end
 		end
 	end
 end

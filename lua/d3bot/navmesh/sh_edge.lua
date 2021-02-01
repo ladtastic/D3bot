@@ -190,9 +190,12 @@ function NAV_EDGE:GetCache()
 	local p1, p2 = self:_GetPoints()
 	cache.Point1, cache.Point2 = p1, p2
 
-	---Calculate center
+	---Calculate center.
 	---@type GVector
 	cache.Center = self:_GetCentroid()
+
+	---Cache IsWalled state.
+	cache.IsWalled = self:_IsWalled()
 
 	---A list of possible paths to take from this edge.
 	---@type D3botPATH_FRAGMENT[]
@@ -337,6 +340,36 @@ function NAV_EDGE:GetVertices()
 	return self.Vertices[1], self.Vertices[2]
 end
 
+---Returns whether an edge is at a wall or wall like (not walkable) geometry.
+---This doesn't influence pathfinding or if bots can use this edge to navigate.
+---This is used (indirectly via vertices) to determine if a bot has to keep distance to edges/vertices so it doesn't get stuck on walls or corners.
+---@return boolean
+function NAV_EDGE:IsWalled()
+	local cache = self:GetCache()
+	return cache.IsWalled
+end
+
+---Internal and uncached version of IsWalled.
+---@return boolean
+function NAV_EDGE:_IsWalled()
+	-- If the edge has less than two triangles, assume that the edge is at a wall.
+	if #self.Triangles < 2 then
+		-- TODO: Add user override for edges that are at cliffs or similar geometries, and therefore "walkable"
+		return true
+	end
+
+	-- Check if any of the two connected triangles can be walked on.
+	for _, triangle in ipairs(self.Triangles) do
+		local locType = triangle:GetLocomotionType()
+		if locType ~= "Ground" then
+			-- TODO: Calculate "angle" between the two triangles, and use it to determine if the edge is at a cliff or wall
+			return true
+		end
+	end
+
+	return false
+end
+
 ---Returns a list of possible paths to take from this navmesh entity.
 ---The result is a list of path fragment tables that contain the destination entity and some metadata.
 ---This is used for pathfinding.
@@ -444,6 +477,9 @@ function NAV_EDGE:Render3D()
 	else
 		--render.DrawLine(p1, p2, Color(255, 255, 255, 16), false)
 		render.DrawLine(p1, p2, Color(255, 0, 0, 255), true)
+		if self:IsWalled() then
+			render.DrawLine(p1 + Vector(0, 0, 1), p2 + Vector(0, 0, 1), Color(255, 255, 0, 127), true)
+		end
 	end
 end
 
