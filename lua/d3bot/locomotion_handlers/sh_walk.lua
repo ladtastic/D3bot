@@ -107,16 +107,16 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 	-- Check wall state of the edge vertices and move the points so that they keep enough distance to the wall.
 	local fromNormVector, toNormVector = ((fromPoints[2] or fromPoints[1]) - fromPoints[1]):GetNormalized(), ((toPoints[2] or toPoints[1]) - toPoints[1]):GetNormalized()
 	if #fromVertices == 2 and fromVertices[1]:IsWalled() then
-		fromPoints[1] = fromPoints[1] + fromNormVector * ((halfHullWidth + 5) / math.abs(pathRight:Dot(fromNormVector)))
+		fromPoints[1] = fromPoints[1] + fromNormVector * math.Clamp((halfHullWidth + 5) / math.abs(pathRight:Dot(fromNormVector)), 1, halfHullWidth * 3)
 	end
 	if #fromVertices == 2 and fromVertices[2]:IsWalled() then
-		fromPoints[2] = fromPoints[2] - fromNormVector * ((halfHullWidth + 5) / math.abs(pathRight:Dot(fromNormVector)))
+		fromPoints[2] = fromPoints[2] - fromNormVector * math.Clamp((halfHullWidth + 5) / math.abs(pathRight:Dot(fromNormVector)), 1, halfHullWidth * 3)
 	end
 	if #toVertices == 2 and toVertices[1]:IsWalled() then
-		toPoints[1] = toPoints[1] + toNormVector * ((halfHullWidth + 5) / math.abs(pathRight:Dot(toNormVector)))
+		toPoints[1] = toPoints[1] + toNormVector * math.Clamp((halfHullWidth + 5) / math.abs(pathRight:Dot(toNormVector)), 1, halfHullWidth * 3)
 	end
 	if #toVertices == 2 and toVertices[2]:IsWalled() then
-		toPoints[2] = toPoints[2] - toNormVector * ((halfHullWidth + 5) / math.abs(pathRight:Dot(toNormVector)))
+		toPoints[2] = toPoints[2] - toNormVector * math.Clamp((halfHullWidth + 5) / math.abs(pathRight:Dot(toNormVector)), 1, halfHullWidth * 3)
 	end
 
 	-- Invert the (edge) points, if they point into the wrong direction.
