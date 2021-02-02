@@ -16,9 +16,6 @@
 -- along with D3bot.  If not, see <http://www.gnu.org/licenses/>.
 
 AddCSLuaFile("cl_init.lua")
-AddCSLuaFile("cl_viewscreen.lua")
-AddCSLuaFile("vgui/cl_panel_navmeshing_options.lua")
-AddCSLuaFile("vgui/cl_panel_reload_menu.lua")
-AddCSLuaFile("vgui/cl_ui_reload_menu.lua")
+include("sh_init.lua")
 
-include("shared.lua")
+-- Nothing much happening in here. Look into `sh_init.lua`.

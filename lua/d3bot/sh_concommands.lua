@@ -53,7 +53,7 @@ CONCOMMANDS.EditMode = CONCOMMAND:New("d3bot_editmode", nil, "Changes your SWEP'
 function CONCOMMANDS.EditMode:OnShared(ply, cmd, args, argStr)
 	local wep = ply:GetWeapon("weapon_d3_navmesher")
 	if IsValid(wep) then
-		local editMode, err = wep:ChangeEditMode(argStr)
+		local err = wep:ChangeEditMode(argStr)
 		if CLIENT and err then ply:ChatPrint(string.format("%s Failed to change edit mode: %s", D3bot.PrintPrefix, err)) end
 	end
 end
@@ -63,6 +63,7 @@ CONCOMMANDS.EditModeReset = CONCOMMAND:New("d3bot_editmode_reset", nil, "Resets 
 function CONCOMMANDS.EditModeReset:OnShared(ply, cmd, args, argStr)
 	local wep = ply:GetWeapon("weapon_d3_navmesher")
 	if IsValid(wep) then
-		wep:ResetEditMode()
+		local err = wep:ResetEditMode()
+		if CLIENT and err then ply:ChatPrint(string.format("%s Failed to reset edit mode: %s", D3bot.PrintPrefix, err)) end
 	end
 end

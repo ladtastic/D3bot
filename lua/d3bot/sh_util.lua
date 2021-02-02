@@ -133,7 +133,7 @@ UTIL.REALM_SHARED = 3 -- 0b11
 --- - UTIL.REALM_CLIENT: The file will only be included on the client side. Additionally the file will be marked with AddCSLuaFile.
 --- - UTIL.REALM_SHARED: The file will only be included on both sides. Additionally the file will be marked with AddCSLuaFile.
 ---@param path string @The (relative) path of the file to include.
----@param realm D3botRealmEnum @The realm the file will be loaded into.
+---@param realm D3botRealmEnum | nil @The realm the file will be loaded into. Will be determined automatically if nil is given.
 function UTIL.IncludeRealm(path, name, realm)
 	if realm == nil then realm = UTIL.REALM_AUTO end
 
@@ -165,7 +165,7 @@ end
 ---Example: UTIL.IncludeDirectory("foo/bar/", "sv_*.lua", UTIL.REALM_SERVER)
 ---@param path string @The absolute path (relative to gmod's lua directory).
 ---@param name string @The filename inside the given path, can contain `*` wildcards.
----@param realm D3botRealmEnum @The realm the file will be loaded into.
+---@param realm D3botRealmEnum | nil @The realm the file will be loaded into. Will be determined automatically if nil is given.
 function UTIL.IncludeDirectory(path, name, realm)
 	local filenames, _ = file.Find(path .. name, "LUA")
 	for _, filename in ipairs(filenames) do

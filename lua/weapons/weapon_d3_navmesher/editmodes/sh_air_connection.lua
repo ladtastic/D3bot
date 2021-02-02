@@ -39,7 +39,7 @@ EDIT_MODES[key] = EDIT_MODES[key] or {}
 --		Static
 ------------------------------------------------------
 
----@class D3botNavmesherEditModeAirConnectionAddRemove
+---@class D3botNavmesherEditModeAirConnectionAddRemove : D3botNavmesherEditMode
 ---@field TempEdges D3botNAV_EDGE[]
 local THIS_EDIT_MODE = EDIT_MODES[key]
 THIS_EDIT_MODE.__index = THIS_EDIT_MODE
@@ -50,30 +50,32 @@ THIS_EDIT_MODE.Key = key
 -- Name that is shown to the user.
 THIS_EDIT_MODE.Name = "Create & remove air connections"
 
--- Set and overwrite current edit mode of the given weapon.
--- This will create an instance of the edit mode class, and store it in the weapon's EditMode field.
+---Set and overwrite current edit mode of the given weapon.
+---This will create an instance of the edit mode class, and store it in the weapon's EditMode field.
+---@param wep GWeapon
 function THIS_EDIT_MODE:AssignToWeapon(wep)
 	local mode = setmetatable({}, self)
 
 	wep.EditMode = mode
-
-	return true
 end
 
 ------------------------------------------------------
 --		Methods
 ------------------------------------------------------
 
--- Left mouse button action.
+---Called when primary attack button ( +attack ) is pressed.
+---Predicted, therefore it's not called by the client in single player.
+---Shared.
+---@param wep GWeapon
 function THIS_EDIT_MODE:PrimaryAttack(wep)
-	if not IsFirstTimePredicted() then return true end
-	if not CLIENT then return true end
+	if not IsFirstTimePredicted() then return end
+	if not CLIENT then return end
 
 	-- If there is no navmesh, stop.
 	local navmesh = NAV_MAIN:GetNavmesh()
 	if not navmesh then
-		wep.Weapon:EmitSound("buttons/button1.wav")
-		return true
+		wep:EmitSound("buttons/button1.wav")
+		return
 	end
 
 	-- Store edges that will be used to create an air connection.
@@ -90,31 +92,33 @@ function THIS_EDIT_MODE:PrimaryAttack(wep)
 		-- Edit server side navmesh.
 		NAV_EDIT.CreateAirConnection2E(LocalPlayer(), self.TempEdges[1]:GetID(), self.TempEdges[2]:GetID())
 
-		-- Reset build mode and its state.
-		THIS_EDIT_MODE:AssignToWeapon(wep)
+		-- Reset edit mode and its state.
+		wep:ResetEditMode()
 
-		wep.Weapon:EmitSound("buttons/blip2.wav")
+		wep:EmitSound("buttons/blip2.wav")
 	else
 		if tracedEdge then
-			wep.Weapon:EmitSound("buttons/blip1.wav")
+			wep:EmitSound("buttons/blip1.wav")
 		else
-			wep.Weapon:EmitSound("common/wpn_denyselect.wav")
+			wep:EmitSound("common/wpn_denyselect.wav")
 		end
 	end
-
-	return true
 end
 
--- Right mouse button action.
+---Called when secondary attack button ( +attack2 ) is pressed.
+---For issues with this hook being called rapidly on the client side, see the global function IsFirstTimePredicted.
+---Predicted, therefore it's not called by the client in single player.
+---Shared.
+---@param wep GWeapon
 function THIS_EDIT_MODE:SecondaryAttack(wep)
-	if not IsFirstTimePredicted() then return true end
-	if not CLIENT then return true end
+	if not IsFirstTimePredicted() then return end
+	if not CLIENT then return end
 
 	-- If there is no navmesh, stop.
 	local navmesh = NAV_MAIN:GetNavmesh()
 	if not navmesh then
-		wep.Weapon:EmitSound("buttons/button1.wav")
-		return true
+		wep:EmitSound("buttons/button1.wav")
+		return
 	end
 
 	-- Get map line trace result and navmesh tracing ray.
@@ -125,24 +129,26 @@ function THIS_EDIT_MODE:SecondaryAttack(wep)
 		-- Remove air connection on the server side.
 		NAV_EDIT.RemoveByID(LocalPlayer(), tracedAirConnection:GetID())
 
-		wep.Weapon:EmitSound("buttons/blip2.wav")
+		wep:EmitSound("buttons/blip2.wav")
 	else
-		wep.Weapon:EmitSound("common/wpn_denyselect.wav")
+		wep:EmitSound("common/wpn_denyselect.wav")
 	end
-
-	return true
 end
 
--- Reload button action.
-function THIS_EDIT_MODE:Reload(wep)
-	-- Reset build mode and its state.
-	--THIS_EDIT_MODE:AssignToWeapon(wep)
+---Called when the reload key ( +reload ) is pressed.
+---Predicted, therefore it's not called by the client in single player.
+---Shared.
+---@param wep GWeapon
+--function THIS_EDIT_MODE:Reload(wep)
+--end
 
-	return true
-end
-
--- Client side drawing.
-function THIS_EDIT_MODE:PreDrawViewModel(wep, vm)
+---Allows you to modify viewmodel while the weapon in use before it is drawn. This hook only works if you haven't overridden GM:PreDrawViewModel.
+---Client realm.
+---@param wep GWeapon
+---@param vm GEntity
+---@param weapon GWeapon @Can be nil in some gamemodes.
+---@param ply GPlayer @Can be nil in some gamemodes.
+function THIS_EDIT_MODE:PreDrawViewModel(wep, vm, weapon, ply)
 	local navmesh = NAV_MAIN:GetNavmesh()
 	if not navmesh then return end
 
@@ -193,5 +199,9 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm)
 	cam.IgnoreZ(true)
 end
 
+---This hook allows you to draw on screen while this weapon is in use.
+---If you want to draw a custom crosshair, consider using WEAPON:DoDrawCrosshair instead.
+---Client realm.
+---@param wep GWeapon
 --function THIS_EDIT_MODE:DrawHUD(wep)
 --end

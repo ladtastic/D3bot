@@ -36,6 +36,7 @@
         "gamemodes",
         "gmod's",
         "kpairs",
+        "lastinv",
         "loadmesh",
         "navgeometry",
         "navmeshes",
@@ -54,6 +55,7 @@
         "toolmode",
         "ulib",
         "vararg",
+        "viewmodel",
         "viewscreen",
         "zculling"
     ],

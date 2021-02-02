@@ -41,7 +41,7 @@ EDIT_MODES[key] = EDIT_MODES[key] or {}
 --		Static
 ------------------------------------------------------
 
----@class D3botNavmesherEditModePathTest
+---@class D3botNavmesherEditModePathTest : D3botNavmesherEditMode
 ---@field StartPos GVector
 ---@field DestPos GVector
 ---@field Path D3botPATH
@@ -54,25 +54,26 @@ THIS_EDIT_MODE.Key = key
 -- Name that is shown to the user.
 THIS_EDIT_MODE.Name = "Debug path generation"
 
--- Set and overwrite current edit mode of the given weapon.
--- This will create an instance of the edit mode class, and store it in the weapon's EditMode field.
+---Set and overwrite current edit mode of the given weapon.
+---This will create an instance of the edit mode class, and store it in the weapon's EditMode field.
+---@param wep GWeapon
 function THIS_EDIT_MODE:AssignToWeapon(wep)
 	local mode = setmetatable({}, self)
 
 	wep.EditMode = mode
-
-	return true
 end
 
 ------------------------------------------------------
 --		Methods
 ------------------------------------------------------
 
--- Generate a path from the current edit mode state and store it.
+---Generate a path from the current edit mode state and store it.
+---@param navmesh D3botNAV_MESH
+---@param debugOutput boolean
 function THIS_EDIT_MODE:GeneratePath(navmesh, debugOutput)
 
 	-- Can't generate a path if start and end point are not defined.
-	if not self.StartPos or not self.DestPos then return true end
+	if not self.StartPos or not self.DestPos then return end
 
 	-- Add some virtual locomotion handlers.
 	local standingHull = Vector(32, 32, 72)
@@ -107,16 +108,19 @@ function THIS_EDIT_MODE:GeneratePath(navmesh, debugOutput)
 	end
 end
 
--- Left mouse button action.
+---Called when primary attack button ( +attack ) is pressed.
+---Predicted, therefore it's not called by the client in single player.
+---Shared.
+---@param wep GWeapon
 function THIS_EDIT_MODE:PrimaryAttack(wep)
-	if not IsFirstTimePredicted() then return true end
-	if not CLIENT then return true end
+	if not IsFirstTimePredicted() then return end
+	if not CLIENT then return end
 
 	-- If there is no navmesh, stop.
 	local navmesh = NAV_MAIN:GetNavmesh()
 	if not navmesh then
-		wep.Weapon:EmitSound("buttons/button1.wav")
-		return true
+		wep:EmitSound("buttons/button1.wav")
+		return
 	end
 
 	-- Get map line trace result and navmesh tracing ray.
@@ -128,21 +132,23 @@ function THIS_EDIT_MODE:PrimaryAttack(wep)
 	-- (Re)generate path.
 	self:GeneratePath(navmesh, true)
 
-	wep.Weapon:EmitSound("buttons/blip2.wav")
-
-	return true
+	wep:EmitSound("buttons/blip2.wav")
 end
 
--- Right mouse button action.
+---Called when secondary attack button ( +attack2 ) is pressed.
+---For issues with this hook being called rapidly on the client side, see the global function IsFirstTimePredicted.
+---Predicted, therefore it's not called by the client in single player.
+---Shared.
+---@param wep GWeapon
 function THIS_EDIT_MODE:SecondaryAttack(wep)
-	if not IsFirstTimePredicted() then return true end
-	if not CLIENT then return true end
+	if not IsFirstTimePredicted() then return end
+	if not CLIENT then return end
 
 	-- If there is no navmesh, stop.
 	local navmesh = NAV_MAIN:GetNavmesh()
 	if not navmesh then
-		wep.Weapon:EmitSound("buttons/button1.wav")
-		return true
+		wep:EmitSound("buttons/button1.wav")
+		return
 	end
 
 	-- Get map line trace result and navmesh tracing ray.
@@ -154,21 +160,23 @@ function THIS_EDIT_MODE:SecondaryAttack(wep)
 	-- (Re)generate path.
 	self:GeneratePath(navmesh, true)
 
-	wep.Weapon:EmitSound("buttons/blip2.wav")
-
-	return true
+	wep:EmitSound("buttons/blip2.wav")
 end
 
--- Reload button action.
-function THIS_EDIT_MODE:Reload(wep)
-	-- Reset build mode and its state.
-	--THIS_EDIT_MODE:AssignToWeapon(wep)
+---Called when the reload key ( +reload ) is pressed.
+---Predicted, therefore it's not called by the client in single player.
+---Shared.
+---@param wep GWeapon
+--function THIS_EDIT_MODE:Reload(wep)
+--end
 
-	return true
-end
-
--- Client side drawing.
-function THIS_EDIT_MODE:PreDrawViewModel(wep, vm)
+---Allows you to modify viewmodel while the weapon in use before it is drawn. This hook only works if you haven't overridden GM:PreDrawViewModel.
+---Client realm.
+---@param wep GWeapon
+---@param vm GEntity
+---@param weapon GWeapon @Can be nil in some gamemodes.
+---@param ply GPlayer @Can be nil in some gamemodes.
+function THIS_EDIT_MODE:PreDrawViewModel(wep, vm, weapon, ply)
 	local navmesh = NAV_MAIN:GetNavmesh()
 	if not navmesh then return end
 
@@ -211,5 +219,9 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm)
 	cam.IgnoreZ(true)
 end
 
+---This hook allows you to draw on screen while this weapon is in use.
+---If you want to draw a custom crosshair, consider using WEAPON:DoDrawCrosshair instead.
+---Client realm.
+---@param wep GWeapon
 --function THIS_EDIT_MODE:DrawHUD(wep)
 --end
