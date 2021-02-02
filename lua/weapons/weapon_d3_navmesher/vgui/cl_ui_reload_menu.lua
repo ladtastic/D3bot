@@ -50,6 +50,12 @@ function RELOAD_MENU:Open()
 	local wep = LocalPlayer():GetActiveWeapon()
 	if not IsValid(wep) or not wep:GetClass() == "weapon_d3_navmesher" then return end
 
+	-- Reset edit mode every time the player presses RELOAD.
+	-- It's called in the menu open function to trigger only a single time while the key is pressed.
+	if CONVARS.SWEPResetOnReloadKey:GetBool() then
+		wep:ResetEditMode()
+	end
+
 	self.PanelInstance:Open()
 end
 
@@ -66,16 +72,11 @@ function RELOAD_MENU:Close()
 	self.PanelInstance:Close()
 end
 
--- Stupid hack: Check if the reload key is hold, and open the menu accordingly.
+-- Stupid hack: Check if the reload key is hold, and spam open or close calls accordingly.
 local reloadMenuOpener = function()
 	-- Only open menu if the player has the SWEP in his hand.
 	local wep = LocalPlayer():GetActiveWeapon()
 	if not IsValid(wep) or wep:GetClass() ~= "weapon_d3_navmesher" then return end
-
-	-- Reset edit mode every time the player reloads the SWEP.
-	if LocalPlayer():KeyPressed(IN_RELOAD) and CONVARS.SWEPResetOnReloadKey:GetBool() then
-		wep:ResetEditMode()
-	end
 
 	-- Spam open or close calls.
 	if LocalPlayer():KeyDown(IN_RELOAD) then
