@@ -69,48 +69,48 @@ D3bot.PATH_POINT = D3bot.PATH_POINT or {} -- PATH_POINT helper class for start a
 -- General stuff.
 include("sh_util.lua")
 local UTIL = D3bot.Util -- From here on UTIL.IncludeRealm can be used.
-UTIL.IncludeRealm("sh_error.lua", UTIL.REALM_SHARED)
-UTIL.IncludeRealm("sh_priority_queue.lua", UTIL.REALM_SHARED)
-UTIL.IncludeRealm("sh_convars.lua", UTIL.REALM_SHARED)
-UTIL.IncludeRealm("sv_control.lua", UTIL.REALM_SERVER)
-UTIL.IncludeRealm("sv_ulx_fix.lua", UTIL.REALM_SERVER)
-UTIL.IncludeRealm("sh_concommand.lua", UTIL.REALM_SHARED)
-UTIL.IncludeRealm("sh_concommands.lua", UTIL.REALM_SHARED)
-UTIL.IncludeRealm("sh_mapgeometry.lua", UTIL.REALM_SHARED)
-UTIL.IncludeRealm("cl_renderutil.lua", UTIL.REALM_CLIENT)
+UTIL.IncludeRealm("", "sh_error.lua")
+UTIL.IncludeRealm("", "sh_priority_queue.lua")
+UTIL.IncludeRealm("", "sh_convars.lua")
+UTIL.IncludeRealm("", "sv_control.lua")
+UTIL.IncludeRealm("", "sv_ulx_fix.lua")
+UTIL.IncludeRealm("", "sh_concommand.lua")
+UTIL.IncludeRealm("", "sh_concommands.lua")
+UTIL.IncludeRealm("", "sh_mapgeometry.lua")
+UTIL.IncludeRealm("", "cl_renderutil.lua")
 
 -- Navmesh stuff.
-UTIL.IncludeRealm("navmesh/sh_main.lua", UTIL.REALM_SHARED)
-UTIL.IncludeRealm("navmesh/sh_navmesh.lua", UTIL.REALM_SHARED)
-UTIL.IncludeRealm("navmesh/sh_vertex.lua", UTIL.REALM_SHARED)
-UTIL.IncludeRealm("navmesh/sh_edge.lua", UTIL.REALM_SHARED)
-UTIL.IncludeRealm("navmesh/sh_triangle.lua", UTIL.REALM_SHARED)
-UTIL.IncludeRealm("navmesh/sh_air_connection.lua", UTIL.REALM_SHARED)
-UTIL.IncludeRealm("navmesh/sh_pubsub.lua", UTIL.REALM_SHARED)
-UTIL.IncludeRealm("navmesh/sh_edit.lua", UTIL.REALM_SHARED)
-UTIL.IncludeRealm("navmesh/sv_file.lua", UTIL.REALM_SERVER)
+UTIL.IncludeRealm("navmesh/", "sh_main.lua")
+UTIL.IncludeRealm("navmesh/", "sh_navmesh.lua")
+UTIL.IncludeRealm("navmesh/", "sh_vertex.lua")
+UTIL.IncludeRealm("navmesh/", "sh_edge.lua")
+UTIL.IncludeRealm("navmesh/", "sh_triangle.lua")
+UTIL.IncludeRealm("navmesh/", "sh_air_connection.lua")
+UTIL.IncludeRealm("navmesh/", "sh_pubsub.lua")
+UTIL.IncludeRealm("navmesh/", "sh_edit.lua")
+UTIL.IncludeRealm("navmesh/", "sv_file.lua")
 
 -- Path stuff.
-UTIL.IncludeRealm("path/sh_path.lua", UTIL.REALM_SHARED)
-UTIL.IncludeRealm("path/sh_path_point.lua", UTIL.REALM_SHARED)
+UTIL.IncludeRealm("path/", "sh_path.lua")
+UTIL.IncludeRealm("path/", "sh_path_point.lua")
 
 -- Load bot naming script (default, and any optional override).
-UTIL.IncludeRealm("names/sv_default.lua", UTIL.REALM_SERVER)
+UTIL.IncludeRealm("names/", "sv_default.lua")
 if D3bot.Config.NameScript then
-	UTIL.IncludeRealm("names/sv_" .. D3bot.Config.NameScript .. ".lua", UTIL.REALM_SERVER)
+	UTIL.IncludeRealm("names/", "sv_" .. D3bot.Config.NameScript .. ".lua")
 end
 
 -- Load any gamemode specific logic.
-UTIL.IncludeRealm("gamemodes/" .. engine.ActiveGamemode() .. "/sh_init.lua", UTIL.REALM_SHARED)
+UTIL.IncludeRealm("gamemodes/" .. engine.ActiveGamemode() .. "/", "sh_init.lua")
 
 -- Load locomotion handler classes (General and gamemode specific).
-UTIL.IncludeDirectory(D3bot.AddonRoot .. "locomotion_handlers/", "*.lua", UTIL.REALM_SHARED)
-UTIL.IncludeDirectory(D3bot.AddonRoot .. "gamemodes/" .. engine.ActiveGamemode() .. "/locomotion_handlers/", "*.lua", UTIL.REALM_SHARED)
+UTIL.IncludeDirectory(D3bot.AddonRoot .. "locomotion_handlers/", "*.lua")
+UTIL.IncludeDirectory(D3bot.AddonRoot .. "gamemodes/" .. engine.ActiveGamemode() .. "/locomotion_handlers/", "*.lua")
 
 -- Load action handlers (General and gamemode specific).
-UTIL.IncludeDirectory(D3bot.AddonRoot .. "actions/", "*.lua", UTIL.REALM_SERVER)
-UTIL.IncludeDirectory(D3bot.AddonRoot .. "gamemodes/" .. engine.ActiveGamemode() .. "/actions/", "*.lua", UTIL.REALM_SERVER)
+UTIL.IncludeDirectory(D3bot.AddonRoot .. "actions/", "*.lua")
+UTIL.IncludeDirectory(D3bot.AddonRoot .. "gamemodes/" .. engine.ActiveGamemode() .. "/actions/", "*.lua")
 
 -- Load brains (General and gamemode specific).
-UTIL.IncludeDirectory(D3bot.AddonRoot .. "brains/", "*.lua", UTIL.REALM_SERVER)
-UTIL.IncludeDirectory(D3bot.AddonRoot .. "gamemodes/" .. engine.ActiveGamemode() .. "/brains/", "*.lua", UTIL.REALM_SERVER)
+UTIL.IncludeDirectory(D3bot.AddonRoot .. "brains/", "*.lua")
+UTIL.IncludeDirectory(D3bot.AddonRoot .. "gamemodes/" .. engine.ActiveGamemode() .. "/brains/", "*.lua")

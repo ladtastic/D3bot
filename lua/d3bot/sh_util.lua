@@ -120,29 +120,42 @@ function UTIL.Sign(num)
 end
 
 ---Realm bitmasks/enumerations.
----@alias D3botRealmEnum "UTIL.REALM_SERVER" | "UTIL.REALM_CLIENT" | "UTIL.REALM_SHARED"
+---@alias D3botRealmEnum "UTIL.REALM_AUTO" | "UTIL.REALM_SERVER" | "UTIL.REALM_CLIENT" | "UTIL.REALM_SHARED"
+UTIL.REALM_AUTO = 0 -- 0b00
 UTIL.REALM_SERVER = 1 -- 0b01
 UTIL.REALM_CLIENT = 2 -- 0b10
 UTIL.REALM_SHARED = 3 -- 0b11
 
--- TODO: Add function that determines realm by filename/path
-
 ---Include a lua file into the given realm.
 ---This helper must be run in the "shared" realm to work properly, and the usage of any AddCSLuaFile() is not necessary.
+--- - UTIL.REALM_AUTO: The prefix of the file (name) is used to determine the correct realm. `cl_` for `REALM_CLIENT`, `sv_` for `REALM_SERVER`, or `sh_` for `REALM_SHARED`.
 --- - UTIL.REALM_SERVER: The file will only be included on the server side.
 --- - UTIL.REALM_CLIENT: The file will only be included on the client side. Additionally the file will be marked with AddCSLuaFile.
 --- - UTIL.REALM_SHARED: The file will only be included on both sides. Additionally the file will be marked with AddCSLuaFile.
 ---@param path string @The (relative) path of the file to include.
 ---@param realm D3botRealmEnum @The realm the file will be loaded into.
-function UTIL.IncludeRealm(path, realm)
-	if realm == UTIL.REALM_SERVER then
-		if SERVER then include(path) end
+function UTIL.IncludeRealm(path, name, realm)
+	if realm == nil then realm = UTIL.REALM_AUTO end
+
+	if realm == UTIL.REALM_AUTO then
+		local prefix = string.sub(name, 1, 3)
+		if prefix == "sv_" then
+			UTIL.IncludeRealm(path, name, UTIL.REALM_SERVER)
+		elseif prefix == "cl_" then
+			UTIL.IncludeRealm(path, name, UTIL.REALM_CLIENT)
+		elseif prefix == "sh_" then
+			UTIL.IncludeRealm(path, name, UTIL.REALM_SHARED)
+		else
+			error(string.format("Can't determine realm of file %q by file prefix %q", path .. name, prefix))
+		end
+	elseif realm == UTIL.REALM_SERVER then
+		if SERVER then include(path .. name) end
 	elseif realm == UTIL.REALM_CLIENT then
-		if SERVER then AddCSLuaFile(path) end
-		if CLIENT then include(path) end
+		if SERVER then AddCSLuaFile(path .. name) end
+		if CLIENT then include(path .. name) end
 	elseif realm == UTIL.REALM_SHARED then
-		if SERVER then AddCSLuaFile(path) end
-		include(path)
+		if SERVER then AddCSLuaFile(path .. name) end
+		include(path .. name)
 	else
 		error("Invalid realm")
 	end
@@ -156,7 +169,7 @@ end
 function UTIL.IncludeDirectory(path, name, realm)
 	local filenames, _ = file.Find(path .. name, "LUA")
 	for _, filename in ipairs(filenames) do
-		UTIL.IncludeRealm(path .. filename, realm)
+		UTIL.IncludeRealm(path, filename, realm)
 	end
 end
 
