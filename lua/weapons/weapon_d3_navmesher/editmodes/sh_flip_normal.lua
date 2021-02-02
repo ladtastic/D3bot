@@ -15,8 +15,6 @@
 -- You should have received a copy of the GNU General Public License
 -- along with D3bot.  If not, see <http://www.gnu.org/licenses/>.
 
-AddCSLuaFile()
-
 local D3bot = D3bot
 local CONVARS = D3bot.Convars
 local UTIL = D3bot.Util

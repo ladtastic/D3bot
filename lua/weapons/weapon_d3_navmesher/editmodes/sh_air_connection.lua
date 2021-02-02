@@ -15,8 +15,6 @@
 -- You should have received a copy of the GNU General Public License
 -- along with D3bot.  If not, see <http://www.gnu.org/licenses/>.
 
-AddCSLuaFile()
-
 local D3bot = D3bot
 local CONVARS = D3bot.Convars
 local UTIL = D3bot.Util
@@ -40,7 +38,7 @@ EDIT_MODES[key] = EDIT_MODES[key] or {}
 ------------------------------------------------------
 
 ---@class D3botNavmesherEditModeAirConnectionAddRemove : D3botNavmesherEditMode
----@field TempEdges D3botNAV_EDGE[]
+---@field TempEdges D3botNAV_EDGE[] @Selected edges that will be used to create an air connection.
 local THIS_EDIT_MODE = EDIT_MODES[key]
 THIS_EDIT_MODE.__index = THIS_EDIT_MODE
 
@@ -54,7 +52,9 @@ THIS_EDIT_MODE.Name = "Create & remove air connections"
 ---This will create an instance of the edit mode class, and store it in the weapon's EditMode field.
 ---@param wep GWeapon
 function THIS_EDIT_MODE:AssignToWeapon(wep)
-	local mode = setmetatable({}, self)
+	local mode = setmetatable({
+		TempEdges = {},
+	}, self)
 
 	wep.EditMode = mode
 end
@@ -77,9 +77,6 @@ function THIS_EDIT_MODE:PrimaryAttack(wep)
 		wep:EmitSound("buttons/button1.wav")
 		return
 	end
-
-	-- Store edges that will be used to create an air connection.
-	self.TempEdges = self.TempEdges or {}
 
 	-- Get map line trace result and navmesh tracing ray.
 	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())
@@ -153,7 +150,7 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm, weapon, ply)
 	if not navmesh then return end
 
 	-- Triangle points that are used to draw a ghost of the current triangle.
-	local tempEdges = table.Copy(self.TempEdges or {})
+	local tempEdges = table.Copy(self.TempEdges)
 
 	-- Get map line trace result and navmesh tracing ray.
 	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())

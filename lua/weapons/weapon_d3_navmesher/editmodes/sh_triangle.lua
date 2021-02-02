@@ -15,8 +15,6 @@
 -- You should have received a copy of the GNU General Public License
 -- along with D3bot.  If not, see <http://www.gnu.org/licenses/>.
 
-AddCSLuaFile()
-
 local D3bot = D3bot
 local CONVARS = D3bot.Convars
 local UTIL = D3bot.Util
@@ -39,7 +37,7 @@ EDIT_MODES[key] = EDIT_MODES[key] or {}
 ------------------------------------------------------
 
 ---@class D3botNavmesherEditModeTriangleAddRemove : D3botNavmesherEditMode
----@field TempPoints GVector[]
+---@field TempPoints GVector[] @List of points that will be used to create triangles.
 local THIS_EDIT_MODE = EDIT_MODES[key]
 THIS_EDIT_MODE.__index = THIS_EDIT_MODE
 
@@ -53,7 +51,9 @@ THIS_EDIT_MODE.Name = "Create & remove triangles"
 ---This will create an instance of the edit mode class, and store it in the weapon's EditMode field.
 ---@param wep GWeapon
 function THIS_EDIT_MODE:AssignToWeapon(wep)
-	local mode = setmetatable({}, self)
+	local mode = setmetatable({
+		TempPoints = {},
+	}, self)
 
 	wep.EditMode = mode
 end
@@ -73,9 +73,6 @@ function THIS_EDIT_MODE:PrimaryAttack(wep)
 	-- Get navmesh, but it's also fine if there is none.
 	-- In this case the navmesh will be created when the first triangle gets created.
 	local navmesh = NAV_MAIN:GetNavmesh()
-
-	-- Store points that are used to create triangles.
-	self.TempPoints = self.TempPoints or {}
 
 	-- Get map line trace result and navmesh tracing ray.
 	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())
@@ -167,7 +164,7 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm, weapon, ply)
 	local navmesh = NAV_MAIN:GetNavmesh()
 
 	-- Triangle points that are used to draw a ghost of the current triangle.
-	local trianglePoints = table.Copy(self.TempPoints or {})
+	local trianglePoints = table.Copy(self.TempPoints)
 
 	-- Get map line trace result and navmesh tracing ray.
 	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())

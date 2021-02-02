@@ -17,8 +17,6 @@
 
 -- TODO: Put this path testing tool into its own SWEP
 
-AddCSLuaFile()
-
 local D3bot = D3bot
 local CONVARS = D3bot.Convars
 local UTIL = D3bot.Util
@@ -189,7 +187,7 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm, weapon, ply)
 
 	-- Draw 3D cursor.
 	render.SetColorMaterialIgnoreZ()
-	RENDER_UTIL.Draw3DCursorPos(trRes.HitPos, Color(255, 255, 255, 255), Color(0, 0, 0, 255))
+	RENDER_UTIL.Draw3DCursorPos(trRes.HitPos, 2, Color(255, 255, 255, 255), Color(0, 0, 0, 255))
 
 	-- Draw client side navmesh.
 	navmesh:Render3D()
