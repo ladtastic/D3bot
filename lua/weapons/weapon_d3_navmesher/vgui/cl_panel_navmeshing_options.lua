@@ -78,7 +78,7 @@ function PANEL:Init()
 
 	local list = vgui.Create("DListView", dScrollPanel)
 	list:SetMultiSelect(false)
-	list:SetSize(nil, 100)
+	list:SetSize(nil, 150)
 	list:DockMargin(5, 5, 5, 0)
 	list:Dock(TOP)
 	list:AddColumn("Name")
