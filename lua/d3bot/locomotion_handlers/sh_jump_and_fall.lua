@@ -161,9 +161,9 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 			cUserCmd:SetForwardMove(50)
 		end
 
-		-- (2D) Rotate bot towards the next edge.
+		-- (2D) Rotate bot towards the end plane origin.
 		-- We can't use PathDirection, as it can be vertical.
-		local rotDirection = pathFragment.ToPos - bot:GetPos()
+		local rotDirection = cache.EndPlaneOrigin - bot:GetPos()
 		rotDirection[3] = 0
 		cUserCmd:SetViewAngles(rotDirection:Angle())
 		bot:SetEyeAngles(rotDirection:Angle())
