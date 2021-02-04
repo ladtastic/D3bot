@@ -85,7 +85,7 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 	cache.EndPlaneNormal = pathFragment.OrthogonalOutside
 
 	-- Move end plane along its normal if the successive path element is a wall or something similar.
-	local endPlaneOffset = -5
+	local endPlaneOffset = 0
 	local nextPathElement = pathElements[index-1] -- The previous index is the next path element.
 	if nextPathElement then
 		local nextPathFragment = nextPathElement.PathFragment
@@ -94,7 +94,7 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 			-- If the next path element is of a type that doesn't allow ground based locomotion, make sure the end condition is offset accordingly.
 			-- We don't want the bot to try to move inside a wall.
 			if nextPathFragment.PathDirection[3] > 0 then
-				endPlaneOffset = endPlaneOffset - halfHullWidth
+				endPlaneOffset = -5 - halfHullWidth
 			else
 				endPlaneOffset = halfHullWidth
 			end
@@ -160,6 +160,15 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 		cache.LeftPlaneNormal = (fromLeft - toLeft):Cross(viaNormal):GetNormalized()
 	end
 
+	-- Limitation plane on the "from" entity (edge or point) that prevents the bot from going backwards in some edge cases.
+	-- It's pointing to the outside.
+	cache.BackPlaneOrigin = fromLeft
+	if (fromRight - fromLeft):IsZero() then
+		cache.BackPlaneNormal = -pathDirection:GetNormalized()
+	else
+		cache.BackPlaneNormal = (fromRight - fromLeft):Cross(viaNormal):GetNormalized()
+	end
+
 	return cache
 end
 
@@ -180,7 +189,7 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 	-- Get straight direction to the next element.
 	local straightDirection = (pathFragment.ToPos - botPos)
 
-	-- Get movement direction. The "beeline" to the last of the next few elements.
+	-- Get general movement direction. The "beeline" to the last of the next few elements.
 	local direction = (straightDirection + cache.FutureDirectionSum):GetNormalized()
 
 	-- Initialize smoothed direction vector.
@@ -189,33 +198,52 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 	-- Push the right buttons and stuff.
 	local prevControlCallback = mem.ControlCallback
 	mem.ControlCallback = function(bot, mem, cUserCmd)
-		-- Adjust direction vector based on the left and right limiting planes.
-		--local adjustedDirection = direction
+		-- Prevent bot from passing the "backside" of the triangle in some edge cases.
 		local botPos = bot:GetPos()
-		if (botPos - cache.LeftPlaneOrigin):Dot(cache.LeftPlaneNormal) >= 0 then
-			local alongPlaneDirection = cache.LeftPlaneNormal:Cross(Vector(0, 0, 1))
-			local awayFromPlaneDirection = -cache.LeftPlaneNormal
-			direction = alongPlaneDirection * 0.8 + awayFromPlaneDirection * 0.2
-			-- Add correction value so that the bot doesn't move outside the valid area.
-			--adjustedDirection = pathFragment.ToPos - botPos--adjustedDirection - cache.LeftPlaneNormal * 0.75 + pathFragment.PathDirection
+		if (botPos - cache.BackPlaneOrigin):Dot(cache.BackPlaneNormal) > 0 then
+			if direction:Dot(cache.BackPlaneNormal) > 0 then
+				direction = direction * 0.8 - cache.BackPlaneNormal * 0.2
+				direction:Normalize()
+			end
 		end
-		if (botPos - cache.RightPlaneOrigin):Dot(cache.RightPlaneNormal) >= 0 then
-			local alongPlaneDirection = cache.RightPlaneNormal:Cross(Vector(0, 0, -1))
+
+		-- Adjust direction vector based on the left and right limiting planes.
+		-- This checks if the bot is behind the limiting plane and if the direction of the bot is pointing outside the plane.
+		local adjustedDirection = direction
+		if (botPos - cache.LeftPlaneOrigin):Dot(cache.LeftPlaneNormal) > 0 then
+			if direction:Dot(cache.LeftPlaneNormal) > 0 then
+				-- Bot went too far to the left and is still going into the plane, set new default direction to be parallel to the plane.
+				local alongPlaneDirection = cache.LeftPlaneNormal:Cross(Vector(0, 0, 1))
+				direction = alongPlaneDirection
+			end
+			-- As long as he is behind the plane, let it move away from the plane.
+			local awayFromPlaneDirection = -cache.LeftPlaneNormal
+			adjustedDirection = direction * 0.8 + awayFromPlaneDirection * 0.2
+		end
+		if (botPos - cache.RightPlaneOrigin):Dot(cache.RightPlaneNormal) > 0 then
+			if direction:Dot(cache.RightPlaneNormal) > 0 then
+				-- Bot went too far to the right and is still going into the plane, set new default direction to be parallel to the plane.
+				local alongPlaneDirection = cache.RightPlaneNormal:Cross(Vector(0, 0, -1))
+				direction = alongPlaneDirection
+			end
+			-- As long as he is behind the plane, let it move away from the plane.
 			local awayFromPlaneDirection = -cache.RightPlaneNormal
-			direction = alongPlaneDirection * 0.8 + awayFromPlaneDirection * 0.2
-			-- Add correction value so that the bot doesn't move outside the valid area.
-			--adjustedDirection = pathFragment.ToPos - botPos--adjustedDirection - cache.RightPlaneNormal * 0.75 + pathFragment.PathDirection
+			adjustedDirection = direction * 0.8 + awayFromPlaneDirection * 0.2
 		end
 
 		-- Smooth out the movement
-		--smoothedDirection = smoothedDirection * 0.9 + adjustedDirection * 0.1
+		smoothedDirection = smoothedDirection * 0.8 + adjustedDirection * 0.2
 
-		local angle = direction:Angle()
+		-- Get next aim and right sided normal vector.
+		local angle = smoothedDirection:Angle()
+		local aim2D = Vector(smoothedDirection[1], smoothedDirection[2], 0):GetNormalized()
+		local right2D = aim2D:Cross(Vector(0, 0, 1))
 
 		cUserCmd:ClearButtons()
 		cUserCmd:ClearMovement()
 		--cUserCmd:SetButtons(bit.bor(IN_FORWARD))
-		cUserCmd:SetForwardMove(self.Speed)
+		cUserCmd:SetForwardMove(self.Speed * aim2D:Dot(adjustedDirection))
+		cUserCmd:SetSideMove(self.Speed * right2D:Dot(adjustedDirection))
 		cUserCmd:SetViewAngles(angle)
 		bot:SetEyeAngles(angle)
 	end
