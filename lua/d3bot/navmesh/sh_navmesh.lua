@@ -435,10 +435,10 @@ end
 function NAV_MESH:Render3D()
 
 	-- Draw vertices.
-	if CONVARS.NavmeshZCulling:GetBool() then render.SetColorMaterial()	else render.SetColorMaterialIgnoreZ() end
-	for _, vertex in pairs(self.Vertices) do
-		vertex:Render3D()
-	end
+	--if CONVARS.NavmeshZCulling:GetBool() then render.SetColorMaterial()	else render.SetColorMaterialIgnoreZ() end
+	--for _, vertex in pairs(self.Vertices) do
+	--	vertex:Render3D()
+	--end
 
 	-- Draw edges.
 	if CONVARS.NavmeshZCulling:GetBool() then render.SetColorMaterial()	else render.SetColorMaterialIgnoreZ() end

@@ -32,7 +32,10 @@ local THIS_BRAIN = BRAINS.ON_ERROR
 -- Make all methods and properties of the class available to its objects.
 THIS_BRAIN.__index = THIS_BRAIN
 
--- This will assign the brain to the given bot (and the corresponding mem).
+---This will assign the brain to the given bot (and the corresponding mem).
+---@param bot GPlayer
+---@param mem table
+---@return table
 function THIS_BRAIN:AssignToBot(bot, mem)
 	local brain = setmetatable({Bot = bot, Mem = mem}, self)
 
@@ -47,7 +50,9 @@ end
 --		Methods
 ------------------------------------------------------
 
--- Think coroutine. Put all the important stuff in here.
+---Think coroutine. Put all the important stuff in here.
+---@param bot GPlayer
+---@param mem any
 function THIS_BRAIN:_ThinkCoroutine(bot, mem)
 	--bot:Say("I had a stronk")
 
@@ -65,7 +70,10 @@ function THIS_BRAIN:_ThinkCoroutine(bot, mem)
 	-- A new brain will be assigned automatically after here.
 end
 
--- Think callback. Ideally this will resume coroutine(s).
+---Think callback. Ideally this will resume coroutine(s).
+---@param bot GPlayer
+---@param mem table
+---@return boolean
 function THIS_BRAIN:Callback(bot, mem)
 	-- Resume coroutine, catch and print any error.
 	local succ, msg = coroutine.resume(self.MainCoroutine)

@@ -18,11 +18,15 @@
 local D3bot = D3bot
 local ACTIONS = D3bot.Actions
 
--- Let the bot walk in a random direction.
+---Let the bot walk in a random direction.
+---@param bot GPlayer
+---@param mem table
+---@param duration number
 function ACTIONS.RandomWalkTest(bot, mem, duration)
 	local direction = Vector(math.Rand(-1, 1), math.Rand(-1, 1), 0):GetNormalized()
 
 	-- Add control callback to bot.
+	local prevControlCallback = mem.ControlCallback
 	mem.ControlCallback = function(bot, mem, cUserCmd)
 		cUserCmd:ClearButtons()
 		cUserCmd:ClearMovement()
@@ -35,6 +39,6 @@ function ACTIONS.RandomWalkTest(bot, mem, duration)
 	-- Wait for x amount of time.
 	coroutine.wait(duration)
 
-	-- Reset control.
-	mem.ControlCallback = nil
+	-- Restore previous control callback.
+	mem.ControlCallback = prevControlCallback
 end

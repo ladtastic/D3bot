@@ -18,7 +18,10 @@
 local D3bot = D3bot
 local ACTIONS = D3bot.Actions
 
--- Runs a gesture/sequence on the bot.
+---Runs a gesture/sequence on the bot.
+---@param bot GPlayer
+---@param mem any
+---@param gestureName string
 function ACTIONS.Gesture(bot, mem, gestureName)
 	-- BUG: Gestures don't seem to work with this kind of bot entities
 	local duration = bot:SetSequence(gestureName)

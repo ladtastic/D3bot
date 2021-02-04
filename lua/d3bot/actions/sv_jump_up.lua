@@ -18,10 +18,13 @@
 local D3bot = D3bot
 local ACTIONS = D3bot.Actions
 
--- Let the bot jump a single time.
--- Takes 1 second in total.
+---Let the bot jump a single time.
+---Takes 1 second in total.
+---@param bot GPlayer
+---@param mem table
 function ACTIONS.JumpUp(bot, mem)
 	-- Press jump button.
+	local prevControlCallback = mem.ControlCallback
 	mem.ControlCallback = function(bot, mem, cUserCmd)
 		cUserCmd:ClearButtons()
 		cUserCmd:ClearMovement()
@@ -34,4 +37,7 @@ function ACTIONS.JumpUp(bot, mem)
 	mem.ControlCallback = nil
 
 	coroutine.wait(0.8)
+
+	-- Restore previous control callback.
+	mem.ControlCallback = prevControlCallback
 end

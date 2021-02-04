@@ -36,9 +36,9 @@ There will be importers/converters for the old navmeshes at some later point in 
 - [ ] Behavior/Action controllers (Let bot do specific actions, they run locomotion controllers)
 - [ ] Bot brain controllers that tell the bot what actions to run
 - [ ] Supervisor that creates intermediate goals/tasks for bots and does some more thorough planning (Like where to place a nest)
-- [ ] Bot control SWEP (Select bots, give them a target, debug generated paths)
+- [ ] Debug "edit" modes for the SWEP (Select bots, give them a target, debug generated paths)
 - [ ] [Localization optimization](documentation/lookup-acceleration/README.md), alternatively just quad tree based and use a max. distance
-- [ ] convex navmesh groups (for path and speed optimization)
-- [ ] maybe other navmesh groups (to apply parameters to several navmesh elements)
+- [ ] Use polygons instead of triangles. This will speed up pathfinding, but path generation needs to take special care of edges that are "obtuse"
+- [ ] Navmesh groups (to apply parameters to several navmesh elements). But polygons should solve that problem good enough
 - [ ] Internationalization
 - [ ] Improve navmesh and path drawing style (Customizable colors, less eye strain inducing shapes and default colors)

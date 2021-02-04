@@ -35,6 +35,8 @@ local function ControlDistributor(bot, cUserCmd)
 		-- "Insane in the membrane".
 		-- "Crazy insane, got no brain".
 		if D3bot.AssignBrain then
+			-- Make sure that there is no old control callback left.
+			mem.ControlCallback = nil
 			D3bot.AssignBrain(bot, mem)
 		end
 	end

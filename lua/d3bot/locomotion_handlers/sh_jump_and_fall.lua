@@ -69,25 +69,113 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 	-- Changing this to false will not cause the cache to be rebuilt.
 	cache.IsValid = true
 
-	-- End condition. (As a plane that the bot has to cross)
-	cache.EndPlaneOrigin = pathFragment.ToPos
-	cache.EndPlaneNormal = pathFragment.OrthogonalOutside
+	-- Half hull width.
+	local halfHullWidth = self.HullSize[1] / 2
 
-	-- If the next path element has a locomotion type similar to "Ground", make sure that there is enough space between the end condition and the real ground.
+	-- End condition as a plane.
+	local nextPathElement = pathElements[index-1]
+	if nextPathElement then
+		-- If there is a next element, use the direction of it to determine the end plane.
+
+		local nextPathFragment = nextPathElement.PathFragment
+		local nextDirection = nextPathFragment.PathDirection
+
+		-- Get points of the dest edge on the current cell/triangle (it may also be a point or something similar).
+		local eP1, eP2 = pathFragment.To:GetPoints()
+
+		-- If there is only one point, position the second point in some way so that it is orthogonal to the moving direction.
+		if not eP2 then
+			eP2 = eP1 + nextDirection:Cross(Vector(0, 0, 1))
+		end
+
+		-- Determine a normal that is always horizontal and orthogonal to the edge.
+		local normalEdgeOrtho = (eP2 - eP1):Cross(Vector(0, 0, 1))
+		cache.EndPlaneOrigin = pathFragment.ToPos
+		cache.EndPlaneNormal = (normalEdgeOrtho * (normalEdgeOrtho:Dot(nextDirection))):GetNormalized()
+	end
+
+	-- If the previous calculation failed, just use the orthogonal that comes with the path fragment.
+	if not cache.EndPlaneNormal or cache.EndPlaneNormal:IsZero() then
+		cache.EndPlaneOrigin = pathFragment.ToPos
+		cache.EndPlaneNormal = pathFragment.OrthogonalOutside
+	end
+
+	-- If the next path element has a different locomotion type, move the end plane a bit back.
 	local endPlaneOffset = 0
 	local nextPathElement = pathElements[index-1] -- The previous index is the next path element.
 	if nextPathElement then
 		local nextPathFragment = nextPathElement.PathFragment
 		local locType = nextPathFragment.LocomotionType
-		if locType == "Ground" then
+		if locType ~= pathFragment.LocomotionType then
 			if pathFragment.PathDirection[3] < 0 then
-				endPlaneOffset = -32
+				endPlaneOffset = halfHullWidth
 			end
 		end
 	end
 	cache.EndPlaneOrigin = cache.EndPlaneOrigin + endPlaneOffset * cache.EndPlaneNormal
 
 	return cache
+end
+
+---Takes over control of the bot to navigate through the given pathElement (pathElements at index).
+---This must be run from a coroutine.
+---@param bot GPlayer
+---@param mem any
+---@param index integer
+---@param pathElements D3botPATH_ELEMENT[]
+---@return D3botERROR | nil err
+function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
+	local cache = self:GetPathElementCache(index, pathElements)
+	local pathElement = pathElements[index]
+	local pathFragment = pathElement.PathFragment
+
+	-- General direction to the next triangle/cell.
+	local direction = pathFragment.PathDirection
+
+	-- Prevent the bot from pressing jump all the time.
+	local jumpTimeout = 0
+
+	-- Push the right buttons and stuff.
+	local prevControlCallback = mem.ControlCallback
+	mem.ControlCallback = function(bot, mem, cUserCmd)
+		local angle = direction:Angle()
+
+		cUserCmd:ClearButtons()
+		cUserCmd:ClearMovement()
+
+		if direction[3] > 0 then
+			-- Let the bot crouch jump if the path is going upwards.
+			cUserCmd:SetForwardMove(1000)
+			if bot:IsOnGround() then
+				if jumpTimeout <= 0 then
+					jumpTimeout = 60
+					cUserCmd:SetButtons(bit.bor(IN_JUMP, IN_FORWARD))
+				else
+					jumpTimeout = jumpTimeout - 1
+				end
+			else
+				cUserCmd:SetButtons(bit.bor(IN_DUCK, IN_FORWARD))
+			end
+		else
+			-- Otherwise the bot will just fall down, there is not much to do.
+			cUserCmd:SetForwardMove(50)
+		end
+
+		-- (2D) Rotate bot towards the next edge.
+		-- We can't use PathDirection, as it can be vertical.
+		local rotDirection = pathFragment.ToPos - bot:GetPos()
+		rotDirection[3] = 0
+		cUserCmd:SetViewAngles(rotDirection:Angle())
+		bot:SetEyeAngles(rotDirection:Angle())
+	end
+
+	-- Wait until the bot crosses the end/destination plane.
+	while (cache.EndPlaneOrigin - bot:GetPos()):Dot(cache.EndPlaneNormal) >= 0 do
+		coroutine.yield()
+	end
+
+	-- Restore previous control callback.
+	mem.ControlCallback = prevControlCallback
 end
 
 ---Overrides the base pathfinding cost (in engine units) for the given path fragment.
@@ -129,8 +217,8 @@ function THIS_LOCO_HANDLER:CanNavigate(pathFragment, entityData)
 	local previousEntity = entityData[entityA].From
 	local previousZDiff = previousEntity and entityData[previousEntity].ZDiff or nil
 
-	-- A bot can either fall or jump in one go, a mix isn't allowed.
-	if previousZDiff and UTIL.PositiveNumber(zDiff) ~= UTIL.PositiveNumber(previousZDiff) then return false end
+	-- A bot can either jump and then fall, or just fall.
+	if previousZDiff and UTIL.PositiveNumber(zDiff) ~= UTIL.PositiveNumber(previousZDiff) and UTIL.PositiveNumber(previousZDiff) == false then return false end
 
 	-- Check if bot is in the possible and or safe zone.
 	local totalZDiff = zDiff + (previousZDiff or 0)

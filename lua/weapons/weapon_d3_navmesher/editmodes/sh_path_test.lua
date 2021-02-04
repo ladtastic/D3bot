@@ -15,8 +15,6 @@
 -- You should have received a copy of the GNU General Public License
 -- along with D3bot.  If not, see <http://www.gnu.org/licenses/>.
 
--- TODO: Put this path testing tool into its own SWEP
-
 local D3bot = D3bot
 local CONVARS = D3bot.Convars
 local UTIL = D3bot.Util
@@ -77,14 +75,14 @@ function THIS_EDIT_MODE:GeneratePath(navmesh, debugOutput)
 	local standingHull = Vector(32, 32, 72)
 	local abilities = {
 		Ground = LOCOMOTION_HANDLERS.WALKING:New(standingHull, 200),
-		Wall = LOCOMOTION_HANDLERS.JUMP_AND_FALL:New(standingHull, 56, 1000),
-		AirVertical = LOCOMOTION_HANDLERS.JUMP_AND_FALL:New(standingHull, 56, 1000),
+		Wall = LOCOMOTION_HANDLERS.JUMP_AND_FALL:New(standingHull, 65, 1000),
+		AirVertical = LOCOMOTION_HANDLERS.JUMP_AND_FALL:New(standingHull, 65, 1000),
 	}
 
 	-- Create path object.
 	self.Path = PATH:New(navmesh, abilities)
 
-	-- Get triangles of start and end pos.
+	-- Create points from the start and end position.
 	local startPoint = PATH_POINT:New(navmesh, self.StartPos)
 	local destPoint = PATH_POINT:New(navmesh, self.DestPos)
 	if not startPoint or not destPoint then return end
@@ -193,8 +191,8 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm, weapon, ply)
 	navmesh:Render3D()
 
 	-- Debug: Live path regeneration.
-	self.DestPos = trRes.HitPos
-	self:GeneratePath(navmesh, false)
+	--self.DestPos = trRes.HitPos
+	--self:GeneratePath(navmesh, false)
 
 	-- Draw path.
 	if self.Path then

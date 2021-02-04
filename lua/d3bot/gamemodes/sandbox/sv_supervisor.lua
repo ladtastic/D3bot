@@ -20,11 +20,11 @@ local D3bot = D3bot
 local function MaintainBotRoles()
 	local bots = player.GetBots()
 
-	if #bots < 60 then
+	if #bots < 5 then
 		---@type GPlayer
 		local bot = player.CreateNextBot(D3bot.GetBotName())
 		bot.D3bot = {}
-	elseif #bots > 60 then
+	elseif #bots > 5 then
 		bots[1]:Kick("blabla") -- TODO: Add kick message
 	end
 end

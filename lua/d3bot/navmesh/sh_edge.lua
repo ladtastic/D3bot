@@ -38,7 +38,7 @@ NAV_EDGE.__index = NAV_EDGE
 NAV_EDGE.DisplayRadius = 5
 
 -- Min length of any edge.
-NAV_EDGE.MinLength = 10
+NAV_EDGE.MinLength = 5
 
 ---Get new instance of an edge object with the two given points.
 ---This represents an edge that is defined with two points.
@@ -478,7 +478,8 @@ function NAV_EDGE:Render3D()
 		--render.DrawLine(p1, p2, Color(255, 255, 255, 16), false)
 		render.DrawLine(p1, p2, Color(255, 0, 0, 255), true)
 		if self:IsWalled() then
-			render.DrawLine(p1 + Vector(0, 0, 1), p2 + Vector(0, 0, 1), Color(255, 255, 0, 127), true)
+			render.DrawBeam(p1 + Vector(0, 0, 1), p2 + Vector(0, 0, 1), self.DisplayRadius/2, 0, 1, Color(255, 255, 0, 127))
+			--render.DrawLine(p1 + Vector(0, 0, 1), p2 + Vector(0, 0, 1), Color(255, 255, 0, 127), true)
 		end
 	end
 end

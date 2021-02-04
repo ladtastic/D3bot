@@ -34,7 +34,7 @@ local NAV_TRIANGLE = D3bot.NAV_TRIANGLE
 NAV_TRIANGLE.__index = NAV_TRIANGLE
 
 -- Min height of any triangle.
-NAV_TRIANGLE.MinHeight = 10
+NAV_TRIANGLE.MinHeight = 5
 
 ---Get new instance of a triangle object.
 ---This represents a triangle that is defined by 3 edges that are connected in a loop.

@@ -18,9 +18,13 @@
 local D3bot = D3bot
 local ACTIONS = D3bot.Actions
 
--- Let the bot walk in an circular arc without rotating their view.
+---Let the bot walk in an circular arc without rotating their view.
+---@param bot GPlayer
+---@param mem table
+---@param duration number
 function ACTIONS.SinCosTest(bot, mem, duration)
 	-- Add control callback to bot.
+	local prevControlCallback = mem.ControlCallback
 	mem.ControlCallback = function(bot, mem, cUserCmd)
 		cUserCmd:ClearButtons()
 		cUserCmd:ClearMovement()
@@ -31,6 +35,6 @@ function ACTIONS.SinCosTest(bot, mem, duration)
 	-- Wait for x amount of time.
 	coroutine.wait(duration)
 
-	-- Reset control.
-	mem.ControlCallback = nil
+	-- Restore previous control callback.
+	mem.ControlCallback = prevControlCallback
 end

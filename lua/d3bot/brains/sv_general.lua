@@ -32,7 +32,10 @@ local THIS_BRAIN = BRAINS.GENERAL
 -- Make all methods and properties of the class available to its objects.
 THIS_BRAIN.__index = THIS_BRAIN
 
--- This will assign the brain to the given bot (and the corresponding mem).
+---This will assign the brain to the given bot (and the corresponding mem).
+---@param bot GPlayer
+---@param mem table
+---@return table
 function THIS_BRAIN:AssignToBot(bot, mem)
 	local brain = setmetatable({Bot = bot, Mem = mem}, self)
 
@@ -47,14 +50,32 @@ end
 --		Methods
 ------------------------------------------------------
 
--- Think coroutine. Put all the important stuff in here.
+---Think coroutine. Put all the important stuff in here.
+---@param bot GPlayer
+---@param mem any
 function THIS_BRAIN:_ThinkCoroutine(bot, mem)
 
+	-- Get information about the player object.
+	local hullBottom, hullTop = bot:GetHull()
+	local speed, hull, crouchJumpHeight, maxFallHeight = bot:GetMaxSpeed(), (hullTop - hullBottom), 65, 230
+	-- TODO: Get more information about players.
+
+	-- A list of abilities.
+	-- This could be precalculated if specifics of the player entity are known beforehand, in the general case this has to be regenerated every time this brain is assigned.
+	local abilities = {
+		Ground = LOCOMOTION_HANDLERS.WALKING:New(hull, speed),
+		Wall = LOCOMOTION_HANDLERS.JUMP_AND_FALL:New(hull, crouchJumpHeight, maxFallHeight),
+		AirVertical = LOCOMOTION_HANDLERS.JUMP_AND_FALL:New(hull, crouchJumpHeight, maxFallHeight),
+	}
+
+	-- Do debug command actions, if available.
+	ACTIONS.DebugCommands(bot, mem, abilities)
+
 	-- Walk in an arc for 3 seconds.
-	ACTIONS.SinCosTest(bot, mem, 3)
+	--ACTIONS.SinCosTest(bot, mem, 3)
 
 	-- Walk in some random direction for 3 seconds.
-	ACTIONS.RandomWalkTest(bot, mem, 3)
+	--ACTIONS.RandomWalkTest(bot, mem, 3)
 
 	-- Wait 2 seconds.
 	coroutine.wait(2)
@@ -62,7 +83,10 @@ function THIS_BRAIN:_ThinkCoroutine(bot, mem)
 	-- A new brain will be assigned automatically after here.
 end
 
--- Think callback. Ideally this will resume coroutine(s).
+---Think callback. Ideally this will resume coroutine(s).
+---@param bot GPlayer
+---@param mem table
+---@return boolean
 function THIS_BRAIN:Callback(bot, mem)
 	-- Resume coroutine, catch and print any error.
 	local succ, msg = coroutine.resume(self.MainCoroutine)

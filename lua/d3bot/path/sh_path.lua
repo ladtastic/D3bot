@@ -144,6 +144,13 @@ function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 	-- Add start point to open list.
 	enqueueEntity({To = startPoint, ToPos = startPos, Via = startPoint.Triangle}, 0)
 
+	-- If both points are on the same triangle, just output a direct path.
+	if startPoint.Triangle == destPoint.Triangle then
+		local pathFragment = destPoint:GetPathFragmentsForInjection(startPoint, startPos)
+		enqueueEntity(pathFragment, 0)
+		reconstructPath(destPoint)
+	end
+
 	-- As search is edge based, store edges where the destPoint has to be injected to the "neighbors" list.
 	local destTriangle = destPoint.Triangle
 	local endE1, endE2, endE3 = destTriangle.Edges[1], destTriangle.Edges[2], destTriangle.Edges[3]
@@ -231,7 +238,7 @@ function PATH:UpdatePathToPos(startPos, destPos)
 	local navmesh = self.Navmesh
 
 	-- TODO: Check if destPos is still on the same navmesh entity (shortest distance to {current triangle, neighbors...})
-	-- TODO: Regenerate path if destPos moved to different navmesh
+	-- TODO: Regenerate path if destPos moved to different navmesh entity
 
 	-- It should be decided in an intelligent way how and when to regenerate the path.
 	-- Ideally it only has to do a full path regeneration when the destPos moves too much, otherwise it only has to update the last path element.
@@ -245,6 +252,33 @@ function PATH:UpdatePathToPos(startPos, destPos)
 	if err then return err end
 
 	return self:GeneratePathBetweenPoints(startPoint, destPoint)
+end
+
+---This will take over control of the bot and make it move along the path.
+---It will call all the locomotion handlers needed to do so.
+---When this function ends, it's either because the bot arrived at the end of the path, or because a locomotion handler returned an error.
+---This must be run from a coroutine.
+---@param bot GPlayer
+---@param mem table
+---@return D3botERROR | nil err
+function PATH:RunPathActions(bot, mem)
+	local pathElements = self.Path
+
+	while #pathElements > 0 do
+		local index = #self.Path
+		---@type D3botPATH_ELEMENT
+		local pathElement = pathElements[index]
+
+		-- Give the locomotion handler the control over the bot.
+		local err = pathElement.LocomotionHandler:RunPathElementAction(bot, mem, index, pathElements)
+		if err then return err end
+
+		-- Bot successfully navigated through the pathElement. Remove the path element.
+		table.remove(pathElements)
+	end
+
+	-- Bot successfully navigated through the path.
+	return nil
 end
 
 ---Draw the path into a 3D rendering context.

@@ -15,8 +15,6 @@
 -- You should have received a copy of the GNU General Public License
 -- along with D3bot.  If not, see <http://www.gnu.org/licenses/>.
 
--- TODO: Put this path testing tool into its own SWEP
-
 local D3bot = D3bot
 local CONVARS = D3bot.Convars
 local UTIL = D3bot.Util
@@ -128,7 +126,16 @@ function THIS_EDIT_MODE:SecondaryAttack(wep)
 	local i, iMax = 1, 1
 	local pos = trRes.HitPos
 	self.Positions = {}
-	for _ in pairs(self.Bots) do
+	for bot in pairs(self.Bots) do
+		local mem = bot.D3bot
+
+		-- Give bots their destination position and reset their brain.
+		if SERVER and mem then
+			mem.DebugCommandPosition = pos
+			mem.Brain = nil
+		end
+
+		-- Calculate next position on the spiral grid.
 		table.insert(self.Positions, pos)
 		pos = pos + direction
 		i = i + 1
