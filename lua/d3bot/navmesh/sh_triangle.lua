@@ -278,10 +278,10 @@ function NAV_TRIANGLE:GetCache()
 					Via = self,
 					To = edge,
 					ToPos = edgeCenter,
+					ToOrthogonal = (edgeOrthogonal * (edgeOrthogonal:Dot(pathDirection))):GetNormalized(), -- Vector for path end condition that is orthogonal to the edge and parallel to the triangle plane, additionally it always points outside the triangle.
 					LocomotionType = cache.LocomotionType,
 					PathDirection = pathDirection, -- Vector from start position to dest position.
 					Distance = pathDirection:Length(), -- Distance from start to dest.
-					OrthogonalOutside = (edgeOrthogonal * (edgeOrthogonal:Dot(pathDirection))):GetNormalized(), -- Vector for path end condition that is orthogonal to the edge and parallel to the triangle plane, additionally it always points outside the triangle.
 				}
 				table.insert(cache.PathFragments, pathFragment)
 			end

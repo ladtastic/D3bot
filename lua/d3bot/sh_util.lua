@@ -80,6 +80,18 @@ function UTIL.VectorLargestAbsComponent(vec)
 	return 2
 end
 
+---Takes a vector and flips it so that it aligns with another vector.
+---@param vec GVector
+---@param compVec GVector
+---@return GVector
+function UTIL.VectorFlipAlongVector(vec, compVec)
+	if vec:Dot(compVec) >= 0 then
+		return vec
+	else
+		return -vec
+	end
+end
+
 ---Returns the pitch of a given angle in the range from [-90;90) degree.
 ---A vector pointing upwards has a pitch of -90 deg, if it is pointing downwards it has 90 deg.
 ---@param angle table

@@ -75,10 +75,10 @@ function PATH_POINT:New(navmesh, pos)
 				Via = obj.Triangle,
 				To = edge,
 				ToPos = edgeCenter,
+				ToOrthogonal = (edgeOrthogonal * (edgeOrthogonal:Dot(pathDirection))):GetNormalized(), -- Vector for path end condition that is orthogonal to the edge and parallel to the triangle plane, additionally it always points outside the triangle.
 				LocomotionType = obj.Triangle:GetLocomotionType(),
 				PathDirection = pathDirection, -- Vector from start position to dest position.
 				Distance = pathDirection:Length(), -- Distance from start to dest.
-				OrthogonalOutside = (edgeOrthogonal * (edgeOrthogonal:Dot(pathDirection))):GetNormalized(), -- Vector for path end condition that is orthogonal to the edge and parallel to the triangle plane, additionally it always points outside the triangle.
 			}
 			table.insert(obj.PathFragments, pathFragment)
 		end
@@ -142,10 +142,10 @@ function PATH_POINT:GetPathFragmentsForInjection(from, fromPos)
 		Via = self.Triangle,
 		To = self,
 		ToPos = self.Pos,
+		ToOrthogonal = pathDirection:GetNormalized(), -- Vector for the end condition of this path element.
 		LocomotionType = self.Triangle:GetLocomotionType(),
 		PathDirection = pathDirection, -- Vector from start position to dest position.
 		Distance = pathDirection:Length(), -- Distance from start to dest.
-		OrthogonalOutside = pathDirection:GetNormalized(), -- Vector for the end condition of this path element.
 	}
 	return pathFragment
 end

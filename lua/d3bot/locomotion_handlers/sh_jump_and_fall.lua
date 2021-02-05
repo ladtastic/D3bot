@@ -73,6 +73,7 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 	local halfHullWidth = self.HullSize[1] / 2
 
 	-- End condition as a plane.
+	-- This will try to create a plane with a horizontal normal. This may fail if the path direction is vertical.
 	local nextPathElement = pathElements[index-1]
 	if nextPathElement then
 		-- If there is a next element, use the direction of it to determine the end plane.
@@ -97,7 +98,7 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 		if nextPathElement then
 			local locHandler = nextPathElement.LocomotionHandler
 			if locHandler.BeginOffset then
-				local beginOffset = locHandler:BeginOffset(index-1, pathElements)
+				local beginOffset = locHandler:BeginOffset(index-1, pathElements, cache.EndPlaneNormal)
 				cache.EndPlaneOrigin = cache.EndPlaneOrigin + beginOffset * cache.EndPlaneNormal
 			end
 		end
@@ -106,7 +107,7 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 	-- If the previous calculation failed, just use the orthogonal that comes with the path fragment.
 	if not cache.EndPlaneNormal or cache.EndPlaneNormal:IsZero() then
 		cache.EndPlaneOrigin = pathFragment.ToPos
-		cache.EndPlaneNormal = pathFragment.OrthogonalOutside
+		cache.EndPlaneNormal = pathFragment.ToOrthogonal
 	end
 
 	-- If the next path element has a different locomotion type, move the end plane a bit back.
@@ -172,22 +173,22 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 				-- When the bot is in the air, let it crouch.
 				cUserCmd:SetButtons(bit.bor(IN_DUCK, IN_FORWARD))
 			end
-
-			-- Try to position the bot so that it faces the end plane.
-			local forwardMove = (cache.EndPlaneOrigin - botPos):Dot(cache.EndPlaneNormal) * 100
-			local sideMove = (leftRightSplitPlaneOrigin - botPos):Dot(leftRightSplitPlaneNormal) * 100
-			cUserCmd:SetForwardMove(forwardMove)
-			cUserCmd:SetSideMove(sideMove)
 		else
 			-- Otherwise the bot will just fall down, there is not much to do.
 			cUserCmd:SetForwardMove(150)
 		end
 
-		-- Rotate bot that it aligns with the end plane, which is usually parallel to the destination (edge).
+		-- Rotate bot so that it aligns with the end plane, which is usually parallel to the destination (edge).
 		-- We can't use PathDirection, as it can be vertical.
 		local rotDirection = cache.EndPlaneNormal
 		cUserCmd:SetViewAngles(rotDirection:Angle())
 		bot:SetEyeAngles(rotDirection:Angle())
+
+		-- Try to position the bot so that it faces the end plane.
+		local forwardMove = (cache.EndPlaneOrigin - botPos):Dot(cache.EndPlaneNormal) * 100
+		local sideMove = (leftRightSplitPlaneOrigin - botPos):Dot(leftRightSplitPlaneNormal) * 100
+		cUserCmd:SetForwardMove(forwardMove)
+		cUserCmd:SetSideMove(sideMove)
 	end
 
 	-- Wait until the bot crosses the end/destination plane.
@@ -199,12 +200,12 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 	mem.ControlCallback = prevControlCallback
 end
 
----Returns the offset that a previous element can use this information to offset its end plane.
----This assumes a horizontal movement of the plane, but in most cases a normal based offset is good enough.
+---Returns an offset that a previous element can use to offset its end plane.
 ---@param index integer
 ---@param pathElements D3botPATH_ELEMENT[]
+---@param prevEndPlaneNormal GVector @Normal of the previous element's end plane.
 ---@return number
-function THIS_LOCO_HANDLER:BeginOffset(index, pathElements)
+function THIS_LOCO_HANDLER:BeginOffset(index, pathElements, prevEndPlaneNormal)
 	local pathElement = pathElements[index]
 	local pathFragment = pathElement.PathFragment
 

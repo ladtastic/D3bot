@@ -95,15 +95,34 @@ end
 
 -- Vertices of a 2D arrow with a total length of 1.
 -- It starts at Vector(0,0,0) and points to Vector(1,0,0) while facing upwards.
-local Draw2DArrowP1, Draw2DArrowP2, Draw2DArrowP3, Draw2DArrowP4, Draw2DArrowP5, Draw2DArrowP6, Draw2DArrowP7 = Vector(0/6, 1/6, 0), Vector(2/6, 1/6, 0), Vector(2/6, 3/6, 0), Vector(6/6, 0/6, 0), Vector(2/6, -3/6, 0), Vector(2/6, -1/6, 0), Vector(0/6, -1/6, 0)
+local Draw2DArrowP1, Draw2DArrowP2, Draw2DArrowP3, Draw2DArrowP4, Draw2DArrowP5, Draw2DArrowP6, Draw2DArrowP7 = Vector(-6/6, 1/6, 0), Vector(-4/6, 1/6, 0), Vector(-4/6, 3/6, 0), Vector(-0/6, 0/6, 0), Vector(-4/6, -3/6, 0), Vector(-4/6, -1/6, 0), Vector(-6/6, -1/6, 0)
 
 ---Draws a 2D arrow shape pointing in positive x direction, and facing upwards.
----The base is at Vector(0,0,0), the tip is at Vector(1,0,0).
+---The base is at Vector(-1,0,0), the tip is at Vector(0,0,0).
 ---It is one sided.
 ---@param color GColor
 function RENDER_UTIL.Draw2DArrow(color)
 	render.DrawQuad(Draw2DArrowP1, Draw2DArrowP2, Draw2DArrowP6, Draw2DArrowP7, color)
 	render.DrawQuad(Draw2DArrowP3, Draw2DArrowP4, Draw2DArrowP5, Draw2DArrowP6, color)
+end
+
+---Draws a 2D arrow shape pointing in positive x direction, and facing upwards.
+---The base is at Vector(-length,0,0), the tip is at Vector(length,0,0).
+---It is one sided.
+---@param color GColor
+---@param length number
+function RENDER_UTIL.Draw2DArrowLength(color, length)
+	if length < 1 then
+		local mat = Matrix()
+		mat:Scale(Vector(length, 1, 1))
+		cam.PushModelMatrix(mat, true)
+		RENDER_UTIL.Draw2DArrow(color)
+		cam.PopModelMatrix()
+	else
+		local offsetVector = Vector(1-length, 0, 0)
+		render.DrawQuad(Draw2DArrowP1 + offsetVector, Draw2DArrowP2, Draw2DArrowP6, Draw2DArrowP7 + offsetVector, color)
+		render.DrawQuad(Draw2DArrowP3, Draw2DArrowP4, Draw2DArrowP5, Draw2DArrowP6, color)
+	end
 end
 
 ---Draws a 2D arrow between two given positions.
@@ -114,15 +133,15 @@ end
 ---@param color GColor
 function RENDER_UTIL.Draw2DArrowPos(from, to, width, color)
 	local diff = to - from
-	local size = diff:Length()
+	local length = diff:Length()
 
 	local mat = Matrix()
-	mat:Translate(from)
+	mat:Translate(to)
 	mat:Rotate(diff:Angle())
-	mat:Scale(Vector(size, width, size))
+	mat:Scale(Vector(width, width, width))
 
 	cam.PushModelMatrix(mat, true)
-	RENDER_UTIL.Draw2DArrow(color)
+	RENDER_UTIL.Draw2DArrowLength(color, length / width)
 	cam.PopModelMatrix()
 end
 
@@ -133,16 +152,16 @@ end
 ---@param color GColor
 function RENDER_UTIL.Draw2DArrow2SidedPos(from, to, width, color)
 	local diff = to - from
-	local size = diff:Length()
+	local length = diff:Length()
 
 	for i = 0, 180, 180 do
 		local mat = Matrix()
-		mat:Translate(from)
+		mat:Translate(to)
 		mat:Rotate(diff:Angle())
 		mat:Rotate(Angle(0, 0, i))
-		mat:Scale(Vector(size, width, size))
+		mat:Scale(Vector(width, width, width))
 		cam.PushModelMatrix(mat, true)
-		RENDER_UTIL.Draw2DArrow(color)
+		RENDER_UTIL.Draw2DArrowLength(color, length / width)
 		cam.PopModelMatrix()
 	end
 end
@@ -156,17 +175,17 @@ end
 ---@param color GColor
 function RENDER_UTIL.Draw2DArrow2SidedRotatingPos(from, to, width, rotSpeed, color)
 	local diff = to - from
-	local size = diff:Length()
+	local length = diff:Length()
 	local angleOffset = CurTime() * 360 * rotSpeed
 
 	for i = 0, 180, 180 do
 		local mat = Matrix()
-		mat:Translate(from)
+		mat:Translate(to)
 		mat:Rotate(diff:Angle())
 		mat:Rotate(Angle(0, 0, i + angleOffset))
-		mat:Scale(Vector(size, width, size))
+		mat:Scale(Vector(width, width, width))
 		cam.PushModelMatrix(mat, true)
-		RENDER_UTIL.Draw2DArrow(color)
+		RENDER_UTIL.Draw2DArrowLength(color, length / width)
 		cam.PopModelMatrix()
 	end
 end

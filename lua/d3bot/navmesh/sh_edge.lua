@@ -224,10 +224,10 @@ function NAV_EDGE:GetCache()
 						Via = triangle,
 						To = edge,
 						ToPos = neighborEdgeCenter,
+						ToOrthogonal = (edgeOrthogonal * (edgeOrthogonal:Dot(pathDirection))):GetNormalized(), -- Vector for path end condition that is orthogonal to the edge and parallel to the triangle plane, additionally it always points outside the triangle.
 						LocomotionType = triangle:GetLocomotionType(), -- Not optimal as it makes a cache query and has potential for infinite recursion.
 						PathDirection = pathDirection, -- Vector from start position to dest position.
 						Distance = pathDirection:Length(), -- Distance from start to dest.
-						OrthogonalOutside = (edgeOrthogonal * (edgeOrthogonal:Dot(pathDirection))):GetNormalized(), -- Vector for path end condition that is orthogonal to the edge and parallel to the triangle plane, additionally it always points outside the triangle.
 					}
 					table.insert(cache.PathFragments, pathFragment)
 				end
@@ -248,10 +248,10 @@ function NAV_EDGE:GetCache()
 						Via = airConnection,
 						To = edge,
 						ToPos = edgeCenter,
+						ToOrthogonal = (edgeOrthogonal * (edgeOrthogonal:Dot(pathDirection))):GetNormalized(), -- Vector for path end condition that is orthogonal to the edge and parallel to the triangle plane, additionally it always points outside the triangle.
 						LocomotionType = airConnection:GetLocomotionType(), -- Not optimal as it makes a cache query and has potential for infinite recursion.
 						PathDirection = pathDirection, -- Vector from start position to dest position.
 						Distance = pathDirection:Length(), -- Distance from start to dest.
-						OrthogonalOutside = (edgeOrthogonal * (edgeOrthogonal:Dot(pathDirection))):GetNormalized(), -- Vector for path end condition that is orthogonal to the edge and parallel to the triangle plane, additionally it always points outside the triangle.
 					}
 					table.insert(cache.PathFragments, pathFragment)
 				end

@@ -30,10 +30,10 @@ local PRIORITY_QUEUE = D3bot.PRIORITY_QUEUE
 ---@field Via table @Triangle or similar navmesh object.
 ---@field To table @Edge or similar navmesh object.
 ---@field ToPos GVector @Centroid of To.
+---@field ToOrthogonal GVector @Vector for the end condition of this path element. It is used to build a plane that the bot has to pass in order to get to the next path element. It points to the outside (or along the path direction).
 ---@field LocomotionType string @Locomotion type.
 ---@field PathDirection GVector @Vector from start position to dest position.
 ---@field Distance number @Distance from start to dest.
----@field OrthogonalOutside GVector @Vector for the end condition of this path element. It is used to build a plane that the bot has to pass in order to get to the next path element.
 
 ---@class D3botPATH_ELEMENT @An atomic part of a path. It is used by locomotion handlers to control bots.
 ---@field PathFragment D3botPATH_FRAGMENT @Precalculated values of a path, don't modify.
@@ -148,7 +148,7 @@ function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 	if startPoint.Triangle == destPoint.Triangle then
 		local pathFragment = destPoint:GetPathFragmentsForInjection(startPoint, startPos)
 		enqueueEntity(pathFragment, 0)
-		reconstructPath(destPoint)
+		return reconstructPath(destPoint)
 	end
 
 	-- As search is edge based, store edges where the destPoint has to be injected to the "neighbors" list.

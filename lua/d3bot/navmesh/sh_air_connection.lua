@@ -34,7 +34,7 @@ local NAV_AIR_CONNECTION = D3bot.NAV_AIR_CONNECTION
 NAV_AIR_CONNECTION.__index = NAV_AIR_CONNECTION
 
 -- Radius of the air connection used for drawing and mouse click tracing.
-NAV_AIR_CONNECTION.DisplayRadius = 10
+NAV_AIR_CONNECTION.DisplayRadius = 5
 
 -- Min length of the connection.
 NAV_AIR_CONNECTION.MinLength = 10
@@ -211,10 +211,10 @@ function NAV_AIR_CONNECTION:GetCache()
 					Via = self,
 					To = edge,
 					ToPos = edgeCenter,
+					ToOrthogonal = (edgeOrthogonal * (edgeOrthogonal:Dot(pathDirection))):GetNormalized(), -- Vector for path end condition that is orthogonal to the edge and parallel to the triangle plane, additionally it always points outside the triangle.
 					LocomotionType = cache.LocomotionType,
 					PathDirection = pathDirection, -- Vector from start position to dest position.
 					Distance = pathDirection:Length(), -- Distance from start to dest.
-					OrthogonalOutside = (edgeOrthogonal * (edgeOrthogonal:Dot(pathDirection))):GetNormalized(), -- Vector for path end condition that is orthogonal to the edge and parallel to the triangle plane, additionally it always points outside the triangle.
 				}
 				table.insert(cache.PathFragments, pathFragment)
 			end

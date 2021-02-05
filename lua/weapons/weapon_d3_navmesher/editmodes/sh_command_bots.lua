@@ -169,6 +169,10 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm, weapon, ply)
 	cam.Start3D()
 	render.SetColorMaterial()
 
+	-- Draw client side navmesh.
+	navmesh:Render3D()
+	-- TODO: Make navmesh drawing optional
+
 	---Highlight the selected bots somehow.
 	---@type GPlayer
 	for ply in pairs(self.Bots) do
