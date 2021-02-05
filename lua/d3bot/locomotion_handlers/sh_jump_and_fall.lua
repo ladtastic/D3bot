@@ -92,6 +92,15 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 		local normalEdgeOrtho = (eP2 - eP1):Cross(Vector(0, 0, 1))
 		cache.EndPlaneOrigin = pathFragment.ToPos
 		cache.EndPlaneNormal = (normalEdgeOrtho * (normalEdgeOrtho:Dot(nextDirection))):GetNormalized()
+
+		-- Move end plane based on next element.
+		if nextPathElement then
+			local locHandler = nextPathElement.LocomotionHandler
+			if locHandler.BeginOffset then
+				local beginOffset = locHandler:BeginOffset(index-1, pathElements)
+				cache.EndPlaneOrigin = cache.EndPlaneOrigin + beginOffset * cache.EndPlaneNormal
+			end
+		end
 	end
 
 	-- If the previous calculation failed, just use the orthogonal that comes with the path fragment.
@@ -114,6 +123,9 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 	end
 	cache.EndPlaneOrigin = cache.EndPlaneOrigin + endPlaneOffset * cache.EndPlaneNormal
 
+	-- Get aim position, as we can't use edges or directions directly.
+	--cache.AimPosition = cache.EndPlaneOrigin + 0.5 * endPlaneOffset * cache.EndPlaneNormal
+
 	return cache
 end
 
@@ -132,39 +144,48 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 	-- General direction to the next triangle/cell.
 	local direction = pathFragment.PathDirection
 
+	-- Plane used to align the bot to face the end plane from the front.
+	local leftRightSplitPlaneOrigin = cache.EndPlaneOrigin
+	local leftRightSplitPlaneNormal = cache.EndPlaneNormal:Cross(Vector(0, 0, 1))
+
 	-- Prevent the bot from pressing jump all the time.
 	local jumpTimeout = 0
 
 	-- Push the right buttons and stuff.
 	local prevControlCallback = mem.ControlCallback
 	mem.ControlCallback = function(bot, mem, cUserCmd)
-		local angle = direction:Angle()
+		local botPos = bot:GetPos()
 
 		cUserCmd:ClearButtons()
 		cUserCmd:ClearMovement()
 
 		if direction[3] > 0 then
 			-- Let the bot crouch jump if the path is going upwards.
-			cUserCmd:SetForwardMove(1000)
 			if bot:IsOnGround() then
 				if jumpTimeout <= 0 then
-					jumpTimeout = 60
+					jumpTimeout = 30
 					cUserCmd:SetButtons(bit.bor(IN_JUMP, IN_FORWARD))
 				else
 					jumpTimeout = jumpTimeout - 1
 				end
 			else
+				-- When the bot is in the air, let it crouch.
 				cUserCmd:SetButtons(bit.bor(IN_DUCK, IN_FORWARD))
 			end
+
+			-- Try to position the bot so that it faces the end plane.
+			local forwardMove = (cache.EndPlaneOrigin - botPos):Dot(cache.EndPlaneNormal) * 100
+			local sideMove = (leftRightSplitPlaneOrigin - botPos):Dot(leftRightSplitPlaneNormal) * 100
+			cUserCmd:SetForwardMove(forwardMove)
+			cUserCmd:SetSideMove(sideMove)
 		else
 			-- Otherwise the bot will just fall down, there is not much to do.
-			cUserCmd:SetForwardMove(50)
+			cUserCmd:SetForwardMove(150)
 		end
 
-		-- (2D) Rotate bot towards the end plane origin.
+		-- Rotate bot that it aligns with the end plane, which is usually parallel to the destination (edge).
 		-- We can't use PathDirection, as it can be vertical.
-		local rotDirection = cache.EndPlaneOrigin - bot:GetPos()
-		rotDirection[3] = 0
+		local rotDirection = cache.EndPlaneNormal
 		cUserCmd:SetViewAngles(rotDirection:Angle())
 		bot:SetEyeAngles(rotDirection:Angle())
 	end
@@ -176,6 +197,27 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 
 	-- Restore previous control callback.
 	mem.ControlCallback = prevControlCallback
+end
+
+---Returns the offset that a previous element can use this information to offset its end plane.
+---This assumes a horizontal movement of the plane, but in most cases a normal based offset is good enough.
+---@param index integer
+---@param pathElements D3botPATH_ELEMENT[]
+---@return number
+function THIS_LOCO_HANDLER:BeginOffset(index, pathElements)
+	local pathElement = pathElements[index]
+	local pathFragment = pathElement.PathFragment
+
+	-- Half hull width.
+	local halfHullWidth = self.HullSize[1] / 2
+
+	if pathFragment.PathDirection[3] > 0 then
+		-- This will be a jump, so the previous path element should end a bit earlier.
+		return -(halfHullWidth * 2 + 5)
+	else
+		-- The bot will fall down a cliff or similar, make the previous path element end later.
+		return halfHullWidth
+	end
 end
 
 ---Overrides the base pathfinding cost (in engine units) for the given path fragment.
@@ -245,5 +287,5 @@ function THIS_LOCO_HANDLER:Render3D(index, pathElements)
 
 	-- Draw end condition planes.
 	cam.IgnoreZ(false)
-	render.DrawQuadEasy(cache.EndPlaneOrigin, -cache.EndPlaneNormal, 50, 50, Color(255, 0, 255, 128))
+	render.DrawQuadEasy(cache.EndPlaneOrigin, -cache.EndPlaneNormal, 20, 20, Color(255, 0, 255, 128))
 end

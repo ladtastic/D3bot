@@ -70,6 +70,7 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 
 	-- Half hull width.
 	local halfHullWidth = self.HullSize[1] / 2
+	cache.HalfHullWidth = halfHullWidth
 
 	-- General direction sum of the next few path elements.
 	local futureDirectionSum = Vector(0, 0, 0)
@@ -84,20 +85,13 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 	cache.EndPlaneOrigin = pathFragment.ToPos
 	cache.EndPlaneNormal = pathFragment.OrthogonalOutside
 
-	-- Move end plane along its normal if the successive path element is a wall or something similar.
+	-- Use offset information of the next element to move this elements end plane.
 	local endPlaneOffset = 0
 	local nextPathElement = pathElements[index-1] -- The previous index is the next path element.
 	if nextPathElement then
-		local nextPathFragment = nextPathElement.PathFragment
-		local locType = nextPathFragment.LocomotionType
-		if locType == "Wall" or locType == "SteepGround" or locType == "AirVertical" then
-			-- If the next path element is of a type that doesn't allow ground based locomotion, make sure the end condition is offset accordingly.
-			-- We don't want the bot to try to move inside a wall.
-			if nextPathFragment.PathDirection[3] > 0 then
-				endPlaneOffset = -5 - halfHullWidth
-			else
-				endPlaneOffset = halfHullWidth
-			end
+		local locHandler = nextPathElement.LocomotionHandler
+		if locHandler.BeginOffset then
+			endPlaneOffset = locHandler:BeginOffset(index-1, pathElements)
 		end
 	end
 	cache.EndPlaneOrigin = cache.EndPlaneOrigin + endPlaneOffset * cache.EndPlaneNormal
@@ -189,6 +183,11 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 	-- Get straight direction to the next element.
 	local straightDirection = (pathFragment.ToPos - botPos)
 
+	-- Expected arrival time at the next element.
+	local timeDiff = straightDirection:Length() / self.Speed
+	local destTime = CurTime() + timeDiff
+	local stuckTime = CurTime() + timeDiff * 2 + 0.5
+
 	-- Get general movement direction. The "beeline" to the last of the next few elements.
 	local direction = (straightDirection + cache.FutureDirectionSum):GetNormalized()
 
@@ -218,7 +217,7 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 			end
 			-- As long as he is behind the plane, let it move away from the plane.
 			local awayFromPlaneDirection = -cache.LeftPlaneNormal
-			adjustedDirection = direction * 0.8 + awayFromPlaneDirection * 0.2
+			adjustedDirection = direction * 0.6 + awayFromPlaneDirection * 0.4
 		end
 		if (botPos - cache.RightPlaneOrigin):Dot(cache.RightPlaneNormal) > 0 then
 			if direction:Dot(cache.RightPlaneNormal) > 0 then
@@ -228,11 +227,11 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 			end
 			-- As long as he is behind the plane, let it move away from the plane.
 			local awayFromPlaneDirection = -cache.RightPlaneNormal
-			adjustedDirection = direction * 0.8 + awayFromPlaneDirection * 0.2
+			adjustedDirection = direction * 0.6 + awayFromPlaneDirection * 0.4
 		end
 
 		-- Smooth out the movement
-		smoothedDirection = smoothedDirection * 0.8 + adjustedDirection * 0.2
+		smoothedDirection = smoothedDirection * 0.9 + adjustedDirection * 0.1
 
 		-- Get next aim and right sided normal vector.
 		local angle = smoothedDirection:Angle()
@@ -250,6 +249,15 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 
 	-- Wait until the bot crosses the end/destination plane.
 	while (cache.EndPlaneOrigin - bot:GetPos()):Dot(cache.EndPlaneNormal) >= 0 do
+
+		if stuckTime < CurTime() then
+			-- If estimated arrival time got exceeded by much, move the end plane a bit closer.
+			cache.EndPlaneOrigin = cache.EndPlaneOrigin - cache.HalfHullWidth * cache.EndPlaneNormal
+		end
+
+		-- TODO: Add "is stuck" timeout that stops this action after some time
+		-- TODO: Add method to reset "is stuck" timeout (especially from inherited objects)
+
 		coroutine.yield()
 	end
 
@@ -293,15 +301,15 @@ function THIS_LOCO_HANDLER:Render3D(index, pathElements)
 
 	-- Draw end condition planes.
 	cam.IgnoreZ(false)
-	render.DrawQuadEasy(cache.EndPlaneOrigin, -cache.EndPlaneNormal, 50, 50, Color(255, 0, 255, 128))
+	render.DrawQuadEasy(cache.EndPlaneOrigin, -cache.EndPlaneNormal, 20, 20, Color(255, 0, 255, 128))
 
 	-- Draw right limitation plane.
 	--cam.IgnoreZ(false)
-	--render.DrawQuadEasy(cache.RightPlaneOrigin, -cache.RightPlaneNormal, 50, 50, Color(255, 0, 0, 128))
+	--render.DrawQuadEasy(cache.RightPlaneOrigin, -cache.RightPlaneNormal, 20, 20, Color(255, 0, 0, 128))
 
 	-- Draw left limitation plane.
 	--cam.IgnoreZ(false)
-	--render.DrawQuadEasy(cache.LeftPlaneOrigin, -cache.LeftPlaneNormal, 50, 50, Color(0, 255, 0, 128))
+	--render.DrawQuadEasy(cache.LeftPlaneOrigin, -cache.LeftPlaneNormal, 20, 20, Color(0, 255, 0, 128))
 
 	-- Draw plane the the bot is able to walk on.
 	cam.IgnoreZ(true)
