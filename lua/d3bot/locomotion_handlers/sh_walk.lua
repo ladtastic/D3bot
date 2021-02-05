@@ -230,6 +230,12 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 			adjustedDirection = direction * 0.6 + awayFromPlaneDirection * 0.4
 		end
 
+		-- If it is the last element, go always straight to the end.
+		if index == 1 then
+			adjustedDirection = (pathFragment.ToPos - botPos) * 0.3
+			adjustedDirection[3] = 0
+		end
+
 		-- Smooth out the movement
 		smoothedDirection = smoothedDirection * 0.9 + adjustedDirection * 0.1
 
@@ -260,6 +266,9 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 
 		coroutine.yield()
 	end
+
+	-- If this is the last element, give it some more time.
+	if index == 1 then coroutine.wait(0.2) end
 
 	-- Restore previous control callback.
 	mem.ControlCallback = prevControlCallback
