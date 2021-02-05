@@ -31,12 +31,13 @@ There will be importers/converters for the old navmeshes at some later point in 
 - [ ] Give triangles an optional volume (along the normal, as it's really easy to calculate)
 - [ ] Simplify and unify logging and text output to player (console and chat)
 - [X] Path-Finding
-- [ ] Path-generation and simplification with locomotion controllers
-- [ ] Controller callback for locomotion controllers (Button pressing logic)
+- [X] Path-generation and simplification with locomotion controllers
+- [X] Controller callback for locomotion controllers (Button pressing logic)
+- [ ] SWEP edit mode for navmesh entity parameters
 - [ ] Behavior/Action controllers (Let bot do specific actions, they run locomotion controllers)
 - [ ] Bot brain controllers that tell the bot what actions to run
 - [ ] Supervisor that creates intermediate goals/tasks for bots and does some more thorough planning (Like where to place a nest)
-- [ ] Debug "edit" modes for the SWEP (Select bots, give them a target, debug generated paths)
+- [X] Debug "edit" modes for the SWEP (Select bots, give them a target, debug generated paths)
 - [ ] [Localization optimization](documentation/lookup-acceleration/README.md), alternatively just quad tree based and use a max. distance
 - [ ] Use polygons instead of triangles. This will speed up pathfinding, but path generation needs to take special care of edges that are "obtuse"
 - [ ] Navmesh groups (to apply parameters to several navmesh elements). But polygons should solve that problem good enough
