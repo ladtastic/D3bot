@@ -156,14 +156,6 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 		cache.LeftPlaneNormal = (fromLeft - toLeft):Cross(Vector(0, 0, 1)):GetNormalized()
 	end
 
-	-- Limitation plane on the "from" entity (edge or point) that prevents the bot from going backwards in some edge cases.
-	-- It doesn't exist for point entities.
-	-- It's pointing to the outside.
-	if not (fromRight - fromLeft):IsZero() then
-		cache.BackPlaneNormal = (fromRight - fromLeft):Cross(Vector(0, 0, 1)):GetNormalized()
-		cache.BackPlaneOrigin = pathFragment.FromPos - cache.BackPlaneNormal * (halfHullWidth + 5)
-	end
-
 	return cache
 end
 
@@ -200,9 +192,6 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 		{Origin = cache.LeftPlaneOrigin, Normal = cache.LeftPlaneNormal},
 		{Origin = cache.RightPlaneOrigin, Normal = cache.RightPlaneNormal},
 	}
-	if cache.BackPlaneOrigin then
-		table.insert(limitingPlanes, {Origin = cache.BackPlaneOrigin, Normal = cache.BackPlaneNormal})
-	end
 
 	local prevControlCallback = mem.ControlCallback
 	---Push the right buttons and stuff.
@@ -399,12 +388,6 @@ function THIS_LOCO_HANDLER:Render3D(index, pathElements)
 	-- Draw left limitation plane.
 	cam.IgnoreZ(false)
 	render.DrawQuadEasy(cache.LeftPlaneOrigin, -cache.LeftPlaneNormal, 30, 10, Color(0, 255, 0, 128))
-
-	-- Draw back limitation plane.
-	if cache.BackPlaneOrigin then
-		cam.IgnoreZ(false)
-		render.DrawQuadEasy(cache.BackPlaneOrigin, -cache.BackPlaneNormal, 30, 10, Color(0, 0, 0, 128))
-	end
 
 	-- Draw plane the the bot is able to walk on.
 	cam.IgnoreZ(true)
