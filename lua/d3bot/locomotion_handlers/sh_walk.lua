@@ -240,17 +240,22 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 				local toPos2D = Vector(pathFragment.ToPos[1], pathFragment.ToPos[2], 0)
 				local botPos2D = Vector(botPos[1], botPos[2], 0)
 
-				if destVector:IsZero() then
-					-- Destination is a point.
+				-- Normal describing a plane on the end/destination entity pointing outwards.
+				local tempOrthoNormal = destVector:Cross(Vector(0, 0, -1)):GetNormalized()
 
-					direction = (toPos2D - botPos2D):GetNormalized()
+				if destVector:IsZero() then
+					-- Destination is a point, let it move to the end plane to make sure the bot crosses it.
+
+					local endPlaneOrigin2D = Vector(cache.EndPlaneOrigin[1], cache.EndPlaneOrigin[2], 0)
+					direction = (endPlaneOrigin2D - botPos2D):GetNormalized()
+				elseif (botPos2D - destOrigin):Dot(tempOrthoNormal) > 0 then
+					-- The bot has already crossed the end element (edge), but maybe not the end plane.
+					-- Let it move straight to the outside.
+					direction = tempOrthoNormal
 				else
 					-- 2D direction to the end of some future path element.
 					local beeline = (toPos2D - botPos2D) + cache.FutureDirectionSum
 					beeline[3] = 0
-
-					-- Normal describing a plane on the end/destination entity pointing outwards.
-					local tempOrthoNormal = destVector:Cross(Vector(0, 0, -1)):GetNormalized()
 
 					-- Check if the beeline (ray) points into the direction of the plane.
 					local denominator = beeline:Dot(tempOrthoNormal)
