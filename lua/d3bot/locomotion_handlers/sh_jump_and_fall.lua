@@ -152,8 +152,11 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 	-- Prevent the bot from pressing jump all the time.
 	local jumpTimeout = 0
 
-	-- Push the right buttons and stuff.
 	local prevControlCallback = mem.ControlCallback
+	---Push the right buttons and stuff.
+	---@param bot GPlayer
+	---@param mem any
+	---@param cUserCmd table
 	mem.ControlCallback = function(bot, mem, cUserCmd)
 		local botPos = bot:GetPos()
 
