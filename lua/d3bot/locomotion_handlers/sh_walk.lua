@@ -20,6 +20,10 @@ local UTIL = D3bot.Util
 local RENDER_UTIL = D3bot.RenderUtil
 local LOCOMOTION_HANDLERS = D3bot.LocomotionHandlers
 
+-- Predefine some local constants for optimization.
+local VECTOR_UP = Vector(0, 0, 1)
+local VECTOR_DOWN = Vector(0, 0, -1)
+
 -- Add new locomotion handler class.
 LOCOMOTION_HANDLERS.WALKING = LOCOMOTION_HANDLERS.WALKING or {}
 local THIS_LOCO_HANDLER = LOCOMOTION_HANDLERS.WALKING
@@ -74,11 +78,11 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 
 	-- General direction sum of the next few path elements.
 	-- Don't sum up elements that have a different locomotion handler (Or after).
-	local futureDirectionSum = Vector(0, 0, 0)
+	local futureDirectionSum = Vector()
 	for i = index-1, index-5, -1 do
 		local tempPathElement = pathElements[i]
 		if not tempPathElement or tempPathElement.LocomotionHandler ~= self then break end
-		futureDirectionSum = futureDirectionSum + tempPathElement.PathFragment.PathDirection
+		futureDirectionSum:Add(tempPathElement.PathFragment.PathDirection)
 	end
 	cache.FutureDirectionSum = futureDirectionSum
 
@@ -142,18 +146,18 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 	-- It's pointing to the outside.
 	cache.RightPlaneOrigin = (fromRight + toRight) / 2
 	if (toRight - fromRight):IsZero() then
-		cache.RightPlaneNormal = pathDirection:Cross(Vector(0, 0, 1)):GetNormalized()
+		cache.RightPlaneNormal = pathDirection:Cross(VECTOR_UP):GetNormalized()
 	else
-		cache.RightPlaneNormal = (toRight - fromRight):Cross(Vector(0, 0, 1)):GetNormalized()
+		cache.RightPlaneNormal = (toRight - fromRight):Cross(VECTOR_UP):GetNormalized()
 	end
 
 	-- Limitation plane on the left side that prevents the bot from dropping down cliffs or scrubbing along walls.
 	-- It's pointing to the outside.
 	cache.LeftPlaneOrigin = (fromLeft + toLeft) / 2
 	if (fromLeft - toLeft):IsZero() then
-		cache.LeftPlaneNormal = -pathDirection:Cross(Vector(0, 0, 1)):GetNormalized()
+		cache.LeftPlaneNormal = -pathDirection:Cross(VECTOR_UP):GetNormalized()
 	else
-		cache.LeftPlaneNormal = (fromLeft - toLeft):Cross(Vector(0, 0, 1)):GetNormalized()
+		cache.LeftPlaneNormal = (fromLeft - toLeft):Cross(VECTOR_UP):GetNormalized()
 	end
 
 	return cache
@@ -241,7 +245,7 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 				local botPos2D = Vector(botPos[1], botPos[2], 0)
 
 				-- Normal describing a plane on the end/destination entity pointing outwards.
-				local tempOrthoNormal = destVector:Cross(Vector(0, 0, -1)):GetNormalized()
+				local tempOrthoNormal = destVector:Cross(VECTOR_DOWN):GetNormalized()
 
 				if destVector:IsZero() then
 					-- Destination is a point, let it move to the end plane to make sure the bot crosses it.
@@ -300,7 +304,7 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 		-- TODO: Use some different direction as view angle.
 		local angle = lookingDirection:Angle()
 		local aim2D = lookingDirection
-		local right2D = aim2D:Cross(Vector(0, 0, 1))
+		local right2D = aim2D:Cross(VECTOR_UP)
 
 		cUserCmd:ClearButtons()
 		cUserCmd:ClearMovement()

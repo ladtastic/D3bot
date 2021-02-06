@@ -19,6 +19,14 @@ local D3bot = D3bot
 local UTIL = D3bot.Util
 local ERROR = D3bot.ERROR
 
+-- Predefine some local constants for optimization.
+local COLOR_TRIANGLE_HIGHLIGHTED = Color(255, 0, 0, 127)
+local COLOR_TRIANGLE_NORMAL = Color(255, 255, 255, 255)
+local COLOR_TRIANGLE_GROUND = Color(255, 0, 0, 31)
+local COLOR_TRIANGLE_OTHER = Color(255, 255, 0, 31)
+local VECTOR_UP = Vector(0, 0, 1)
+local VECTOR_DOWN = Vector(0, 0, -1)
+
 ------------------------------------------------------
 --		Static
 ------------------------------------------------------
@@ -237,7 +245,7 @@ function NAV_TRIANGLE:GetCache()
 	if cache.IsValid then
 		cache.Normal = (points[1] - points[2]):Cross(points[3] - points[1]):GetNormalized()
 	else
-		cache.Normal = Vector(0, 0, 1)
+		cache.Normal = VECTOR_UP
 	end
 	if self.FlipNormal then cache.Normal = cache.Normal * -1 end
 
@@ -245,7 +253,7 @@ function NAV_TRIANGLE:GetCache()
 	if cache.IsValid then
 		cache.Centroid = (points[1] + points[2] + points[3]) / 3
 	else
-		cache.Centroid = Vector(0, 0, 0)
+		cache.Centroid = Vector()
 	end
 
 	-- Determine locomotion type. (Hardcoded locomotion types)
@@ -523,17 +531,15 @@ function NAV_TRIANGLE:Render3D()
 		if ui.Highlighted then
 			ui.Highlighted = nil
 			cam.IgnoreZ(true)
-			render.DrawQuad(cornerPoints[1], cornerPoints[2], cornerPoints[3], cornerPoints[2], Color(255, 0, 0, 127))
+			render.DrawQuad(cornerPoints[1], cornerPoints[2], cornerPoints[3], cornerPoints[2], COLOR_TRIANGLE_HIGHLIGHTED)
 			cam.IgnoreZ(false)
 
-			if centroid and normal then
-				render.DrawLine(centroid, centroid + normal * 30, Color(255, 255, 255, 255), true)
-			end
+			render.DrawLine(centroid, centroid + normal * 30, COLOR_TRIANGLE_NORMAL, true)
 		else
 			if self:GetLocomotionType() == "Ground" then
-				render.DrawQuad(cornerPoints[1] + tinyNormal, cornerPoints[2] + tinyNormal, cornerPoints[3] + tinyNormal, cornerPoints[2] + tinyNormal, Color(255, 0, 0, 31))
+				render.DrawQuad(cornerPoints[1] + tinyNormal, cornerPoints[2] + tinyNormal, cornerPoints[3] + tinyNormal, cornerPoints[2] + tinyNormal, COLOR_TRIANGLE_GROUND)
 			else
-				render.DrawQuad(cornerPoints[1] + tinyNormal, cornerPoints[2] + tinyNormal, cornerPoints[3] + tinyNormal, cornerPoints[2] + tinyNormal, Color(255, 255, 0, 31))
+				render.DrawQuad(cornerPoints[1] + tinyNormal, cornerPoints[2] + tinyNormal, cornerPoints[3] + tinyNormal, cornerPoints[2] + tinyNormal, COLOR_TRIANGLE_OTHER)
 			end
 		end
 	end

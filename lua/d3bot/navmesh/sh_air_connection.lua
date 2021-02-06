@@ -20,6 +20,12 @@ local UTIL = D3bot.Util
 local RENDER_UTIL = D3bot.RenderUtil
 local ERROR = D3bot.ERROR
 
+-- Predefine some local constants for optimization.
+local COLOR_ARROW_HIGHLIGHTED = Color(255, 255, 255, 255)
+local COLOR_ARROW = Color(255, 255, 0, 127)
+local VECTOR_UP = Vector(0, 0, 1)
+local VECTOR_DOWN = Vector(0, 0, -1)
+
 ------------------------------------------------------
 --		Static
 ------------------------------------------------------
@@ -181,7 +187,7 @@ function NAV_AIR_CONNECTION:GetCache()
 	cache.Point1, cache.Point2 = point1, point2
 
 	-- Calculate "centroid" center.
-	cache.Centroid = (point1 + point2) / 3
+	cache.Centroid = (point1 + point2) / 2
 
 	-- Determine locomotion type. (Hardcoded locomotion types)
 	cache.LocomotionType = "AirHorizontal" -- Default type
@@ -378,11 +384,11 @@ function NAV_AIR_CONNECTION:Render3D()
 	local cache = self:GetCache()
 	local ui = self.UI
 	local p1, p2 = cache.Point1, cache.Point2
-	local center = (p1 + p2) / 2
-	local color = Color(255, 255, 0, 127)
+	local center = cache.Centroid
+	local color = COLOR_ARROW
 
 	if ui.Highlighted then
-		color = Color(255, 255, 255, 255)
+		color = COLOR_ARROW_HIGHLIGHTED
 		cam.IgnoreZ(true)
 	end
 

@@ -19,6 +19,13 @@ local D3bot = D3bot
 local UTIL = D3bot.Util
 local ERROR = D3bot.ERROR
 
+-- Predefine some local constants for optimization.
+local COLOR_EDGE_HIGHLIGHTED = Color(255, 255, 255, 127)
+local COLOR_EDGE_WALLED = Color(255, 255, 0, 127)
+local COLOR_EDGE = Color(255, 0, 0, 255)
+local VECTOR_UP = Vector(0, 0, 1)
+local VECTOR_DOWN = Vector(0, 0, -1)
+
 ------------------------------------------------------
 --		Static
 ------------------------------------------------------
@@ -204,7 +211,7 @@ function NAV_EDGE:GetCache()
 		for _, triangle in ipairs(self.Triangles) do
 			-- Get an orthogonal vector of the triangle plane, without using the triangle cache.
 			local triangleVertices, err = UTIL.EdgesToTriangleVertices(triangle.Edges)
-			local triangleNormal = Vector(0, 0, 1)
+			local triangleNormal = VECTOR_UP
 			if triangleVertices then
 				local trianglePoints = {triangleVertices[1]:GetPoint(), triangleVertices[2]:GetPoint(), triangleVertices[3]:GetPoint()}
 				triangleNormal = (trianglePoints[1] - trianglePoints[2]):Cross(trianglePoints[3] - trianglePoints[1]):GetNormalized() -- Has to be normalized, because too large numbers will be interpreted as infinity. Thanks lua.
@@ -472,14 +479,12 @@ function NAV_EDGE:Render3D()
 	if ui.Highlighted then
 		ui.Highlighted = nil
 		cam.IgnoreZ(true)
-		render.DrawBeam(p1, p2, self.DisplayRadius*2, 0, 1, Color(255, 255, 255, 127))
+		render.DrawBeam(p1, p2, self.DisplayRadius*2, 0, 1, COLOR_EDGE_HIGHLIGHTED)
 		cam.IgnoreZ(false)
 	else
-		--render.DrawLine(p1, p2, Color(255, 255, 255, 16), false)
-		render.DrawLine(p1, p2, Color(255, 0, 0, 255), true)
+		render.DrawLine(p1, p2, COLOR_EDGE, true)
 		if self:IsWalled() then
-			render.DrawBeam(p1 + Vector(0, 0, 1), p2 + Vector(0, 0, 1), self.DisplayRadius/2, 0, 1, Color(255, 255, 0, 127))
-			--render.DrawLine(p1 + Vector(0, 0, 1), p2 + Vector(0, 0, 1), Color(255, 255, 0, 127), true)
+			render.DrawBeam(p1 + VECTOR_UP, p2 + VECTOR_UP, self.DisplayRadius/2, 0, 1, COLOR_EDGE_WALLED)
 		end
 	end
 end

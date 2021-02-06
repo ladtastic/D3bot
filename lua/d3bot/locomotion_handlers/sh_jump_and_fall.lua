@@ -19,6 +19,10 @@ local D3bot = D3bot
 local UTIL = D3bot.Util
 local LOCOMOTION_HANDLERS = D3bot.LocomotionHandlers
 
+-- Predefine some local constants for optimization.
+local VECTOR_UP = Vector(0, 0, 1)
+local VECTOR_DOWN = Vector(0, 0, -1)
+
 -- Add new locomotion handler class.
 LOCOMOTION_HANDLERS.JUMP_AND_FALL = LOCOMOTION_HANDLERS.JUMP_AND_FALL or {}
 local THIS_LOCO_HANDLER = LOCOMOTION_HANDLERS.JUMP_AND_FALL
@@ -86,11 +90,11 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 
 		-- If there is only one point, position the second point in some way so that it is orthogonal to the moving direction.
 		if not eP2 then
-			eP2 = eP1 + nextDirection:Cross(Vector(0, 0, 1))
+			eP2 = eP1 + nextDirection:Cross(VECTOR_UP)
 		end
 
 		-- Determine a normal that is always horizontal and orthogonal to the edge.
-		local normalEdgeOrtho = (eP2 - eP1):Cross(Vector(0, 0, 1))
+		local normalEdgeOrtho = (eP2 - eP1):Cross(VECTOR_UP)
 		cache.EndPlaneOrigin = pathFragment.ToPos
 		cache.EndPlaneNormal = (normalEdgeOrtho * (normalEdgeOrtho:Dot(nextDirection))):GetNormalized()
 
@@ -147,7 +151,7 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 
 	-- Plane used to align the bot to face the end plane from the front.
 	local leftRightSplitPlaneOrigin = cache.EndPlaneOrigin
-	local leftRightSplitPlaneNormal = cache.EndPlaneNormal:Cross(Vector(0, 0, 1))
+	local leftRightSplitPlaneNormal = cache.EndPlaneNormal:Cross(VECTOR_UP)
 
 	-- Prevent the bot from pressing jump all the time.
 	local jumpTimeout = 0
@@ -231,8 +235,8 @@ end
 ---@param pathFragment D3botPATH_FRAGMENT
 ---@return number cost
 function THIS_LOCO_HANDLER:CostOverride(pathFragment)
-	-- Assume near 0 cost for falling or jumping, which is somewhat realistic.
-	return 0
+	-- Assume constant but low cost for falling or jumping, which is somewhat realistic.
+	return 100
 end
 
 ---Returns whether the bot can move on the path fragment described by pathFragment.
