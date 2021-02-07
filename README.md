@@ -34,6 +34,11 @@ There will be importers/converters for the old navmeshes at some later point in 
 - [X] Path-generation and simplification with locomotion controllers
 - [ ] Fix limitation planes by using adjacent walls and edges that are walled.
 - [X] Controller callback for locomotion controllers (Button pressing logic)
+- [ ] Walk locomotion handler: Let bots get around obstacles (If there is something in front, let the try to jump or move sideways based on the obstacles position in the current path element)
+- [ ] Let bots handle doors (Ideally, if possible, query if door is open. If it is, and bot walks against it, figure out door direction and walk around it)
+- [ ] Add ladder locomotion handler (For general climbable surfaces and HL2 ladders)
+- [ ] Add pouncing locomotion handler
+- [ ] Add helper to let any (coroutine based) blocking function to run asynchronously
 - [ ] SWEP edit mode for navmesh entity parameters
 - [ ] Behavior/Action controllers (Let bot do specific actions, they run locomotion controllers)
 - [ ] Bot brain controllers that tell the bot what actions to run
@@ -44,3 +49,6 @@ There will be importers/converters for the old navmeshes at some later point in 
 - [ ] Navmesh groups (to apply parameters to several navmesh elements). But polygons should solve that problem good enough
 - [ ] Internationalization
 - [ ] Improve navmesh and path drawing style (Customizable colors, less eye strain inducing shapes and default colors)
+- [ ] Navmesh entity selection optimization
+- [ ] Ignore navmesh elements (For drawing and selection) that are not visible (Coroutine will filter and select navmesh elements in the background) (Option to enable/disable in UI)
+- [ ] Navmesh drawing radius with UI slider
