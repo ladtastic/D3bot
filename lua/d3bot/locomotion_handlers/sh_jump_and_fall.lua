@@ -116,7 +116,6 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 
 	-- If the next path element has a different locomotion type, move the end plane a bit back.
 	local endPlaneOffset = 0
-	local nextPathElement = pathElements[index-1] -- The previous index is the next path element.
 	if nextPathElement then
 		local nextPathFragment = nextPathElement.PathFragment
 		local locType = nextPathFragment.LocomotionType
@@ -216,15 +215,17 @@ function THIS_LOCO_HANDLER:BeginOffset(index, pathElements, prevEndPlaneNormal)
 	local pathElement = pathElements[index]
 	local pathFragment = pathElement.PathFragment
 
+	local prevEndPlaneNormal2D = Vector(prevEndPlaneNormal[1], prevEndPlaneNormal[2], 0):GetNormalized()
+
 	-- Half hull width.
 	local halfHullWidth = self.HullSize[1] / 2
 
 	if pathFragment.PathDirection[3] > 0 then
 		-- This will be a jump, so the previous path element should end a bit earlier.
-		return -(halfHullWidth * 2 + 5)
+		return -UTIL.PlaneXYSquareTouchDistance(prevEndPlaneNormal2D, halfHullWidth) - 32
 	else
 		-- The bot will fall down a cliff or similar, make the previous path element end later.
-		return halfHullWidth
+		return UTIL.PlaneXYSquareTouchDistance(prevEndPlaneNormal2D, halfHullWidth)
 	end
 end
 

@@ -56,6 +56,28 @@ function UTIL.ScaleVectorXYSquare(vec, halfWidth)
 	return vec * (halfWidth / max)
 end
 
+---Takes a vector and returns the closest vector that points into a corner of a xy-square (with a half width of 1).
+---@param vec GVector
+---@return GVector
+function UTIL.VectorIntoXYSquareCorner(vec)
+	local x, y
+	if vec[1] >= 0 then x = 1 else x = -1 end
+	if vec[2] >= 0 then y = 1 else y = -1 end
+	return Vector(x, y, 0)
+end
+
+---Returns the smallest distance of a plane touching a xy-square.
+---The distance is measured from the plane to the center of the square.
+---This can be used to determine how much a bot has to move orthogonally from an edge, until the bot's square-base shaped hull is barely touching the edge.
+---The normal should be horizontal, otherwise the resulting distance will be smaller.
+---@param normal GVector
+---@param halfWidth number
+---@return number
+function UTIL.PlaneXYSquareTouchDistance(normal, halfWidth)
+	local cornerVector = UTIL.VectorIntoXYSquareCorner(normal)
+	return cornerVector:Dot(normal) * halfWidth
+end
+
 ---Scales a vector so that one of its components given by dirIndex is equal to dist.
 ---This will only change the length of a vector, not its direction.
 ---@param vec GVector
@@ -81,6 +103,7 @@ function UTIL.VectorLargestAbsComponent(vec)
 end
 
 ---Takes a vector and flips it so that it aligns with another vector.
+---This may just pass the vector through, consider this if you modify it!
 ---@param vec GVector
 ---@param compVec GVector
 ---@return GVector

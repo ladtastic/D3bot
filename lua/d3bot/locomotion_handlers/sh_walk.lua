@@ -340,6 +340,8 @@ function THIS_LOCO_HANDLER:BeginOffset(index, pathElements, prevEndPlaneNormal)
 	local pathElement = pathElements[index]
 	local pathFragment = pathElement.PathFragment
 
+	local prevEndPlaneNormal2D = Vector(prevEndPlaneNormal[1], prevEndPlaneNormal[2], 0):GetNormalized()
+
 	-- Path direction.
 	local direction = pathFragment.PathDirection
 
@@ -349,7 +351,7 @@ function THIS_LOCO_HANDLER:BeginOffset(index, pathElements, prevEndPlaneNormal)
 	-- Offsets the plane in a way that the bot doesn't get stuck on small steps.
 	-- It basically moves the previous end plane by the amount that this path is too short.
 	-- This is just an estimation.
-	return math.min(0, direction:Length() - halfHullWidth)
+	return math.min(0, direction:Length() - UTIL.PlaneXYSquareTouchDistance(prevEndPlaneNormal2D, halfHullWidth))
 end
 
 ---Overrides the base pathfinding cost (in engine units) for the given path fragment.

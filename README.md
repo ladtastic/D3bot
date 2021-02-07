@@ -32,6 +32,7 @@ There will be importers/converters for the old navmeshes at some later point in 
 - [ ] Simplify and unify logging and text output to player (console and chat)
 - [X] Path-Finding
 - [X] Path-generation and simplification with locomotion controllers
+- [ ] Fix limitation planes by using adjacent walls and edges that are walled.
 - [X] Controller callback for locomotion controllers (Button pressing logic)
 - [ ] SWEP edit mode for navmesh entity parameters
 - [ ] Behavior/Action controllers (Let bot do specific actions, they run locomotion controllers)
