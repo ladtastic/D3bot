@@ -16,11 +16,16 @@
 -- along with D3bot.  If not, see <http://www.gnu.org/licenses/>.
 
 local D3bot = D3bot
-local UTIL = D3bot.Util
 
-------------------------------------------------------
---		Includes
-------------------------------------------------------
+local function MaintainBotRoles()
+	local bots = player.GetBots()
 
-UTIL.IncludeRealm("", "sv_brainassigner.lua")
-UTIL.IncludeRealm("", "sv_supervisor.lua")
+	if #bots < 2 then
+		---@type GPlayer
+		local bot = player.CreateNextBot(D3bot.GetBotName())
+		bot.D3bot = {}
+	elseif #bots > 2 then
+		bots[1]:Kick("blabla") -- TODO: Add kick message
+	end
+end
+timer.Create(D3bot.HookPrefix .. "MaintainBotRoles", 0.1, 0, MaintainBotRoles)

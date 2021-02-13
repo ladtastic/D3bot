@@ -16,11 +16,10 @@
 -- along with D3bot.  If not, see <http://www.gnu.org/licenses/>.
 
 local D3bot = D3bot
-local UTIL = D3bot.Util
+local BRAINS = D3bot.Brains
 
-------------------------------------------------------
---		Includes
-------------------------------------------------------
-
-UTIL.IncludeRealm("", "sv_brainassigner.lua")
-UTIL.IncludeRealm("", "sv_supervisor.lua")
+-- Assigns a suitable brain to the bot.
+function D3bot.AssignBrain(bot, mem)
+	-- Assign a GENERAL brain by default.
+	BRAINS.GENERAL:AssignToBot(bot, mem)
+end
