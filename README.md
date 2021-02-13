@@ -35,6 +35,7 @@ There will be importers/converters for the old navmeshes at some later point in 
 - [ ] Fix limitation planes by using adjacent walls and edges that are walled.
 - [X] Controller callback for locomotion controllers (Button pressing logic)
 - [ ] Walk locomotion handler: Let bots get around obstacles (If there is something in front, let the try to jump or move sideways based on the obstacles position in the current path element)
+- [ ] Walk locomotion handler: Handle destination position updates while the bot is walking along the path
 - [ ] Let bots handle doors (Ideally, if possible, query if door is open. If it is, and bot walks against it, figure out door direction and walk around it)
 - [ ] Add ladder locomotion handler (For general climbable surfaces and HL2 ladders)
 - [ ] Add pouncing locomotion handler

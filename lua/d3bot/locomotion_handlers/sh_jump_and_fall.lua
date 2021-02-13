@@ -197,13 +197,19 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 		cUserCmd:SetSideMove(sideMove)
 	end
 
+	-- TODO: Only continue if bot is on ground again.
+
 	-- Wait until the bot crosses the end/destination plane.
 	while (cache.EndPlaneOrigin - bot:GetPos()):Dot(cache.EndPlaneNormal) >= 0 do
+		-- Check if the path element is still valid. If the path got updated, stop this action.
+		if pathElement.IsInvalid then mem.ControlCallback = prevControlCallback return nil end
+
 		coroutine.yield()
 	end
 
 	-- Restore previous control callback.
 	mem.ControlCallback = prevControlCallback
+	return nil
 end
 
 ---Returns an offset that a previous element can use to offset its end plane.

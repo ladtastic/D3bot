@@ -220,7 +220,7 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 			for _, limitingPlane in ipairs(limitingPlanes) do
 				if (botPos - limitingPlane.Origin):Dot(limitingPlane.Normal) > 0 then
 					-- Bot has crossed one of the limiting planes. Adjust its direction so that it moves back inside.
-					directionCorrection:Sub(limitingPlane.Normal * 0.5)
+					directionCorrection:Sub(limitingPlane.Normal)
 
 					-- Check if the general movement direction of the bot points outside this plane.
 					-- The pointingOutside check is just for speedup.
@@ -317,6 +317,8 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 
 	-- Wait until the bot crosses the end/destination plane.
 	while (cache.EndPlaneOrigin - bot:GetPos()):Dot(cache.EndPlaneNormal) >= 0 do
+		-- Check if the path element is still valid. If the path got updated, stop this action.
+		if pathElement.IsInvalid then mem.ControlCallback = prevControlCallback return nil end
 
 		-- TODO: Add "is stuck" timeout that stops this action after some time
 		-- TODO: Add method to reset "is stuck" timeout (especially from inherited objects)
@@ -329,6 +331,7 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 
 	-- Restore previous control callback.
 	mem.ControlCallback = prevControlCallback
+	return nil
 end
 
 ---Returns an offset that a previous element can use to offset its end plane.

@@ -71,11 +71,14 @@ function THIS_BRAIN:_ThinkCoroutine(bot, mem)
 	-- Do debug command actions, if available.
 	ACTIONS.DebugCommands(bot, mem, abilities)
 
-	-- Walk in an arc for 3 seconds.
-	--ACTIONS.SinCosTest(bot, mem, 3)
+	-- Get some target entity.
+	local targetEnt = player.GetHumans()[1]
+	if not IsValid(targetEnt) then coroutine.wait(2) return end
 
-	-- Walk in some random direction for 3 seconds.
-	--ACTIONS.RandomWalkTest(bot, mem, 3)
+	-- Go to target.
+	ACTIONS.FollowTarget(bot, mem, abilities, targetEnt)
+
+	bot:Say("Hey!")
 
 	-- Wait 2 seconds.
 	coroutine.wait(2)

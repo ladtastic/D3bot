@@ -17,6 +17,7 @@
 
 local D3bot = D3bot
 local ERROR = D3bot.ERROR
+local UTIL = D3bot.Util
 local PATH_POINT = D3bot.PATH_POINT
 local PRIORITY_QUEUE = D3bot.PRIORITY_QUEUE
 
@@ -39,6 +40,7 @@ local PRIORITY_QUEUE = D3bot.PRIORITY_QUEUE
 ---@field PathFragment D3botPATH_FRAGMENT @Precalculated values of a path, don't modify.
 ---@field LocomotionHandler table
 ---@field Cache table | nil
+---@field IsInvalid boolean @States whether a path element was invalidated. This happens when the path got updated. Locomotion handlers are advised to return from action handlers when this is set to true.
 
 ------------------------------------------------------
 --		Static
@@ -48,6 +50,7 @@ local PRIORITY_QUEUE = D3bot.PRIORITY_QUEUE
 ---@field Navmesh D3botNAV_MESH
 ---@field Abilities table<string, table> @Maps navmesh locomotion types (keys) to locomotion handlers (values).
 ---@field Path D3botPATH_ELEMENT[] @Queue of path elements in reverse order (current element is last in the list).
+---@field DestPoint D3botPATH_POINT @The destination point of the current path.
 local PATH = D3bot.PATH
 PATH.__index = PATH
 
@@ -80,8 +83,16 @@ end
 function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 	-- See: https://en.wikipedia.org/wiki/A*_search_algorithm
 
+	-- Invalidate all previous path elements.
+	for _, pathElement in ipairs(self.Path) do
+		pathElement.IsInvalid = true
+	end
+
 	-- Reset current path.
 	self.Path = {}
+
+	-- Store destination point faster path updates in the future.
+	self.DestPoint = destPoint
 
 	-- Define some variables for optimization.
 	local navmesh = self.Navmesh
@@ -237,6 +248,21 @@ end
 function PATH:UpdatePathToPos(startPos, destPos)
 	local navmesh = self.Navmesh
 
+	-- First element in the list is the last path element. And it's a PATH_POINT.
+	local destPoint = self.DestPoint
+
+	-- Update the destPoint if it lies on the same navmesh element as before.
+	if destPoint then
+		local currentTriangle = UTIL.GetClosestToPos(destPos, navmesh.Triangles)
+		if currentTriangle and destPoint.Triangle == currentTriangle then
+			-- Update the destination point.
+			destPoint:UpdatePosition(destPos)
+		else
+			-- Remove destination point, this will cause the path to be fully regenerated.
+			destPoint = nil
+		end
+	end
+
 	-- TODO: Check if destPos is still on the same navmesh entity (shortest distance to {current triangle, neighbors...})
 	-- TODO: Regenerate path if destPos moved to different navmesh entity
 
@@ -245,13 +271,17 @@ function PATH:UpdatePathToPos(startPos, destPos)
 	-- Also, if the current path is long enough, there is no need to regenerate the path every time the destPos moves from one triangle to another.
 	-- In this case it could do a search from the old "end" position of the path to the new destPos.
 
-	-- Regenerate path.
-	local startPoint, err = PATH_POINT:New(navmesh, startPos)
-	if err then return err end
-	local destPoint, err = PATH_POINT:New(navmesh, destPos)
-	if err then return err end
+	-- How efficient the bot is depends on how well we can prevent redundant calculations from here.
 
-	return self:GeneratePathBetweenPoints(startPoint, destPoint)
+	-- Regenerate path, if needed.
+	if not destPoint then
+		local destPoint, err = PATH_POINT:New(navmesh, destPos)
+		if err then return err end
+		local startPoint, err = PATH_POINT:New(navmesh, startPos)
+		if err then return err end
+
+		return self:GeneratePathBetweenPoints(startPoint, destPoint)
+	end
 end
 
 ---This will take over control of the bot and make it move along the path.
@@ -262,10 +292,9 @@ end
 ---@param mem table
 ---@return D3botERROR | nil err
 function PATH:RunPathActions(bot, mem)
-	local pathElements = self.Path
-
-	while #pathElements > 0 do
-		local index = #self.Path
+	while #self.Path > 0 do
+		local pathElements = self.Path
+		local index = #pathElements
 		---@type D3botPATH_ELEMENT
 		local pathElement = pathElements[index]
 
@@ -274,7 +303,10 @@ function PATH:RunPathActions(bot, mem)
 		if err then return err end
 
 		-- Bot successfully navigated through the pathElement. Remove the path element.
-		table.remove(pathElements)
+		-- We need to check if the element at index is still the same.
+		if pathElements[index] == pathElement then
+			table.remove(pathElements, index)
+		end
 	end
 
 	-- Bot successfully navigated through the path.

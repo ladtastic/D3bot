@@ -27,6 +27,7 @@ D3bot.Version = {1, 0, 0} -- TODO: Create SemVer object or something.
 D3bot.Config = D3bot.Config or {} -- General configuration table.
 D3bot.Convars = D3bot.Convars or {} -- List of console variables.
 D3bot.Util = D3bot.Util or {} -- Utility functions.
+D3bot.Async = D3bot.Async or {} -- Async/coroutine utility functions.
 D3bot.RenderUtil = D3bot.RenderUtil or {} -- Render helper/utility functions.
 D3bot.MapGeometry = D3bot.MapGeometry or {} -- Functions for querying map geometry like corner points.
 D3bot.ConCommands = D3bot.ConCommands or {} -- List of commands that can be run from the console.
@@ -69,6 +70,7 @@ D3bot.PATH_POINT = D3bot.PATH_POINT or {} -- PATH_POINT helper class for start a
 -- General stuff.
 include("sh_util.lua")
 local UTIL = D3bot.Util -- From here on UTIL.IncludeRealm can be used.
+UTIL.IncludeRealm("", "sh_async.lua")
 UTIL.IncludeRealm("", "sh_error.lua")
 UTIL.IncludeRealm("", "sh_priority_queue.lua")
 UTIL.IncludeRealm("", "sh_convars.lua")

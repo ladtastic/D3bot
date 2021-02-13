@@ -28,6 +28,7 @@ local UTIL = D3bot.Util
 ---@field Pos GVector
 ---@field Triangle D3botNAV_TRIANGLE @The triangle that the point lies on (or is closest to)
 ---@field PathFragments D3botPATH_FRAGMENT[]
+---@field InjectionPathFragment D3botPATH_FRAGMENT
 local PATH_POINT = D3bot.PATH_POINT
 PATH_POINT.__index = PATH_POINT
 
@@ -42,6 +43,7 @@ function PATH_POINT:New(navmesh, pos)
 	local obj = setmetatable({
 		Navmesh = navmesh,
 		Pos = pos,
+		InjectionPathFragment = {},
 	}, self)
 
 	-- Check if there is even a position.
@@ -135,19 +137,32 @@ end
 ---@return D3botPATH_FRAGMENT
 function PATH_POINT:GetPathFragmentsForInjection(from, fromPos)
 	local pathDirection = self.Pos - fromPos -- Basically the walking direction.
-	---@type D3botPATH_FRAGMENT
-	local pathFragment = {
-		From = from,
-		FromPos = fromPos,
-		Via = self.Triangle,
-		To = self,
-		ToPos = self.Pos,
-		ToOrthogonal = pathDirection:GetNormalized(), -- Vector for the end condition of this path element.
-		LocomotionType = self.Triangle:GetLocomotionType(),
-		PathDirection = pathDirection, -- Vector from start position to dest position.
-		Distance = pathDirection:Length(), -- Distance from start to dest.
-	}
+	local pathLength = pathDirection:Length()
+
+	local pathFragment = self.InjectionPathFragment
+
+	pathFragment.From = from
+	pathFragment.FromPos = fromPos
+	pathFragment.Via = self.Triangle
+	pathFragment.To = self
+	pathFragment.ToPos = self.Pos
+	pathFragment.ToOrthogonal = pathDirection / pathLength -- Vector for the end condition of this path element.
+	pathFragment.LocomotionType = self.Triangle:GetLocomotionType()
+	pathFragment.PathDirection = pathDirection -- Vector from start position to dest position.
+	pathFragment.Distance = pathLength -- Distance from start to dest.
+
 	return pathFragment
+end
+
+---Change the position of the path point.
+---This assumes that the point is still in the previous triangle.
+---@param pos GVector
+function PATH_POINT:UpdatePosition(pos)
+	self.Pos = pos
+
+	-- Update some values of the path fragment.
+	local pathFragment = self.InjectionPathFragment
+	pathFragment.ToPos = pos
 end
 
 ---Define metamethod for string conversion.
