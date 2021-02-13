@@ -17,6 +17,7 @@
 
 local D3bot = D3bot
 local UTIL = D3bot.Util
+local ASYNC = D3bot.Async
 local BRAINS = D3bot.Brains
 local ACTIONS = D3bot.Actions
 local LOCOMOTION_HANDLERS = D3bot.LocomotionHandlers
@@ -37,10 +38,7 @@ THIS_BRAIN.__index = THIS_BRAIN
 ---@param mem table
 ---@return table
 function THIS_BRAIN:AssignToBot(bot, mem)
-	local brain = setmetatable({Bot = bot, Mem = mem}, self)
-
-	-- Add main handler.
-	brain.MainCoroutine = coroutine.create(function() brain:_ThinkCoroutine(bot, mem) end)
+	local brain = setmetatable({Bot = bot, Mem = mem, AsyncState = {}}, self)
 
 	mem.Brain = brain
 	return brain
@@ -75,18 +73,18 @@ end
 ---@param mem table
 ---@return boolean
 function THIS_BRAIN:Callback(bot, mem)
-	-- Resume coroutine, catch and print any error.
-	local succ, msg = coroutine.resume(self.MainCoroutine)
-	if not succ then
-		-- Coroutine ended unexpectedly.
-		print(string.format("%s %s of bot %s failed: %s", D3bot.PrintPrefix, self.MainCoroutine, bot:Nick(), msg))
-		-- Assign ON_ERROR brain that does some stupid animations to prevent the erroneous brain to be assigned again immediately (Spam prevention).
+	-- Initialize the coroutine and continue it every call.
+	local running, err = ASYNC.Run(self.AsyncState, function() self:_ThinkCoroutine(bot, mem) end)
+
+	-- Coroutine ended unexpectedly.
+	if err then
+		print(string.format("%s %s", D3bot.PrintPrefix, err))
 		BRAINS.ON_ERROR:AssignToBot(bot, mem)
 		return false
 	end
 
 	-- Delete brain when the coroutine ends.
-	if coroutine.status(self.MainCoroutine) == "dead" then
+	if not running then
 		mem.Brain = nil
 	end
 
