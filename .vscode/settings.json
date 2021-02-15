@@ -1,5 +1,7 @@
 {
     "cSpell.words": [
+        "AGPL",
+        "Affero",
         "Convars",
         "DONTRECORD",
         "Draggable",
@@ -17,9 +19,11 @@
         "SWEP's",
         "SWEPs",
         "Selfcheck",
+        "Sublicensing",
         "Unauthed",
         "VGUI",
         "Vogel",
+        "WIPO",
         "acception",
         "ahhhh",
         "baseclass",
@@ -62,7 +66,6 @@
     "editor.formatOnSave": false,
     "lua.format.useTabs": true,
     "lua.format.lineWidth": 240,
-    "licenser.license": "GPLv3",
     "licenser.projectName": "D3bot",
     "licenser.author": "David Vogel",
     "licenser.disableAutoHeaderInsertion": true,
@@ -86,5 +89,6 @@
     ],
     "Lua.diagnostics.severity": {
         "trailing-space": "Information"
-    }
+    },
+    "licenser.license": "AGPLv3"
 }
