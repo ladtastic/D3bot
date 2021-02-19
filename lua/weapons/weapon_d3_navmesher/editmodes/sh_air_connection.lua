@@ -150,11 +150,8 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm, weapon, ply)
 	if not navmesh then return end
 
 	-- Triangle points that are used to draw a ghost of the current triangle.
-	-- Make a shallow copy.
-	local tempEdges = {}
-	for _, edge in ipairs(self.TempEdges) do
-		table.insert(tempEdges, edge)
-	end
+	-- Make a copy of the table.
+	local tempEdges = {unpack(self.TempEdges)}
 
 	-- Get map line trace result and navmesh tracing ray.
 	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())

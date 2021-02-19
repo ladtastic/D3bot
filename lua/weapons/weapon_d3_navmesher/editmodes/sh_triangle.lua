@@ -164,7 +164,7 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm, weapon, ply)
 	local navmesh = NAV_MAIN:GetNavmesh()
 
 	-- Triangle points that are used to draw a ghost of the current triangle.
-	local trianglePoints = table.Copy(self.TempPoints)
+	local trianglePoints = {unpack(self.TempPoints)}
 
 	-- Get map line trace result and navmesh tracing ray.
 	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())
