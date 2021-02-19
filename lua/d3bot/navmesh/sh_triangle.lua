@@ -535,6 +535,7 @@ function NAV_TRIANGLE:Render3D()
 			cam.IgnoreZ(false)
 
 			render.DrawLine(centroid, centroid + normal * 30, COLOR_TRIANGLE_NORMAL, true)
+			render.SetColorMaterial() -- Necessary here after some gMod update. DrawLine seems to overwrite the material now.
 		else
 			if self:GetLocomotionType() == "Ground" then
 				render.DrawQuad(cornerPoints[1] + tinyNormal, cornerPoints[2] + tinyNormal, cornerPoints[3] + tinyNormal, cornerPoints[2] + tinyNormal, COLOR_TRIANGLE_GROUND)

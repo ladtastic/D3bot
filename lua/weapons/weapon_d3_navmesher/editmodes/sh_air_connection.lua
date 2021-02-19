@@ -150,7 +150,11 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm, weapon, ply)
 	if not navmesh then return end
 
 	-- Triangle points that are used to draw a ghost of the current triangle.
-	local tempEdges = table.Copy(self.TempEdges)
+	-- Make a shallow copy.
+	local tempEdges = {}
+	for _, edge in ipairs(self.TempEdges) do
+		table.insert(tempEdges, edge)
+	end
 
 	-- Get map line trace result and navmesh tracing ray.
 	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())
@@ -161,7 +165,9 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm, weapon, ply)
 
 	-- Trace closest edge and add it to temporary list.
 	local tracedEdge = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Edges)
-	table.insert(tempEdges, tracedEdge)
+	if #tempEdges >= 1 then
+		table.insert(tempEdges, tracedEdge)
+	end
 	-- Highlight navmesh edge.
 	if tracedEdge then
 		tracedEdge.UI.Highlighted = true

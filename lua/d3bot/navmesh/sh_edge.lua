@@ -483,6 +483,7 @@ function NAV_EDGE:Render3D()
 		cam.IgnoreZ(false)
 	else
 		render.DrawLine(p1, p2, COLOR_EDGE, true)
+		render.SetColorMaterial() -- Necessary here after some gMod update. DrawLine seems to overwrite the material now.
 		if self:IsWalled() then
 			render.DrawBeam(p1 + VECTOR_UP, p2 + VECTOR_UP, self.DisplayRadius/2, 0, 1, COLOR_EDGE_WALLED)
 		end
