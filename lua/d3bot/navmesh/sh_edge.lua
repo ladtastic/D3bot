@@ -16,6 +16,7 @@
 -- along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 local D3bot = D3bot
+local CONVARS = D3bot.Convars
 local UTIL = D3bot.Util
 local ERROR = D3bot.ERROR
 
@@ -516,7 +517,7 @@ function NAV_EDGE:Render3D()
 		cam.IgnoreZ(false)
 	else
 		render.DrawLine(p1, p2, COLOR_EDGE, true)
-		render.SetColorMaterial() -- Necessary here after some gMod update. DrawLine seems to overwrite the material now.
+		if CONVARS.NavmeshZCulling:GetBool() then render.SetColorMaterial()	else render.SetColorMaterialIgnoreZ() end -- Necessary here after some gMod update. DrawLine seems to overwrite the material now.
 		if self:IsWalled() then
 			render.DrawBeam(p1 + VECTOR_UP, p2 + VECTOR_UP, self.DisplayRadius/2, 0, 1, COLOR_EDGE_WALLED)
 		end

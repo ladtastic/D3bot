@@ -16,6 +16,7 @@
 -- along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 local D3bot = D3bot
+local CONVARS = D3bot.Convars
 local UTIL = D3bot.Util
 local ERROR = D3bot.ERROR
 
@@ -612,7 +613,7 @@ function NAV_TRIANGLE:Render3D()
 			cam.IgnoreZ(false)
 
 			render.DrawLine(centroid, centroid + normal * 30, COLOR_TRIANGLE_NORMAL, true)
-			render.SetColorMaterial() -- Necessary here after some gMod update. DrawLine seems to overwrite the material now.
+			if CONVARS.NavmeshZCulling:GetBool() then render.SetColorMaterial()	else render.SetColorMaterialIgnoreZ() end -- Necessary here after some gMod update. DrawLine seems to overwrite the material now.
 		else
 			if self:GetLocomotionType() == "Ground" then
 				render.DrawQuad(cornerPoints[1] + tinyNormal, cornerPoints[2] + tinyNormal, cornerPoints[3] + tinyNormal, cornerPoints[2] + tinyNormal, COLOR_TRIANGLE_GROUND)
