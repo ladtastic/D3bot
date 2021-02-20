@@ -203,13 +203,15 @@ function NAV_AIR_CONNECTION:GetCache()
 	---@type D3botPATH_FRAGMENT[]
 	cache.PathFragments = {}
 	if cache.IsValid then
+		-- Generate path fragments from this air connection to connected edges.
 		for _, edge in ipairs(self.Edges) do
 			if #edge.Triangles + #edge.AirConnections > 1 then
 				local eP1, eP2 = edge:_GetPoints()
 				local edgeCenter = edge:_GetCentroid()
 				local edgeVector = eP2 - eP1
 				local pathDirection = edgeCenter - cache.Centroid -- Basically the walking direction.
-				local edgeOrthogonal = pathDirection:Cross(edgeVector):Cross(edgeVector) -- Vector that is orthogonal to the edge.
+				local edgeOrthogonal = edgeVector:Cross(pathDirection):Cross(edgeVector):GetNormalized() -- Vector that is orthogonal to the edge, additionally it always points outside the triangle.
+				local edgeOrthogonal2D = UTIL.VectorFlipAlongVector(edgeVector:Cross(VECTOR_UP), pathDirection):GetNormalized() -- Flattened 2D version of the above.
 				---@type D3botPATH_FRAGMENT
 				local pathFragment = {
 					From = self,
@@ -217,10 +219,12 @@ function NAV_AIR_CONNECTION:GetCache()
 					Via = self,
 					To = edge,
 					ToPos = edgeCenter,
-					ToOrthogonal = (edgeOrthogonal * (edgeOrthogonal:Dot(pathDirection))):GetNormalized(), -- Vector for path end condition that is orthogonal to the edge and parallel to the triangle plane, additionally it always points outside the triangle.
 					LocomotionType = cache.LocomotionType,
 					PathDirection = pathDirection, -- Vector from start position to dest position.
 					Distance = pathDirection:Length(), -- Distance from start to dest.
+					LimitingPlanes = {},
+					EndPlane = {Origin = edgeCenter, Normal = edgeOrthogonal, Normal2D = edgeOrthogonal2D},
+					--StartPlane = nil,
 				}
 				table.insert(cache.PathFragments, pathFragment)
 			end

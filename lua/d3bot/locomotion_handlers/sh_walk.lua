@@ -75,89 +75,76 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 	-- Half hull width.
 	local halfHullWidth = self.HullSize[1] / 2
 	cache.HalfHullWidth = halfHullWidth
+	cache.HalfHullSafetyWidth = halfHullWidth + 5
 
-	-- General direction sum of the next few path elements.
-	-- Don't sum up elements that have a different locomotion handler (Or after).
-	local futureDirectionSum = Vector()
-	for i = index-1, index-5, -1 do
+	-- Future (or current) path element that the bot uses as target.
+	-- TODO: Directly calculate index based on list length
+	local futurePathElement
+	for i = index, index-5, -1 do
 		local tempPathElement = pathElements[i]
-		if not tempPathElement or tempPathElement.LocomotionHandler ~= self then break end
-		futureDirectionSum:Add(tempPathElement.PathFragment.PathDirection)
-	end
-	cache.FutureDirectionSum = futureDirectionSum
-
-	-- End condition. (As a plane that the bot has to cross)
-	cache.EndPlaneOrigin = pathFragment.ToPos
-	cache.EndPlaneNormal = pathFragment.ToOrthogonal
-
-	-- Use offset information of the next element to move this element's end plane.
-	local endPlaneOffset = 0
-	local nextPathElement = pathElements[index-1] -- The previous index is the next path element.
-	if nextPathElement then
-		local locHandler = nextPathElement.LocomotionHandler
-		if locHandler.BeginOffset then
-			endPlaneOffset = locHandler:BeginOffset(index-1, pathElements, cache.EndPlaneNormal)
-			cache.EndPlaneOrigin = cache.EndPlaneOrigin + endPlaneOffset * cache.EndPlaneNormal
+		if tempPathElement then
+			futurePathElement = tempPathElement
+		else
+			break
 		end
 	end
+	cache.FuturePathElement = futurePathElement
 
-	-- Get the points from the start and dest NAV_EDGE (or PATH_POINT).
-	-- The point arrays will either contain one or two points.
-	local from, via, to = pathFragment.From, pathFragment.Via, pathFragment.To
-	local fromPoints, toPoints = {from:GetPoints()}, {to:GetPoints()}
-	local fromVertices, toVertices = {from:GetVertices()}, {to:GetVertices()}
-	local viaNormal = via:GetCache().Normal
-	local pathDirection = pathFragment.PathDirection
+	-- Next path element is the previous one in the list.
+	-- This can be nil.
+	cache.NextPathElement = pathElements[index-1]
 
-	-- A vector that points "to the right" direction as seen from the path direction.
-	local pathRight = pathDirection:Cross(viaNormal):GetNormalized()
+	-- List of planes that the bot avoids to cross. (Walls, cliffs, ...)
+	local limitingPlanes = {}
+	for _, plane in ipairs(pathFragment.LimitingPlanes) do
+		local origin, normal = plane.Origin, plane.Normal2D
+		if plane.IsWalled then
+			-- Keep distance from any wall. Calculate distance to squared base of the bot's hull.
+			origin = origin - normal * UTIL.PlaneXYSquareTouchDistance(normal, cache.HalfHullSafetyWidth)
+		end
+		table.insert(limitingPlanes, {Origin = origin, Normal = normal})
+	end
+	cache.LimitingPlanes = limitingPlanes
 
-	-- Check wall state of the edge vertices and move the points so that they keep enough distance to the wall.
-	local fromNormVector, toNormVector = ((fromPoints[2] or fromPoints[1]) - fromPoints[1]):GetNormalized(), ((toPoints[2] or toPoints[1]) - toPoints[1]):GetNormalized()
-	cache.FromNormVector = fromNormVector
-	if #fromVertices == 2 and fromVertices[1]:IsWalled() then
-		fromPoints[1] = fromPoints[1] + fromNormVector * math.Clamp((halfHullWidth + 5) / math.abs(pathRight:Dot(fromNormVector)), 1, fromPoints[1]:Distance(fromPoints[2]))
-	end
-	if #fromVertices == 2 and fromVertices[2]:IsWalled() then
-		fromPoints[2] = fromPoints[2] - fromNormVector * math.Clamp((halfHullWidth + 5) / math.abs(pathRight:Dot(fromNormVector)), 1, fromPoints[1]:Distance(fromPoints[2]))
-	end
-	if #toVertices == 2 and toVertices[1]:IsWalled() then
-		toPoints[1] = toPoints[1] + toNormVector * math.Clamp((halfHullWidth + 5) / math.abs(pathRight:Dot(toNormVector)), 1, toPoints[1]:Distance(toPoints[2]))
-	end
-	if #toVertices == 2 and toVertices[2]:IsWalled() then
-		toPoints[2] = toPoints[2] - toNormVector * math.Clamp((halfHullWidth + 5) / math.abs(pathRight:Dot(toNormVector)), 1, toPoints[1]:Distance(toPoints[2]))
-	end
+	-- End condition.
+	if pathFragment.EndPlane then
+		-- Plane that the bot has to cross.
+		cache.EndPlane = {}
+		cache.EndPlane.Origin = pathFragment.EndPlane.Origin
+		cache.EndPlane.Normal = pathFragment.EndPlane.Normal2D
 
-	-- Invert the (edge) points, if they point into the wrong direction.
-	-- This basically makes sure that the edge vectors are pointing "to the right" as seen from the path direction.
-	-- TODO: Put this stuff into the pathFragment, as it can be precalculated.
-	if #fromPoints == 2 and pathRight:Dot(fromPoints[2]-fromPoints[1]) < 0 then
-		fromPoints[2], fromPoints[1] = fromPoints[1], fromPoints[2]
-	end
-	if #toPoints == 2 and pathRight:Dot(toPoints[2]-toPoints[1]) < 0 then
-		toPoints[2], toPoints[1] = toPoints[1], toPoints[2]
-	end
-
-	-- All points that are needed to calculate the right/left limitation planes.
-	local fromLeft, fromRight, toLeft, toRight = fromPoints[1], fromPoints[2] or fromPoints[1], toPoints[1], toPoints[2] or toPoints[1]
-	cache.FromLeft, cache.FromRight, cache.ToLeft, cache.ToRight = fromLeft, fromRight, toLeft, toRight
-
-	-- Limitation plane on the right side that prevents the bot from dropping down cliffs or scrubbing along walls.
-	-- It's pointing to the outside.
-	cache.RightPlaneOrigin = (fromRight + toRight) / 2
-	if (toRight - fromRight):IsZero() then
-		cache.RightPlaneNormal = pathDirection:Cross(VECTOR_UP):GetNormalized()
+		-- Use offset information of the next element to move the element's end plane.
+		local endPlaneOffset = 0
+		local nextPathElement = pathElements[index-1] -- The previous index is the next path element.
+		if nextPathElement then
+			local locHandler = nextPathElement.LocomotionHandler
+			if locHandler.BeginOffset then
+				endPlaneOffset = locHandler:BeginOffset(index-1, pathElements, cache.EndPlane.Normal)
+				-- TODO: Handle positive offsets in a different way, as real time string pulling doesn't work correctly with bot positions behind the end plane
+				cache.EndPlane.Origin = cache.EndPlane.Origin + endPlaneOffset * cache.EndPlane.Normal
+			end
+		end
 	else
-		cache.RightPlaneNormal = (toRight - fromRight):Cross(VECTOR_UP):GetNormalized()
+		-- 2D position that the bot has to get close to. This is calculated in the control callback.
 	end
 
-	-- Limitation plane on the left side that prevents the bot from dropping down cliffs or scrubbing along walls.
-	-- It's pointing to the outside.
-	cache.LeftPlaneOrigin = (fromLeft + toLeft) / 2
-	if (fromLeft - toLeft):IsZero() then
-		cache.LeftPlaneNormal = -pathDirection:Cross(VECTOR_UP):GetNormalized()
+	-- A vector that points to the "right" direction as seen from the path direction.
+	local pathRight = pathFragment.PathDirection:Cross(pathFragment.Via:GetNormal()):GetNormalized()
+
+	-- Vertices of the destination element "To".
+	local v1, v2 = pathFragment.To:GetVertices()
+	local p1, p2 = pathFragment.To:GetPoints()
+	-- Check if "To" is an edge or similar entity.
+	if v1 and v2 then
+		-- Flip direction of the two vertices, so that v1 is the "left" and v2 is the "right" one.
+		if (p2 - p1):Dot(pathRight) < 0 then
+			v1, v2, p1, p2 = v2, v1, p2, p1
+		end
+
+		cache.DestVertexLeft, cache.DestVertexRight = v1, v2
+		cache.DestPosLeft, cache.DestPosRight = p1, p2
 	else
-		cache.LeftPlaneNormal = (fromLeft - toLeft):Cross(VECTOR_UP):GetNormalized()
+		-- There is only a single vertex as destination. Calculate in real time, as destination is most likely a PATH_POINT object.
 	end
 
 	return cache
@@ -175,27 +162,13 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 	local pathElement = pathElements[index]
 	local pathFragment = pathElement.PathFragment
 
-	local botPos = bot:GetPos()
-
-	-- Get straight direction to the next element.
-	local straightDirection = (pathFragment.ToPos - botPos)
-
-	-- Expected arrival time at the next element.
-	local timeDiff = straightDirection:Length() / self.Speed
+	-- Estimated arrival time at the next element.
+	local timeDiff = pathFragment.Distance / self.Speed
 	local destTime = CurTime() + timeDiff
 	local stuckTime = CurTime() + timeDiff * 2 + 0.5
 
-	-- Get general 2D movement direction.
-	local direction
-
 	-- Initialize smoothed direction vector.
 	local lookingDirection = bot:GetAimVector()
-
-	-- Generate list of limiting planes. (Back, left and right)
-	local limitingPlanes = {
-		{Origin = cache.LeftPlaneOrigin, Normal = cache.LeftPlaneNormal},
-		{Origin = cache.RightPlaneOrigin, Normal = cache.RightPlaneNormal},
-	}
 
 	local prevControlCallback = mem.ControlCallback
 	---Push the right buttons and stuff.
@@ -205,99 +178,57 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 	mem.ControlCallback = function(bot, mem, cUserCmd)
 
 		local botPos = bot:GetPos()
+		local botPos2D = Vector(botPos)
+		botPos2D[3] = 0
 
-		-- If this is the last path element, go straight towards it.
-		local walkingDirection
-		if index == 1 then
-			walkingDirection = (pathFragment.ToPos - botPos) * 0.1
-			if not direction then
-				direction = walkingDirection:GetNormalized()
+		local movementDirection
+		if cache.DestVertexLeft and cache.DestVertexRight then
+			-- Destination consists of two vertices (Like an edge). Walk between/through them.
+
+			-- Get destination position that lies on some future path element.
+			-- The destination can't be cached, as it may be updated while the bot is walking.
+			local toPos = cache.FuturePathElement.PathFragment.ToPos
+			local direction = toPos - botPos2D
+			direction[3] = 0
+
+			-- Clamp direction to the next path element's "To" entity.
+			-- This step can be disabled, but results in a bit wonkier movement in some edge cases.
+			if cache.NextPathElement and cache.NextPathElement._ClampBetweenVertices then
+				local nextCache = cache.NextPathElement:GetPathElementCache(index-1, pathElements)
+				direction = self:_ClampBetweenVertices(botPos2D, direction, nextCache.DestVertexLeft, nextCache.DestVertexRight, nextCache.HalfHullSafetyWidth)
 			end
+
+			-- Clamp direction to the current path element's "To" entity.
+			movementDirection = self:_ClampBetweenVertices(botPos2D, direction, cache.DestVertexLeft, cache.DestVertexRight, cache.HalfHullSafetyWidth)
 		else
-			-- Check limiting planes that prevent the bot from leaving the valid walking area.
-			local directionCorrection = Vector()
-			local pointingOutside = false
-			for _, limitingPlane in ipairs(limitingPlanes) do
-				if (botPos - limitingPlane.Origin):Dot(limitingPlane.Normal) > 0 then
-					-- Bot has crossed one of the limiting planes. Adjust its direction so that it moves back inside.
-					directionCorrection:Sub(limitingPlane.Normal)
+			-- A single destination position. Go straight towards it.
+			movementDirection = pathFragment.ToPos - botPos
+			movementDirection[3] = 0
+		end
+		movementDirection:Normalize()
 
-					-- Check if the general movement direction of the bot points outside this plane.
-					-- The pointingOutside check is just for speedup.
-					if direction and not pointingOutside and direction:Dot(limitingPlane.Normal) > 0 then
-						pointingOutside = true
-					end
-				end
+		-- Check limiting planes that prevent the bot from leaving the valid walking area.
+		local movementCorrection = Vector()
+		for _, limitingPlane in ipairs(cache.LimitingPlanes) do
+			if (botPos - limitingPlane.Origin):Dot(limitingPlane.Normal) > 0 then
+				-- Bot has crossed one of the limiting planes. Adjust its direction so that it moves back inside.
+
+				-- Determine if the movement direction is parallel (in any direction) to the correction direction.
+				-- It's in the range of [0;1], as both vectors are normalized.
+				local parallelism = math.abs(movementDirection:Dot(limitingPlane.Normal))
+
+				-- Correct most if the bot is moving parallel to the plane.
+				-- Correct least if the bot is moving towards the plane or away from it.
+				movementCorrection:Sub(limitingPlane.Normal * (1 - parallelism))
 			end
-
-			-- Bot is behind a limiting plane AND is moving to the outside.
-			-- Calculate new direction from current position that goes straight to the destination edge/point.
-			-- Basically this is 2D string pulling from the current position to some future position through the edge.
-			-- Normally this would check how many future path elements can be combined into a straight line, but for simplicity and faster calculation it uses a fixed amount and a precalculated beeline.
-			-- There are a lot of distance/normalization calculations going on, this needs to be optimized.
-			-- TODO: Optimize string pulling in walk handler.
-			if not direction or pointingOutside then
-				-- Get the 2D vector that describes the destination entity (edge or point).
-				local destOrigin, destVector = Vector(cache.ToLeft[1], cache.ToLeft[2], 0), cache.ToRight - cache.ToLeft
-				destVector[3] = 0
-
-				local toPos2D = Vector(pathFragment.ToPos[1], pathFragment.ToPos[2], 0)
-				local botPos2D = Vector(botPos[1], botPos[2], 0)
-
-				-- Normal describing a plane on the end/destination entity pointing outwards.
-				local tempOrthoNormal = destVector:Cross(VECTOR_DOWN):GetNormalized()
-
-				if destVector:IsZero() then
-					-- Destination is a point, let it move to the end plane to make sure the bot crosses it.
-
-					local endPlaneOrigin2D = Vector(cache.EndPlaneOrigin[1], cache.EndPlaneOrigin[2], 0)
-					direction = (endPlaneOrigin2D - botPos2D):GetNormalized()
-				elseif (botPos2D - destOrigin):Dot(tempOrthoNormal) > 0 then
-					-- The bot has already crossed the end element (edge), but maybe not the end plane.
-					-- Let it move straight to the outside.
-					direction = tempOrthoNormal
-				else
-					-- 2D direction to the end of some future path element.
-					local beeline = (toPos2D - botPos2D) + cache.FutureDirectionSum
-					beeline[3] = 0
-
-					-- Check if the beeline (ray) points into the direction of the plane.
-					local denominator = beeline:Dot(tempOrthoNormal)
-					if denominator > 0 then
-						-- Beeline points towards the plane.
-
-						-- Get distance from bot pos to intersection and the intersection point.
-						local beelineFraction = (destOrigin - botPos2D):Dot(tempOrthoNormal) / denominator
-						local point = botPos2D + beeline * beelineFraction
-
-						-- Point will lie on the destination edge, now calculate the fraction.
-						local destFraction = (point - destOrigin):Dot(destVector) / destVector:LengthSqr()
-
-						-- Clamp resulting point.
-						destFraction = math.Clamp(destFraction, 0, 1)
-						local clampedPoint = destOrigin + destVector * destFraction
-
-						direction = (clampedPoint - botPos2D):GetNormalized()
-
-					else
-						-- Beeline is either parallel or points back from the plane.
-
-						if beeline:Dot(destVector) > 0 then
-							-- The beeline points towards the end of the edge (destVector).
-							direction = (destOrigin + destVector - botPos2D):GetNormalized()
-						else
-							-- The beeline points towards the beginning of the edge (destVector).
-							direction = (destOrigin - botPos2D):GetNormalized()
-						end
-					end
-				end
-			end
-
-			walkingDirection = direction + directionCorrection
+		end
+		if not movementDirection:IsZero() then
+			movementDirection:Add(movementCorrection)
+			movementDirection:Normalize()
 		end
 
 		-- Smooth out the movement and make it 2D.
-		lookingDirection = lookingDirection * 0.9 + direction * 0.1
+		lookingDirection = bot:GetAimVector() * 0.9 + movementDirection * 0.1
 		lookingDirection[3] = 0
 
 		-- Get future aim and right sided vector.
@@ -309,14 +240,29 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 		cUserCmd:ClearButtons()
 		cUserCmd:ClearMovement()
 		--cUserCmd:SetButtons(bit.bor(IN_FORWARD))
-		cUserCmd:SetForwardMove(self.Speed * aim2D:Dot(walkingDirection))
-		cUserCmd:SetSideMove(self.Speed * right2D:Dot(walkingDirection))
+		cUserCmd:SetForwardMove(self.Speed * aim2D:Dot(movementDirection))
+		cUserCmd:SetSideMove(self.Speed * right2D:Dot(movementDirection))
 		cUserCmd:SetViewAngles(angle)
 		bot:SetEyeAngles(angle)
 	end
 
-	-- Wait until the bot crosses the end/destination plane.
-	while (cache.EndPlaneOrigin - bot:GetPos()):Dot(cache.EndPlaneNormal) >= 0 do
+	while true do
+		-- End condition for this path element.
+		if cache.EndPlane then
+			if (cache.EndPlane.Origin - bot:GetPos()):Dot(cache.EndPlane.Normal) < 0 then
+				-- Bot crossed the end plane.
+				break
+			end
+		else
+			-- 2D distance to end position of this path element. Can't cache ToPos, as it may change while the bot is moving.
+			local pos, toPos = Vector(bot:GetPos()), Vector(pathFragment.ToPos)
+			pos[3], toPos[3] = 0, 0
+			if pos:DistToSqr(toPos) < 20*20 then
+				-- Bot is close enough to the end.
+				break
+			end
+		end
+
 		-- Check if the path element is still valid. If the path got updated, stop this action.
 		if pathElement.IsInvalid then mem.ControlCallback = prevControlCallback return nil end
 
@@ -332,6 +278,86 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 	-- Restore previous control callback.
 	mem.ControlCallback = prevControlCallback
 	return nil
+end
+
+---Helper function for real time string pulling.
+---This takes the current position and direction, and outputs a corrected direction that goes through between v1 and v2.
+---Additionally this will help the bot to "corner" corners by making bots walk around vertices of walled edges.
+---@param pos2D GVector
+---@param direction2D GVector
+---@param leftVertex D3botNAV_VERTEX
+---@param rightVertex D3botNAV_VERTEX
+---@return GVector clampedDirection2D
+function THIS_LOCO_HANDLER:_ClampBetweenVertices(pos2D, direction2D, leftVertex, rightVertex, walledOffset)
+	-- Flattened/Projected positions of the vertices.
+	local leftPos, rightPos = leftVertex:GetPoint(), rightVertex:GetPoint()
+	leftPos, rightPos = Vector(leftPos[1], leftPos[2], 0), Vector(rightPos[1], rightPos[2], 0)
+
+	-- Distance from bot position to a vertex.
+	local leftLen, rightLen = leftPos:Distance(pos2D), rightPos:Distance(pos2D)
+
+	-- Determine left and right plane normals by calculating tangents. (Either point to circle or point to point)
+	local leftTangentPos, leftPlaneNormal
+	if leftVertex:IsWalled() then
+		-- Approximate point to circle tangent in two iterations.
+		-- Additionally, the approximation returns a useful result in case the bot is inside the circle.
+		leftTangentPos = leftPos + (leftPos - pos2D):Cross(VECTOR_UP) * walledOffset / leftLen
+		leftTangentPos = leftPos + (leftTangentPos - pos2D):Cross(VECTOR_UP):GetNormalized() * walledOffset
+		leftPlaneNormal = (leftTangentPos - pos2D):Cross(VECTOR_DOWN)
+	else
+		-- Calculate point to point.
+		leftTangentPos = leftPos
+		leftPlaneNormal = (leftPos - pos2D):Cross(VECTOR_DOWN)
+	end
+	--leftPlaneNormal:Normalize()
+	local rightTangentPos, rightPlaneNormal
+	if rightVertex:IsWalled() then
+		-- Approximate point to circle tangent in two iterations.
+		-- Additionally, the approximation returns a useful result in case the bot is inside the circle.
+		rightTangentPos = rightPos + (rightPos - pos2D):Cross(VECTOR_DOWN) * walledOffset / rightLen
+		rightTangentPos = rightPos + (rightTangentPos - pos2D):Cross(VECTOR_DOWN):GetNormalized() * walledOffset
+		rightPlaneNormal = (rightTangentPos - pos2D):Cross(VECTOR_UP)
+	else
+		-- Calculate point to point.
+		rightTangentPos = rightPos
+		rightPlaneNormal = (rightPos - pos2D):Cross(VECTOR_UP)
+	end
+	--rightPlaneNormal:Normalize()
+
+	-- Check whether the direction points behind either plane.
+	local dotLeftPlane, dotRightPlane = direction2D:Dot(leftPlaneNormal), direction2D:Dot(rightPlaneNormal)
+
+	-- Decide on how to move.
+	if (rightTangentPos - pos2D):Dot(leftPlaneNormal) > 0 then
+		-- Left and right planes are swapped because the bot is standing too far to the side.
+		-- In this edge case we need to use the closest tangent as destination.
+		--          ▄▄▄▄▄
+		--   ▄▄▄  ▄▀▄▄▄
+		--  ▐███▌▄▀▐███▌
+		--   ▀▀▀▄▀  ▀▀▀
+		-- ▀▀▀▀▀
+		if leftLen < rightLen then
+			return leftTangentPos - pos2D
+		else
+			return rightTangentPos - pos2D
+		end
+	elseif dotLeftPlane > 0 and dotRightPlane > 0 then
+		-- Bot is trying to move backwards because its direction crosses both planes.
+		-- Use the shortest distance from either vertex to the destination.
+		local destPos = direction2D + pos2D
+		if leftPos:DistToSqr(destPos) < rightPos:DistToSqr(destPos) then
+			return leftTangentPos - pos2D
+		else
+			return rightTangentPos - pos2D
+		end
+	elseif dotLeftPlane > 0 then
+		return leftTangentPos - pos2D
+	elseif dotRightPlane > 0 then
+		return rightTangentPos - pos2D
+	end
+
+	-- Pass the direction through.
+	return direction2D
 end
 
 ---Returns an offset that a previous element can use to offset its end plane.
@@ -389,21 +415,57 @@ function THIS_LOCO_HANDLER:Render3D(index, pathElements)
 
 	-- Draw arrow as the main movement direction.
 	cam.IgnoreZ(true)
-	RENDER_UTIL.Draw2DArrowPos(fromPos, toPos, 10, Color(0, 0, 255, 128))
+	RENDER_UTIL.Draw2DArrowPos(fromPos, toPos, 16, Color(0, 0, 255, 127))
 
-	-- Draw end condition planes.
-	cam.IgnoreZ(false)
-	render.DrawQuadEasy(cache.EndPlaneOrigin, -cache.EndPlaneNormal, 30, 15, Color(255, 0, 255, 128))
+	-- Draw end condition plane.
+	if cache.EndPlane then
+		cam.IgnoreZ(false)
+		render.DrawQuadEasy(cache.EndPlane.Origin, -cache.EndPlane.Normal, 30, 15, Color(255, 0, 255, 127))
+	end
 
-	-- Draw right limitation plane.
-	cam.IgnoreZ(false)
-	render.DrawQuadEasy(cache.RightPlaneOrigin, -cache.RightPlaneNormal, 30, 10, Color(255, 0, 0, 128))
+	-- Draw limitation planes.
+	for _, limitingPlane in ipairs(cache.LimitingPlanes) do
+		cam.IgnoreZ(false)
+		render.DrawQuadEasy(limitingPlane.Origin, -limitingPlane.Normal, 30, 15, Color(255, 0, 0, 127))
+	end
 
-	-- Draw left limitation plane.
-	cam.IgnoreZ(false)
-	render.DrawQuadEasy(cache.LeftPlaneOrigin, -cache.LeftPlaneNormal, 30, 10, Color(0, 255, 0, 128))
+	-- Draw corners (left and right vertices).
+	if cache.DestVertexLeft and cache.DestVertexLeft:IsWalled() then
+		render.DrawSphere(cache.DestPosLeft, cache.HalfHullSafetyWidth, 16, 3, Color(255, 0, 0, 127))
+	end
+	if cache.DestVertexRight and cache.DestVertexRight:IsWalled() then
+		render.DrawSphere(cache.DestPosRight, cache.HalfHullSafetyWidth, 16, 3, Color(0, 255, 0, 127))
+	end
 
-	-- Draw plane the the bot is able to walk on.
-	cam.IgnoreZ(true)
-	render.DrawQuad(cache.FromLeft, cache.ToLeft, cache.ToRight, cache.FromRight, Color(0, 0, 255, 63))
+	-- Draw direction field for debugging
+	--[[if cache.DestVertexLeft and cache.DestVertexRight and pathFragment.Via.GetBoundingBox then
+		cam.IgnoreZ(true)
+		local min, max = pathFragment.Via:GetBoundingBox()
+		for x = min[1], max[1], 16 do
+			for y = min[2], max[2], 16 do
+				local botPos = Vector(x, y, max[3])
+
+				local outside
+				if cache.EndPlane and (cache.EndPlane.Origin - botPos):Dot(cache.EndPlane.Normal) < 0 then outside = true end
+				for _, limitingPlane in ipairs(cache.LimitingPlanes) do
+					if (botPos - limitingPlane.Origin):Dot(limitingPlane.Normal) > 0 then outside = true break end
+				end
+
+				if not outside then
+
+					local toPos = cache.FuturePathElement.PathFragment.ToPos
+					local botPos2D = Vector(x, y, 0)
+
+					local direction = toPos - botPos2D
+					direction[3] = 0
+
+					local clampedDirection = self:_ClampBetweenVertices(botPos2D, direction, cache.DestVertexLeft, cache.DestVertexRight, cache.HalfHullSafetyWidth)
+					clampedDirection:Normalize()
+					clampedDirection:Mul(16)
+
+					RENDER_UTIL.Draw2DArrowPos(botPos, botPos + clampedDirection, 8, Color(0, 0, 255, 127))
+				end
+			end
+		end
+	end]]
 end

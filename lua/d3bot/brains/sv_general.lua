@@ -74,9 +74,9 @@ function THIS_BRAIN:_ThinkCoroutine(bot, mem)
 	if not IsValid(targetEnt) then coroutine.wait(2) return end
 
 	-- Go to target.
-	ACTIONS.FollowTarget(bot, mem, abilities, targetEnt)
+	--ACTIONS.FollowTarget(bot, mem, abilities, targetEnt)
 
-	bot:Say("Hey!")
+	--bot:Say("Hey!")
 
 	-- Wait 2 seconds.
 	coroutine.wait(2)

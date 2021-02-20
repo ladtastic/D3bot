@@ -96,7 +96,7 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 		-- Determine a normal that is always horizontal and orthogonal to the edge.
 		local normalEdgeOrtho = (eP2 - eP1):Cross(VECTOR_UP)
 		cache.EndPlaneOrigin = pathFragment.ToPos
-		cache.EndPlaneNormal = (normalEdgeOrtho * (normalEdgeOrtho:Dot(nextDirection))):GetNormalized()
+		cache.EndPlaneNormal = UTIL.VectorFlipAlongVector(normalEdgeOrtho, nextDirection):GetNormalized()
 
 		-- Move end plane based on next element.
 		if nextPathElement then
@@ -108,10 +108,10 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 		end
 	end
 
-	-- If the previous calculation failed, just use the orthogonal that comes with the path fragment.
+	-- If the previous calculation failed, use some fallback vectors.
 	if not cache.EndPlaneNormal or cache.EndPlaneNormal:IsZero() then
 		cache.EndPlaneOrigin = pathFragment.ToPos
-		cache.EndPlaneNormal = pathFragment.ToOrthogonal
+		cache.EndPlaneNormal = pathFragment.EndPlane and pathFragment.EndPlane.Normal or pathFragment.PathDirection
 	end
 
 	-- If the next path element has a different locomotion type, move the end plane a bit back.

@@ -19,6 +19,10 @@ local D3bot = D3bot
 local ERROR = D3bot.ERROR
 local UTIL = D3bot.Util
 
+-- Predefine some local constants for optimization.
+local VECTOR_UP = Vector(0, 0, 1)
+local VECTOR_DOWN = Vector(0, 0, -1)
+
 ------------------------------------------------------
 --		Static
 ------------------------------------------------------
@@ -57,19 +61,21 @@ function PATH_POINT:New(navmesh, pos)
 		return nil, ERROR:New("Can't find closest triangle for point %s", pos)
 	end
 
-	-- Triangle normal.
-	local triangleNormal = obj.Triangle:GetCache().Normal
+	-- Triangle normal and centroid.
+	local triangleNormal, triangleCentroid = obj.Triangle:GetNormal(), obj.Triangle:GetCentroid()
 
 	---A list of possible paths to take from this point.
 	---@type D3botPATH_FRAGMENT[]
 	obj.PathFragments = {}
+	-- Generate path fragments from this point to connected edges (via triangles).
 	for _, edge in ipairs(obj.Triangle.Edges) do
 		if #edge.Triangles + #edge.AirConnections > 1 then
 			local eP1, eP2 = edge:GetPoints()
 			local edgeCenter = edge:GetCentroid() -- Use cache as it may be faster.
 			local edgeVector = eP2 - eP1
-			local edgeOrthogonal = triangleNormal:Cross(edgeVector) -- Vector that is orthogonal to the edge and parallel to the triangle plane.
 			local pathDirection = edgeCenter - pos -- Basically the walking direction.
+			local edgeOrthogonal = UTIL.VectorFlipAlongVector(edgeVector:Cross(triangleNormal), pathDirection):GetNormalized() -- Vector that is orthogonal to the edge, additionally it always points outside the triangle.
+			local edgeOrthogonal2D = UTIL.VectorFlipAlongVector(edgeVector:Cross(VECTOR_UP), pathDirection):GetNormalized() -- Flattened 2D version of the above.
 			---@type D3botPATH_FRAGMENT
 			local pathFragment = {
 				From = obj,
@@ -77,11 +83,26 @@ function PATH_POINT:New(navmesh, pos)
 				Via = obj.Triangle,
 				To = edge,
 				ToPos = edgeCenter,
-				ToOrthogonal = (edgeOrthogonal * (edgeOrthogonal:Dot(pathDirection))):GetNormalized(), -- Vector for path end condition that is orthogonal to the edge and parallel to the triangle plane, additionally it always points outside the triangle.
 				LocomotionType = obj.Triangle:GetLocomotionType(),
 				PathDirection = pathDirection, -- Vector from start position to dest position.
 				Distance = pathDirection:Length(), -- Distance from start to dest.
+				LimitingPlanes = {},
+				EndPlane = {Origin = edgeCenter, Normal = edgeOrthogonal, Normal2D = edgeOrthogonal2D},
+				--StartPlane = nil,
 			}
+			-- Add edges to the limiting plane list.
+			-- Limiting planes can be either walled or not.
+			-- A walled limiting plane implies that the bot has to keep more distance (depending on the bot's hull) to the plane.
+			-- TODO: If there is no direct walled edge, use neighbor walled edges
+			for _, wEdge in ipairs(obj.Triangle.Edges) do
+				if wEdge ~= edge then
+					local wP1, wP2 = wEdge:GetPoints()
+					local wCentroid = wEdge:GetCentroid()
+					local wNormal = UTIL.VectorFlipAlongVector((wP2 - wP1):Cross(triangleNormal):GetNormalized(), wCentroid - triangleCentroid)
+					local wNormal2D = UTIL.VectorFlipAlongVector((wP2 - wP1):Cross(VECTOR_UP):GetNormalized(), wCentroid - triangleCentroid)
+					table.insert(pathFragment.LimitingPlanes, {Origin = wCentroid, Normal = wNormal, Normal2D = wNormal2D, IsWalled = wEdge:IsWalled()})
+				end
+			end
 			table.insert(obj.PathFragments, pathFragment)
 		end
 	end
@@ -146,10 +167,27 @@ function PATH_POINT:GetPathFragmentsForInjection(from, fromPos)
 	pathFragment.Via = self.Triangle
 	pathFragment.To = self
 	pathFragment.ToPos = self.Pos
-	pathFragment.ToOrthogonal = pathDirection / pathLength -- Vector for the end condition of this path element.
 	pathFragment.LocomotionType = self.Triangle:GetLocomotionType()
 	pathFragment.PathDirection = pathDirection -- Vector from start position to dest position.
 	pathFragment.Distance = pathLength -- Distance from start to dest.
+	pathFragment.LimitingPlanes = {}
+	pathFragment.EndPlane = nil
+	--pathFragment.StartPlane = nil
+
+	-- Add edges to the limiting plane list.
+	-- Limiting planes can be either walled or not.
+	-- A walled limiting plane implies that the bot has to keep more distance (depending on the bot's hull) to the plane.
+	-- TODO: If there is no direct walled edge, use neighbor walled edges
+	for _, wEdge in ipairs(self.Triangle.Edges) do
+		if wEdge ~= edge then
+			local wP1, wP2 = wEdge:GetPoints()
+			local wCentroid = wEdge:GetCentroid()
+			local triangleNormal, triangleCentroid = self.Triangle:GetNormal(), self.Triangle:GetCentroid()
+			local wNormal = UTIL.VectorFlipAlongVector((wP2 - wP1):Cross(triangleNormal):GetNormalized(), wCentroid - triangleCentroid)
+			local wNormal2D = UTIL.VectorFlipAlongVector((wP2 - wP1):Cross(VECTOR_UP):GetNormalized(), wCentroid - triangleCentroid)
+			table.insert(pathFragment.LimitingPlanes, {Origin = wCentroid, Normal = wNormal, Normal2D = wNormal2D, IsWalled = wEdge:IsWalled()})
+		end
+	end
 
 	return pathFragment
 end

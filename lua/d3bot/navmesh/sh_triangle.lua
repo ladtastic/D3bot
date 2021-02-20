@@ -272,13 +272,15 @@ function NAV_TRIANGLE:GetCache()
 	---@type D3botPATH_FRAGMENT[]
 	cache.PathFragments = {}
 	if cache.IsValid then
+		-- Generate path fragments from this triangle to connected edges.
 		for _, edge in ipairs(self.Edges) do
 			if #edge.Triangles + #edge.AirConnections > 1 then
 				local eP1, eP2 = edge:_GetPoints()
 				local edgeCenter = edge:_GetCentroid()
 				local edgeVector = eP2 - eP1
-				local edgeOrthogonal = cache.Normal:Cross(edgeVector) -- Vector that is orthogonal to the edge and parallel to the triangle plane.
 				local pathDirection = edgeCenter - cache.Centroid -- Basically the walking direction.
+				local edgeOrthogonal = UTIL.VectorFlipAlongVector(edgeVector:Cross(cache.Normal), pathDirection):GetNormalized() -- Vector that is orthogonal to the edge, additionally it always points outside the triangle.
+				local edgeOrthogonal2D = UTIL.VectorFlipAlongVector(edgeVector:Cross(VECTOR_UP), pathDirection):GetNormalized() -- Flattened 2D version of the above.
 				---@type D3botPATH_FRAGMENT
 				local pathFragment = {
 					From = self,
@@ -286,11 +288,26 @@ function NAV_TRIANGLE:GetCache()
 					Via = self,
 					To = edge,
 					ToPos = edgeCenter,
-					ToOrthogonal = (edgeOrthogonal * (edgeOrthogonal:Dot(pathDirection))):GetNormalized(), -- Vector for path end condition that is orthogonal to the edge and parallel to the triangle plane, additionally it always points outside the triangle.
 					LocomotionType = cache.LocomotionType,
 					PathDirection = pathDirection, -- Vector from start position to dest position.
 					Distance = pathDirection:Length(), -- Distance from start to dest.
+					LimitingPlanes = {},
+					EndPlane = {Origin = edgeCenter, Normal = edgeOrthogonal, Normal2D = edgeOrthogonal2D},
+					--StartPlane = nil,
 				}
+				-- Add edges to the limiting plane list.
+				-- Limiting planes can be either walled or not.
+				-- A walled limiting plane implies that the bot has to keep more distance (depending on the bot's hull) to the plane.
+				-- TODO: If there is no direct walled edge, use neighbor walled edges
+				for _, wEdge in ipairs(self.Edges) do
+					if wEdge ~= edge then
+						local wP1, wP2 = wEdge:_GetPoints()
+						local wCentroid = wEdge:_GetCentroid()
+						local wNormal = UTIL.VectorFlipAlongVector((wP2 - wP1):Cross(cache.Normal):GetNormalized(), wCentroid - cache.Centroid)
+						local wNormal2D = UTIL.VectorFlipAlongVector((wP2 - wP1):Cross(VECTOR_UP):GetNormalized(), wCentroid - cache.Centroid)
+						table.insert(pathFragment.LimitingPlanes, {Origin = wCentroid, Normal = wNormal, Normal2D = wNormal2D, IsWalled = wEdge:_IsWalled()})
+					end
+				end
 				table.insert(cache.PathFragments, pathFragment)
 			end
 		end
@@ -340,10 +357,70 @@ function NAV_TRIANGLE:_Delete()
 end
 
 ---Returns the average of all points that are contained in this geometry, or nil.
----@return GVector | nil
+---@return GVector
 function NAV_TRIANGLE:GetCentroid()
 	local cache = self:GetCache()
 	return cache.Centroid
+end
+
+---Internal and uncached version of GetCentroid.
+---@return GVector | nil
+function NAV_TRIANGLE:_GetCentroid()
+	local p1, p2, p3 = self:_GetPoints()
+	if not p1 or not p2 or not p3 then return nil end
+	return (p1 + p2 + p3) / 3
+end
+
+---Returns the points (vectors) that this entity is made of.
+---May use the cache.
+---@return GVector, GVector, GVector
+function NAV_TRIANGLE:GetPoints()
+	local cache = self:GetCache()
+	return cache.CornerPoints[1], cache.CornerPoints[2], cache.CornerPoints[3]
+end
+
+---Internal and uncached version of GetPoints.
+---@return GVector, GVector, GVector
+function NAV_TRIANGLE:_GetPoints()
+	-- Get 3 corner vertices from the edges and check for validity.
+	local vertices, err = UTIL.EdgesToTriangleVertices(self.Edges)
+	if err then
+		return nil, nil, nil
+	end
+	return vertices[1]:GetPoint(), vertices[2]:GetPoint(), vertices[3]:GetPoint()
+end
+
+---Returns the bounding box that includes all points of this entity.
+---@return GVector min
+---@return GVector max
+function NAV_TRIANGLE:GetBoundingBox()
+	local cache = self:GetCache()
+	local min, max
+	for _, point in ipairs(cache.CornerPoints) do
+		if min then
+			if min[1] > point[1] then min[1] = point[1] end
+			if min[2] > point[2] then min[2] = point[2] end
+			if min[3] > point[3] then min[3] = point[3] end
+		else
+			min = Vector(point)
+		end
+		if max then
+			if max[1] < point[1] then max[1] = point[1] end
+			if max[2] < point[2] then max[2] = point[2] end
+			if max[3] < point[3] then max[3] = point[3] end
+		else
+			max = Vector(point)
+		end
+	end
+
+	return min, max
+end
+
+---Returns the normal of the triangle.
+---@return GVector | nil
+function NAV_TRIANGLE:GetNormal()
+	local cache = self:GetCache()
+	return cache.Normal
 end
 
 ---Returns a list of possible paths to take from this navmesh entity.

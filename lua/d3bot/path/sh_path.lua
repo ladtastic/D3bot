@@ -31,10 +31,11 @@ local PRIORITY_QUEUE = D3bot.PRIORITY_QUEUE
 ---@field Via table @Triangle or similar navmesh object.
 ---@field To table @Edge or similar navmesh object.
 ---@field ToPos GVector @Centroid of To.
----@field ToOrthogonal GVector @Vector for the end condition of this path element. It is used to build a plane that the bot has to pass in order to get to the next path element. It points to the outside (or along the path direction).
 ---@field LocomotionType string @Locomotion type.
 ---@field PathDirection GVector @Vector from start position to dest position.
 ---@field Distance number @Distance from start to dest.
+---@field LimitingPlanes table[] @A list of Origin and Normal pairs that define (outwards facing) planes. Bots should try to stay behind these planes.
+---@field EndPlane table | nil @Outwards facing plane that a bot has to cross to finish this path fragment. It can be used as end condition for a path element in locomotion handlers.
 
 ---@class D3botPATH_ELEMENT @An atomic part of a path. It is used by locomotion handlers to control bots.
 ---@field PathFragment D3botPATH_FRAGMENT @Precalculated values of a path, don't modify.
