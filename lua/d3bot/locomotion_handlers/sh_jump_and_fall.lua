@@ -75,11 +75,15 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 
 	-- Half hull width.
 	local halfHullWidth = self.HullSize[1] / 2
+	local halfHullSafetyWidth = halfHullWidth + 5
+	cache.HalfHullSafetyWidth = halfHullSafetyWidth
 
 	-- End condition as a plane.
 	-- This will try to create a plane with a horizontal normal. This may fail if the path direction is vertical.
+	-- Only calculate a vertical plane in case the bot is jumping up.
+	-- In case it falls down, use the fallback, which will result in a plane orthogonal to the falling direction.
 	local nextPathElement = pathElements[index-1]
-	if nextPathElement then
+	if nextPathElement and pathFragment.PathDirection[3] > 0 then
 		-- If there is a next element, use the direction of it to determine the end plane.
 
 		local nextPathFragment = nextPathElement.PathFragment
@@ -121,7 +125,7 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 		local locType = nextPathFragment.LocomotionType
 		if locType ~= pathFragment.LocomotionType then
 			if pathFragment.PathDirection[3] < 0 then
-				endPlaneOffset = halfHullWidth
+				endPlaneOffset = -halfHullSafetyWidth
 			end
 		end
 	end
@@ -187,10 +191,12 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 		-- Rotate bot so that it aligns with the end plane, which is usually parallel to the destination (edge).
 		-- We can't use PathDirection, as it can be vertical.
 		local rotDirection = cache.EndPlaneNormal
-		cUserCmd:SetViewAngles(rotDirection:Angle())
-		bot:SetEyeAngles(rotDirection:Angle())
+		local angle = rotDirection:Angle()
+		cUserCmd:SetViewAngles(angle)
+		bot:SetEyeAngles(angle)
 
 		-- Try to position the bot so that it faces the end plane.
+		-- TODO: Fix controls in the falling case
 		local forwardMove = (cache.EndPlaneOrigin - botPos):Dot(cache.EndPlaneNormal) * 100
 		local sideMove = (leftRightSplitPlaneOrigin - botPos):Dot(leftRightSplitPlaneNormal) * 100
 		cUserCmd:SetForwardMove(forwardMove)
@@ -225,13 +231,14 @@ function THIS_LOCO_HANDLER:BeginOffset(index, pathElements, prevEndPlaneNormal)
 
 	-- Half hull width.
 	local halfHullWidth = self.HullSize[1] / 2
+	local halfHullSafetyWidth = halfHullWidth + 5
 
 	if pathFragment.PathDirection[3] > 0 then
 		-- This will be a jump, so the previous path element should end a bit earlier.
 		return -UTIL.PlaneXYSquareTouchDistance(prevEndPlaneNormal2D, halfHullWidth) - 32
 	else
 		-- The bot will fall down a cliff or similar, make the previous path element end later.
-		return UTIL.PlaneXYSquareTouchDistance(prevEndPlaneNormal2D, halfHullWidth)
+		return UTIL.PlaneXYSquareTouchDistance(prevEndPlaneNormal2D, halfHullSafetyWidth)
 	end
 end
 

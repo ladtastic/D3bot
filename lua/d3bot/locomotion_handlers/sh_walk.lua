@@ -124,6 +124,16 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 				cache.EndPlane.Origin = cache.EndPlane.Origin + endPlaneOffset * cache.EndPlane.Normal
 			end
 		end
+
+		-- If the end plane is offset to the outside, define a second "pre" end plane that sits on the edge.
+		-- If a bot is in between the end plane and the pre end plane, the string pulling algorithm doesn't give any meaningful result.
+		-- Therefore the bot has to move in the direction of the end plane normal to get to the end condition (the end plane).
+		if endPlaneOffset > 0 then
+			cache.PreEndPlane = {}
+			cache.PreEndPlane.Origin = pathFragment.EndPlane.Origin
+			cache.PreEndPlane.Normal = pathFragment.EndPlane.Normal2D
+		end
+
 	else
 		-- 2D position that the bot has to get close to. This is calculated in the control callback.
 	end
@@ -170,6 +180,10 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 	-- Initialize smoothed direction vector.
 	local lookingDirection = bot:GetAimVector()
 
+	-- True if the bot has crossed the pre end plane that lies exactly on the destination edge entity.
+	-- Here the string pulling algorithm doesn't give any meaningful results anymore, therefore the bot should move in the direction of the end plane normal.
+	local afterPreEndPlane
+
 	local prevControlCallback = mem.ControlCallback
 	---Push the right buttons and stuff.
 	---@param bot GPlayer
@@ -182,7 +196,10 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 		botPos2D[3] = 0
 
 		local movementDirection
-		if cache.DestVertexLeft and cache.DestVertexRight then
+		if afterPreEndPlane then
+			-- Bot is between the pre end plane and the end plane. Let it move straight in the direction of the end plane.
+			movementDirection = Vector(cache.PreEndPlane.Normal)
+		elseif cache.DestVertexLeft and cache.DestVertexRight then
 			-- Destination consists of two vertices (Like an edge). Walk between/through them.
 
 			-- Get destination position that lies on some future path element.
@@ -191,21 +208,27 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 			local direction = toPos - botPos2D
 			direction[3] = 0
 
-			-- Clamp direction to the next path element's "To" entity.
-			-- This step can be disabled, but results in a bit wonkier movement in some edge cases.
-			if cache.NextPathElement and cache.NextPathElement._ClampBetweenVertices then
-				local nextCache = cache.NextPathElement:GetPathElementCache(index-1, pathElements)
-				direction = self:_ClampBetweenVertices(botPos2D, direction, nextCache.DestVertexLeft, nextCache.DestVertexRight, nextCache.HalfHullSafetyWidth)
+			-- Iterate (backwards) over some future path elements and clamp the direction to the destination ("To") entity of every path element.
+			-- This basically does string pulling for the next few elements.
+			for i = index-2, index-1, 1 do
+				local tempPathElement = pathElements[i]
+				if tempPathElement then
+					local locHandler = tempPathElement.LocomotionHandler
+					if locHandler._ClampBetweenVerticesCheap then
+						direction = locHandler:_ClampBetweenVerticesCheap(botPos2D, direction, i, pathElements)
+					end
+				end
 			end
 
 			-- Clamp direction to the current path element's "To" entity.
 			movementDirection = self:_ClampBetweenVertices(botPos2D, direction, cache.DestVertexLeft, cache.DestVertexRight, cache.HalfHullSafetyWidth)
+			movementDirection:Normalize()
 		else
 			-- A single destination position. Go straight towards it.
 			movementDirection = pathFragment.ToPos - botPos
 			movementDirection[3] = 0
+			movementDirection:Normalize()
 		end
-		movementDirection:Normalize()
 
 		-- Check limiting planes that prevent the bot from leaving the valid walking area.
 		local movementCorrection = Vector()
@@ -248,7 +271,12 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 
 	while true do
 		-- End condition for this path element.
-		if cache.EndPlane then
+		if cache.PreEndPlane and not afterPreEndPlane then
+			if (cache.PreEndPlane.Origin - bot:GetPos()):Dot(cache.PreEndPlane.Normal) < 0 then
+				-- Bot crossed the pre end plane.
+				afterPreEndPlane = true
+			end
+		elseif cache.EndPlane then
 			if (cache.EndPlane.Origin - bot:GetPos()):Dot(cache.EndPlane.Normal) < 0 then
 				-- Bot crossed the end plane.
 				break
@@ -263,7 +291,7 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 			end
 		end
 
-		-- Check if the path element is still valid. If the path got updated, stop this action.
+		-- Check if the path element is still valid. If the path got updated (the path was regenerated), stop this action.
 		if pathElement.IsInvalid then mem.ControlCallback = prevControlCallback return nil end
 
 		-- TODO: Add "is stuck" timeout that stops this action after some time
@@ -281,7 +309,7 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 end
 
 ---Helper function for real time string pulling.
----This takes the current position and direction, and outputs a corrected direction that goes through between v1 and v2.
+---This takes the current position and direction, and outputs a corrected direction that goes through between leftVertex and rightVertex.
 ---Additionally this will help the bot to "corner" corners by making bots walk around vertices of walled edges.
 ---@param pos2D GVector
 ---@param direction2D GVector
@@ -325,7 +353,7 @@ function THIS_LOCO_HANDLER:_ClampBetweenVertices(pos2D, direction2D, leftVertex,
 	--rightPlaneNormal:Normalize()
 
 	-- Check whether the direction points behind either plane.
-	local dotLeftPlane, dotRightPlane = direction2D:Dot(leftPlaneNormal), direction2D:Dot(rightPlaneNormal)
+	local behindLeftPlane, behindRightPlane = direction2D:Dot(leftPlaneNormal) > 0, direction2D:Dot(rightPlaneNormal) > 0
 
 	-- Decide on how to move.
 	if (rightTangentPos - pos2D):Dot(leftPlaneNormal) > 0 then
@@ -341,7 +369,7 @@ function THIS_LOCO_HANDLER:_ClampBetweenVertices(pos2D, direction2D, leftVertex,
 		else
 			return rightTangentPos - pos2D
 		end
-	elseif dotLeftPlane > 0 and dotRightPlane > 0 then
+	elseif behindLeftPlane and behindRightPlane then
 		-- Bot is trying to move backwards because its direction crosses both planes.
 		-- Use the shortest distance from either vertex to the destination.
 		local destPos = direction2D + pos2D
@@ -350,14 +378,68 @@ function THIS_LOCO_HANDLER:_ClampBetweenVertices(pos2D, direction2D, leftVertex,
 		else
 			return rightTangentPos - pos2D
 		end
-	elseif dotLeftPlane > 0 then
+	elseif behindLeftPlane then
 		return leftTangentPos - pos2D
-	elseif dotRightPlane > 0 then
+	elseif behindRightPlane then
 		return rightTangentPos - pos2D
 	end
 
 	-- Pass the direction through.
 	return direction2D
+end
+
+---Helper function for real time string pulling.
+---This takes the current position and direction, and outputs a corrected direction that goes through between the destination entity of the path element.
+---This is a cheap version of _ClampBetweenVertices as it doesn't calculate offsets, tangents or square roots.
+---@param pos2D GVector
+---@param direction2D GVector
+---@param index integer
+---@param pathElements D3botPATH_ELEMENT[]
+---@return GVector clampedDirection2D
+function THIS_LOCO_HANDLER:_ClampBetweenVerticesCheap(pos2D, direction2D, index, pathElements)
+	local cache = self:GetPathElementCache(index, pathElements)
+	local leftPos, rightPos = cache.DestPosLeft, cache.DestPosRight
+
+	if leftPos and rightPos then
+		-- Destination is edge like, so clamp direction.
+		leftPos, rightPos = Vector(leftPos), Vector(rightPos)
+		leftPos[3], rightPos[3] = 0, 0
+
+		local leftTangentPos = leftPos
+		local leftPlaneNormal = (leftPos - pos2D):Cross(VECTOR_DOWN)
+
+		local rightTangentPos = rightPos
+		local rightPlaneNormal = (rightPos - pos2D):Cross(VECTOR_UP)
+
+		-- Check whether the direction points behind either plane.
+		local behindLeftPlane, behindRightPlane = direction2D:Dot(leftPlaneNormal) > 0, direction2D:Dot(rightPlaneNormal) > 0
+
+		-- Decide on how to move.
+		if behindLeftPlane and behindRightPlane then
+			-- Bot is trying to move backwards because its direction crosses both planes.
+			-- Use the shortest distance from either vertex to the destination.
+			local destPos = direction2D + pos2D
+			if leftPos:DistToSqr(destPos) < rightPos:DistToSqr(destPos) then
+				return leftTangentPos - pos2D
+			else
+				return rightTangentPos - pos2D
+			end
+		elseif behindLeftPlane then
+			return leftTangentPos - pos2D
+		elseif behindRightPlane then
+			return rightTangentPos - pos2D
+		end
+
+		-- Pass the direction through.
+		return direction2D
+	else
+		-- Destination is PATH_POINT like, so override direction.
+		local pathElement = pathElements[index]
+		local pathFragment = pathElement.PathFragment
+		local toPos = Vector(pathFragment.ToPos)
+		toPos[3] = 0
+		return toPos - pos2D
+	end
 end
 
 ---Returns an offset that a previous element can use to offset its end plane.
@@ -376,11 +458,12 @@ function THIS_LOCO_HANDLER:BeginOffset(index, pathElements, prevEndPlaneNormal)
 
 	-- Half hull width.
 	local halfHullWidth = self.HullSize[1] / 2
+	local halfHullSafetyWidth = halfHullWidth + 5
 
 	-- Offsets the plane in a way that the bot doesn't get stuck on small steps.
 	-- It basically moves the previous end plane by the amount that this path is too short.
 	-- This is just an estimation.
-	return math.min(0, direction:Length() - UTIL.PlaneXYSquareTouchDistance(prevEndPlaneNormal2D, halfHullWidth))
+	return math.min(0, direction:Length() - UTIL.PlaneXYSquareTouchDistance(prevEndPlaneNormal2D, halfHullSafetyWidth))
 end
 
 ---Overrides the base pathfinding cost (in engine units) for the given path fragment.
@@ -416,6 +499,12 @@ function THIS_LOCO_HANDLER:Render3D(index, pathElements)
 	-- Draw arrow as the main movement direction.
 	cam.IgnoreZ(true)
 	RENDER_UTIL.Draw2DArrowPos(fromPos, toPos, 16, Color(0, 0, 255, 127))
+
+	-- Draw pre end plane.
+	if cache.PreEndPlane then
+		cam.IgnoreZ(false)
+		render.DrawQuadEasy(cache.PreEndPlane.Origin, -cache.PreEndPlane.Normal, 30, 15, Color(127, 0, 255, 127))
+	end
 
 	-- Draw end condition plane.
 	if cache.EndPlane then
