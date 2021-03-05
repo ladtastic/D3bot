@@ -186,6 +186,7 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 
 		-- Custom overrides that can be implemented by subclasses.
 		self.ButtonMask, self.MovementDirection, self.LookingDirection = IN_FORWARD, nil, nil
+		-- TODO: Rework how sub locomotion handlers can override some stuff
 		if self._ControlOverride then self:_ControlOverride(bot, mem, index, pathElements, cache, pathElement, pathFragment) end
 
 		-- Get movement direction vector.
