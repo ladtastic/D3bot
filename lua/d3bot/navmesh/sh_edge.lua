@@ -199,7 +199,6 @@ function NAV_EDGE:GetCache()
 	cache.Point1, cache.Point2 = p1, p2
 
 	---Calculate center.
-	---@type GVector
 	cache.Center = self:_GetCentroid()
 
 	---Cache IsWalled state.

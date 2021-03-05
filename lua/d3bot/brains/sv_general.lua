@@ -61,7 +61,7 @@ function THIS_BRAIN:_ThinkCoroutine(bot, mem)
 	-- A list of abilities.
 	-- This could be precalculated if specifics of the player entity are known beforehand, in the general case this has to be regenerated every time this brain is assigned.
 	local abilities = {
-		Ground = LOCOMOTION_HANDLERS.WALKING:New(hull, speed),
+		Ground = LOCOMOTION_HANDLERS.WALK:New(hull, speed),
 		Wall = LOCOMOTION_HANDLERS.JUMP_AND_FALL:New(hull, crouchJumpHeight, maxFallHeight),
 		AirVertical = LOCOMOTION_HANDLERS.JUMP_AND_FALL:New(hull, crouchJumpHeight, maxFallHeight),
 	}

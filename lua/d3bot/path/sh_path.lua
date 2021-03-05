@@ -40,6 +40,7 @@ local PRIORITY_QUEUE = D3bot.PRIORITY_QUEUE
 ---@class D3botPATH_ELEMENT @An atomic part of a path. It is used by locomotion handlers to control bots.
 ---@field PathFragment D3botPATH_FRAGMENT @Precalculated values of a path, don't modify.
 ---@field LocomotionHandler table
+---@field CustomState table @Custom variables that are stored in the path element.
 ---@field Cache table | nil
 ---@field IsInvalid boolean @States whether a path element was invalidated. This happens when the path got updated. Locomotion handlers are advised to return from action handlers when this is set to true.
 
@@ -125,6 +126,7 @@ function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 			local pathElement = {
 				PathFragment = pathFragment,
 				LocomotionHandler = abilities[pathFragment.LocomotionType],
+				CustomState = {},
 			}
 			table.insert(self.Path, pathElement)
 
@@ -189,6 +191,7 @@ function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 		local entityPos = entity:GetCentroid()
 
 		---Get list of possible paths to take.
+		---@type D3botPATH_FRAGMENT[]
 		local pathFragments = entity:GetPathFragments()
 
 		-- If we are at the edge of our destination triangle, inject the pathFragment to the destPoint into the list of possible paths.
@@ -198,7 +201,6 @@ function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 		end
 
 		---Iterate over possible paths: Neighbor entities that are somehow connected to the current entity.
-		---@type D3botPATH_FRAGMENT
 		for _, pathFragment in ipairs(pathFragments) do
 			local neighborEntity = pathFragment.To
 
@@ -296,7 +298,7 @@ function PATH:RunPathActions(bot, mem)
 	while #self.Path > 0 do
 		local pathElements = self.Path
 		local index = #pathElements
-		---@type D3botPATH_ELEMENT
+
 		local pathElement = pathElements[index]
 
 		-- Give the locomotion handler the control over the bot.
@@ -319,7 +321,6 @@ function PATH:Render3D()
 	render.SetColorMaterial()
 	cam.IgnoreZ(true)
 
-	---@type D3botPATH_ELEMENT
 	for i, pathElement in pairs(self.Path) do
 		local locomotionHandler = pathElement.LocomotionHandler
 		-- Let the locomotion handler render the path element.

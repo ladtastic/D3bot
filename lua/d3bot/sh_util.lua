@@ -241,7 +241,7 @@ function UTIL.GetNearestPoint(points, p, r)
 	-- Stupid linear search for the closest point.
 	local minDistSqr = (r and r * r) or math.huge
 	local resultPoint
-	for _, point in pairs(points) do ---@type GVector @Needs to be pairs, as it needs to support sparse arrays/maps.
+	for _, point in pairs(points) do -- Needs to be pairs, as it needs to support sparse arrays/maps.
 		local distSqr = p:DistToSqr(point)
 		if minDistSqr > distSqr then
 			minDistSqr = distSqr

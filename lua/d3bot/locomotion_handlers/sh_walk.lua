@@ -25,8 +25,8 @@ local VECTOR_UP = Vector(0, 0, 1)
 local VECTOR_DOWN = Vector(0, 0, -1)
 
 -- Add new locomotion handler class.
-LOCOMOTION_HANDLERS.WALKING = LOCOMOTION_HANDLERS.WALKING or {}
-local THIS_LOCO_HANDLER = LOCOMOTION_HANDLERS.WALKING
+LOCOMOTION_HANDLERS.WALK = LOCOMOTION_HANDLERS.WALK or {}
+local THIS_LOCO_HANDLER = LOCOMOTION_HANDLERS.WALK
 
 ------------------------------------------------------
 --		Static
@@ -177,9 +177,6 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 	local destTime = CurTime() + timeDiff
 	local stuckTime = CurTime() + timeDiff * 2 + 0.5
 
-	-- Reset "after pre end plane" state for every new path element.
-	self.AfterPreEndPlane = nil
-
 	local prevControlCallback = mem.ControlCallback
 	---Push the right buttons and stuff.
 	---@param bot GPlayer
@@ -189,7 +186,7 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 
 		-- Custom overrides that can be implemented by subclasses.
 		self.ButtonMask, self.MovementDirection, self.LookingDirection = IN_FORWARD, nil, nil
-		if self._ControlOverride then self:_ControlOverride(bot, mem, index, pathElements) end
+		if self._ControlOverride then self:_ControlOverride(bot, mem, index, pathElements, cache, pathElement, pathFragment) end
 
 		-- Get movement direction vector.
 		if not self.MovementDirection then
@@ -225,15 +222,14 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 
 		-- Check if the bot is behind the pre end plane. Once it passed this plane, it will move straight to the end plane.
 		-- This is needed, as the string pulling doesn't work when the bot is outside the triangle.
-		if cache.PreEndPlane and not self.AfterPreEndPlane then
+		if cache.PreEndPlane and not pathElement.CustomState.AfterPreEndPlane then
 			if (cache.PreEndPlane.Origin - botPos):Dot(cache.PreEndPlane.Normal) < 0 then
 				-- Bot crossed the pre end plane.
-				self.AfterPreEndPlane = true
+				pathElement.CustomState.AfterPreEndPlane = true
 			end
 		end
 
-		local endConditionOverride = self._EndConditionOverride and self:_EndConditionOverride(bot, mem, index, pathElements, cache, pathElement, pathFragment) or nil
-
+		local endConditionOverride = self._EndConditionOverride and self:_EndConditionOverride(bot, mem, index, pathElements, cache, pathElement, pathFragment)
 		if endConditionOverride ~= nil then
 			-- An inherited class has overridden the end condition.
 			if endConditionOverride == true then break end
@@ -279,8 +275,11 @@ function THIS_LOCO_HANDLER:_CalculateMovementDirection(bot, mem, index, pathElem
 	local botPos2D = Vector(botPos)
 	botPos2D[3] = 0
 
+	-- Table that contains path specific state variables.
+	local customState = pathElement.CustomState
+
 	local movementDirection
-	if self.AfterPreEndPlane then
+	if customState.AfterPreEndPlane then
 		-- Bot is between the pre end plane and the end plane. Let it move straight in the direction of the end plane.
 		-- The pre end plane lies exactly on the destination edge entity.
 		-- As the string pulling algorithm doesn't give any meaningful results outside the triangle, let the bot move normal to the end plane.
@@ -288,11 +287,18 @@ function THIS_LOCO_HANDLER:_CalculateMovementDirection(bot, mem, index, pathElem
 	elseif cache.DestVertexLeft and cache.DestVertexRight then
 		-- Destination consists of two vertices (Like an edge). Walk between/through them.
 
+		-- Add some randomness to the movement direction so that bots spread out a bit.
+		if not customState.DirectionOffset or customState.NextDirectionOffset < CurTime() then
+			customState.NextDirectionOffset = CurTime() + math.random()*5
+			customState.DirectionOffset = (math.random()*2-1)
+		end
+
 		-- Get destination position that lies on some future path element.
 		-- The destination can't be cached, as it may be updated while the bot is walking.
 		local toPos = cache.FuturePathElement.PathFragment.ToPos
 		local direction = toPos - botPos2D
 		direction[3] = 0
+		direction = direction + Vector(0, 0, customState.DirectionOffset):Cross(direction)
 
 		-- Iterate (backwards) over some future path elements and clamp the direction to the destination ("To") entity of every path element.
 		-- This basically does string pulling for the next few elements.
