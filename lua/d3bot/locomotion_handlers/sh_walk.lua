@@ -222,7 +222,7 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 		local botPos = bot:GetPos()
 
 		-- Check if the bot is behind the pre end plane. Once it passed this plane, it will move straight to the end plane.
-		-- This is needed, as the string pulling doesn't work when the bot is outside the triangle.
+		-- This is needed, as the string pulling doesn't work when the bot is outside the polygon.
 		if cache.PreEndPlane and not pathElement.CustomState.AfterPreEndPlane then
 			if (cache.PreEndPlane.Origin - botPos):Dot(cache.PreEndPlane.Normal) < 0 then
 				-- Bot crossed the pre end plane.
@@ -283,7 +283,7 @@ function THIS_LOCO_HANDLER:_CalculateMovementDirection(bot, mem, index, pathElem
 	if customState.AfterPreEndPlane then
 		-- Bot is between the pre end plane and the end plane. Let it move straight in the direction of the end plane.
 		-- The pre end plane lies exactly on the destination edge entity.
-		-- As the string pulling algorithm doesn't give any meaningful results outside the triangle, let the bot move normal to the end plane.
+		-- As the string pulling algorithm doesn't give any meaningful results outside the polygon, let the bot move normal to the end plane.
 		movementDirection = Vector(cache.PreEndPlane.Normal)
 	elseif cache.DestVertexLeft and cache.DestVertexRight then
 		-- Destination consists of two vertices (Like an edge). Walk between/through them.

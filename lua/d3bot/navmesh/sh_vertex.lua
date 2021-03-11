@@ -172,7 +172,7 @@ end
 
 ---Internal method.
 function NAV_VERTEX:_Delete()
-	-- Delete the triangles and air connections that are connected.
+	-- Delete any edges that use this vertex.
 	for _, edge in ipairs(self.Edges) do
 		edge:_Delete()
 	end

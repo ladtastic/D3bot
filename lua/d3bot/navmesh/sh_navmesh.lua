@@ -21,7 +21,7 @@ local UTIL = D3bot.Util
 local ERROR = D3bot.ERROR
 local NAV_VERTEX = D3bot.NAV_VERTEX
 local NAV_EDGE = D3bot.NAV_EDGE
-local NAV_TRIANGLE = D3bot.NAV_TRIANGLE
+local NAV_POLYGON = D3bot.NAV_POLYGON
 local NAV_AIR_CONNECTION = D3bot.NAV_AIR_CONNECTION
 
 ------------------------------------------------------
@@ -31,7 +31,7 @@ local NAV_AIR_CONNECTION = D3bot.NAV_AIR_CONNECTION
 ---@class D3botNAV_MESH
 ---@field Vertices D3botNAV_VERTEX[]
 ---@field Edges D3botNAV_EDGE[]
----@field Triangles D3botNAV_TRIANGLE[]
+---@field Polygons D3botNAV_POLYGON[]
 ---@field AirConnections D3botNAV_AIR_CONNECTION[]
 ---@field PubSub D3botNAV_PUBSUB
 ---@field UniqueIDCounter integer
@@ -39,14 +39,14 @@ local NAV_MESH = D3bot.NAV_MESH
 NAV_MESH.__index = NAV_MESH
 
 ---Get new instance of a navmesh container object.
----This contains edges and triangles of a navmesh and provides methods for locating and path finding.
+---This contains edges and polygons of a navmesh and provides methods for locating and path finding.
 ---@return D3botNAV_MESH
 ---@return D3botERROR | nil err
 function NAV_MESH:New()
 	local obj = setmetatable({
 		Vertices = {},
 		Edges = {},
-		Triangles = {},
+		Polygons = {},
 		AirConnections = {},
 		PubSub = nil,
 		UniqueIDCounter = 1,
@@ -65,7 +65,7 @@ function NAV_MESH:NewFromTable(t)
 
 	if not t.Vertices then return nil, ERROR:New("The field %q is missing from the table", "Vertices") end
 	if not t.Edges then return nil, ERROR:New("The field %q is missing from the table", "Edges") end
-	if not t.Triangles then return nil, ERROR:New("The field %q is missing from the table", "Triangles") end
+	if not t.Polygons and not t.Triangles then return nil, ERROR:New("The field %q or %q is missing from the table", "Polygons", "Triangles") end
 	if not t.AirConnections then return nil, ERROR:New("The field %q is missing from the table", "AirConnections") end
 
 	-- Ignore but print any sub errors, so malformed navmesh elements are ignored, but the rest is loaded.
@@ -86,11 +86,20 @@ function NAV_MESH:NewFromTable(t)
 		end
 	end
 
-	-- Restore triangles.
+	-- Restore triangles as polygons.
 	if t.Triangles then
 		for _, triangleTable in ipairs(t.Triangles) do
-			local _, err = NAV_TRIANGLE:NewFromTable(obj, triangleTable)
-			if err then print(string.format("%s Failed to restore triangle %s: %s", D3bot.PrintPrefix, triangleTable.ID, err)) end
+			local polygon, err = NAV_POLYGON:NewFromTable(obj, triangleTable)
+			if err then print(string.format("%s Failed to restore triangle %s as polygon: %s", D3bot.PrintPrefix, triangleTable.ID, err)) end
+			if polygon then polygon:RecalcFlipNormal() end
+		end
+	end
+
+	-- Restore polygons.
+	if t.Polygons then
+		for _, polygonTable in ipairs(t.Polygons) do
+			local _, err = NAV_POLYGON:NewFromTable(obj, polygonTable)
+			if err then print(string.format("%s Failed to restore polygon %s: %s", D3bot.PrintPrefix, polygonTable.ID, err)) end
 		end
 	end
 
@@ -126,10 +135,10 @@ function NAV_MESH:MarshalToTable()
 		table.insert(t.Edges, edge:MarshalToTable())
 	end
 
-	-- Get data table of each triangle and store it in an array. Ignore the key/id, it's stored in each object.
-	t.Triangles = {}
-	for _, triangle in UTIL.kpairs(self.Triangles) do
-		table.insert(t.Triangles, triangle:MarshalToTable())
+	-- Get data table of each polygon and store it in an array. Ignore the key/id, it's stored in each object.
+	t.Polygons = {}
+	for _, polygon in UTIL.kpairs(self.Polygons) do
+		table.insert(t.Polygons, polygon:MarshalToTable())
 	end
 
 	-- Get data table of each air connection and store it in an array. Ignore the key/id, it's stored in each object.
@@ -142,13 +151,13 @@ function NAV_MESH:MarshalToTable()
 end
 
 ---Returns a unique ID key that has not been used before.
----It can be used for new edges or triangles.
+---It can be used for new edges or polygons.
 ---@return integer
 function NAV_MESH:GetUniqueID()
 	local idKey = self.UniqueIDCounter
 
 	-- Check if key is already in use, iteratively increase.
-	while self.Vertices[idKey] or self.Edges[idKey] or self.Triangles[idKey] or self.AirConnections[idKey] do
+	while self.Vertices[idKey] or self.Edges[idKey] or self.Polygons[idKey] or self.AirConnections[idKey] do
 		idKey = idKey + 1
 		self.UniqueIDCounter = idKey
 	end
@@ -170,7 +179,7 @@ function NAV_MESH:_GC()
 	end
 end
 
----Returns the nearest triangle/edge corner to the given point p with a radius of r.
+---Returns the nearest polygon/edge corner to the given point p with a radius of r.
 ---If no point is found, nil will be returned.
 ---@param p GVector
 ---@param r number
@@ -181,7 +190,7 @@ function NAV_MESH:GetNearestPoint(p, r)
 	local minDistSqr = (r and r * r) or math.huge
 	local resultPoint
 	for _, vertex in pairs(self.Vertices) do
-		local distSqr = p:DistToSqr(vertex:GetPoints())
+		local distSqr = p:DistToSqr(vertex:GetPoint())
 		if minDistSqr > distSqr then
 			minDistSqr = distSqr
 			resultPoint = vertex.Point
@@ -193,9 +202,9 @@ end
 
 ---Returns any entity with the given ID, or nil if doesn't exist.
 ---@param id number | string
----@return D3botNAV_EDGE | D3botNAV_TRIANGLE | nil
+---@return D3botNAV_EDGE | D3botNAV_POLYGON | nil
 function NAV_MESH:FindByID(id)
-	return self.Vertices[id] or self.Edges[id] or self.Triangles[id] or self.AirConnections[id] or nil
+	return self.Vertices[id] or self.Edges[id] or self.Polygons[id] or self.AirConnections[id] or nil
 end
 
 ---Returns the vertex with the given ID, or nil if doesn't exist.
@@ -290,99 +299,94 @@ function NAV_MESH:FindOrCreateEdge2V(v1, v2)
 	return NAV_EDGE:New(self, nil, v1, v2)
 end
 
----Returns the triangle with the given ID, or nil if doesn't exist.
+---Returns the polygon with the given ID, or nil if doesn't exist.
 ---@param id number | string
----@return D3botNAV_TRIANGLE | nil
-function NAV_MESH:FindTriangleByID(id)
-	return self.Triangles[id]
+---@return D3botNAV_POLYGON | nil
+function NAV_MESH:FindPolygonByID(id)
+	return self.Polygons[id]
 end
 
----Will return the triangle that is built with the three given points (vectors), if there is one.
----@param p1 GVector
----@param p2 GVector
----@param p3 GVector
----@return D3botNAV_TRIANGLE | nil
+---Will return the polygon that is built with the given points, if there is one.
+---The points have to be ordered in a chain.
+---It doesn't matter where the chain starts and what direction it is in.
+---@param points GVector[]
+---@return D3botNAV_POLYGON | nil
 ---@return D3botERROR | nil err
-function NAV_MESH:FindTriangle3P(p1, p2, p3)
-	local e1, err = self:FindEdge2P(p1, p2)
-	if err then return nil, err end
-	local e2, err = self:FindEdge2P(p2, p3)
-	if err then return nil, err end
-	local e3, err = self:FindEdge2P(p3, p1)
-	if err then return nil, err end
-
-	local triangle, err = self:FindTriangle3E(e1, e2, e3)
-	return triangle, err
-end
-
----Will return the triangle that is built with the three given vertices, if there is one.
----@param v1 D3botNAV_VERTEX
----@param v2 D3botNAV_VERTEX
----@param v3 D3botNAV_VERTEX
----@return D3botNAV_TRIANGLE | nil
----@return D3botERROR | nil err
-function NAV_MESH:FindTriangle3V(v1, v2, v3)
-	local e1, err = self:FindEdge2V(v1, v2)
-	if err then return nil, err end
-	local e2, err = self:FindEdge2V(v2, v3)
-	if err then return nil, err end
-	local e3, err = self:FindEdge2V(v3, v1)
-	if err then return nil, err end
-
-	local triangle, err = self:FindTriangle3E(e1, e2, e3)
-	return triangle, err
-end
-
----Will return the triangle that is built with the three given edges, if there is one.
----@param e1 D3botNAV_EDGE
----@param e2 D3botNAV_EDGE
----@param e3 D3botNAV_EDGE
----@return D3botNAV_TRIANGLE | nil
----@return D3botERROR | nil err
-function NAV_MESH:FindTriangle3E(e1, e2, e3)
-	for _, triangle in pairs(self.Triangles) do
-		if triangle:ConsistsOfEdges(e1, e2, e3) then return triangle, nil end
+function NAV_MESH:FindPolygonPs(points)
+	local edges = {}
+	for i, p1 in ipairs(points) do
+		local p2 = points[i%(#points)+1]
+		local err
+		edges[i], err = self:FindEdge2P(p1, p2)
+		if err then return nil, err end
 	end
 
-	return nil, ERROR:New("No triangle found with the given edges %s, %s, %s", e1, e2, e3)
+	return self:FindPolygonEs(edges)
 end
 
----Will create a new triangle with the given three points, or return an already existing triangle.
----@param p1 GVector
----@param p2 GVector
----@param p3 GVector
----@return D3botNAV_TRIANGLE | nil
+---Will return the polygon that is built with the given vertices, if there is one.
+---The vertices have to be ordered in a chain.
+---It doesn't matter where the chain starts and what direction it is in.
+---@param vertices D3botNAV_VERTEX[]
+---@return D3botNAV_POLYGON | nil
 ---@return D3botERROR | nil err
-function NAV_MESH:FindOrCreateTriangle3P(p1, p2, p3)
-	local e1, err = self:FindOrCreateEdge2P(p1, p2)
-	if err then return nil, err end
-	local e2, err = self:FindOrCreateEdge2P(p2, p3)
-	if err then return nil, err end
-	local e3, err = self:FindOrCreateEdge2P(p3, p1)
-	if err then return nil, err end
+function NAV_MESH:FindPolygonVs(vertices)
+	local edges = {}
+	for i, v1 in ipairs(vertices) do
+		local v2 = vertices[i%(#vertices)+1]
+		local err
+		edges[i], err = self:FindEdge2V(v1, v2)
+		if err then return nil, err end
+	end
 
-	local triangle, err = self:FindOrCreateTriangle3E(e1, e2, e3)
-	return triangle, err
+	return self:FindPolygonEs(edges)
 end
 
----Will create a new triangle with the given three edges, or return an already existing triangle.
----@param e1 D3botNAV_EDGE
----@param e2 D3botNAV_EDGE
----@param e3 D3botNAV_EDGE
----@return D3botNAV_TRIANGLE | nil
+---Will return the polygon that is built with the given edges, if there is one.
+---Order or direction of the edges doesn't matter.
+---@param edges D3botNAV_EDGE[]
+---@return D3botNAV_POLYGON | nil
 ---@return D3botERROR | nil err
-function NAV_MESH:FindOrCreateTriangle3E(e1, e2, e3)
-	local triangle = self:FindTriangle3E(e1, e2, e3)
-	if triangle then return triangle, nil end
+function NAV_MESH:FindPolygonEs(edges)
+	for _, polygon in pairs(self.Polygons) do
+		if polygon:ConsistsOfEdges(edges) then return polygon, nil end
+	end
 
-	-- Create new triangle.
-	local triangle, err = NAV_TRIANGLE:New(self, nil, e1, e2, e3, nil)
+	return nil, ERROR:New("No polygon found with the given edges %s", edges)
+end
+
+---Will create a new polygon with the given points, or return an already existing polygon.
+---@param points GVector[]
+---@return D3botNAV_POLYGON | nil
+---@return D3botERROR | nil err
+function NAV_MESH:FindOrCreatePolygonPs(points)
+	local edges = {}
+	for i, p1 in ipairs(points) do
+		local p2 = points[i%(#points)+1]
+		local err
+		edges[i], err = self:FindOrCreateEdge2P(p1, p2)
+		if err then return nil, err end
+	end
+
+	return self:FindOrCreatePolygonEs(edges)
+end
+
+---Will create a new polygon with the given edges, or return an already existing polygon.
+---@param edges D3botNAV_EDGE[]
+---@return D3botNAV_POLYGON | nil
+---@return D3botERROR | nil err
+function NAV_MESH:FindOrCreatePolygonEs(edges)
+	local polygon = self:FindPolygonEs(edges)
+	if polygon then return polygon, nil end
+
+	-- Create new polygon.
+	local polygon, err = NAV_POLYGON:New(self, nil, edges, nil)
 	if err then return nil, err end
 
 	-- Determine FlipNormal state.
-	triangle:RecalcFlipNormal()
+	polygon:RecalcFlipNormal()
 
-	return triangle, nil
+	return polygon, nil
 end
 
 ---Returns the air connection with the given ID, or nil if doesn't exist.
@@ -446,10 +450,10 @@ function NAV_MESH:Render3D()
 		edge:Render3D()
 	end
 
-	-- Draw triangles.
+	-- Draw polygons.
 	if CONVARS.NavmeshZCulling:GetBool() then render.SetColorMaterial()	else render.SetColorMaterialIgnoreZ() end
-	for _, triangle in pairs(self.Triangles) do
-		triangle:Render3D()
+	for _, polygon in pairs(self.Polygons) do
+		polygon:Render3D()
 	end
 
 	-- Draw air connections.

@@ -115,20 +115,6 @@ function UTIL.VectorFlipAlongVector(vec, compVec)
 	end
 end
 
----Returns the pitch of a given angle in the range from [-90;90) degree.
----A vector pointing upwards has a pitch of -90 deg, if it is pointing downwards it has 90 deg.
----@param angle table
----@return number pitch
-function UTIL.Pitch180(angle)
-	local pitch = angle[1]
-	if pitch >= 90 then
-		return pitch - 360
-	elseif pitch < -90 then
-		return pitch + 360
-	end
-	return pitch
-end
-
 ---Returns whether a number is positive (including positive 0) or not.
 ---Unlike the mathematical sign function, this only returns a bool.
 ---@param num number
@@ -432,6 +418,104 @@ function UTIL.EdgesToTriangleVertices(edges)
 	if #vertices ~= 3 then return nil, ERROR:New("There is an unexpected amount of vertices. Want %d, got %d", 3, #vertices) end
 
 	return vertices, nil
+end
+
+---Takes a list of edges and returns a sorted list of edges and vertices.
+---This will make sure that the resulting edges and vertices form a chained loop, otherwise it returns an error.
+---The direction of the loop is determined by the alignment of the first element in the list edges.
+---It's possible to flip the direction of the resulting loop by setting flipDirection.
+---@param edges D3botNAV_EDGE[]
+---@param flipDirection boolean @Changes the direction of the result. This will cause the normal to flip.
+---@return D3botNAV_EDGE[] | nil
+---@return D3botNAV_VERTEX[] | nil
+---@return D3botERROR | nil err
+function UTIL.EdgeChainLoop(edges, flipDirection)
+	if #edges < 2 then return nil, nil, ERROR:New("Too few edges to form a loop. Want at least %d, got %d", 2, #edges) end
+
+	-- Make copy of original list.
+	local originalEdges = {unpack(edges)}
+
+	-- Start with the first element of the original list and search for any edge connected to the second vertex of it.
+	local sortedEdges = {table.remove(originalEdges, 1)}
+	local searchVertex = sortedEdges[#sortedEdges].Vertices[2]
+	local endVertex = sortedEdges[#sortedEdges].Vertices[1]
+	if flipDirection then
+		searchVertex, endVertex = endVertex, searchVertex
+	end
+
+	local sortedVertices = {endVertex}
+
+	-- Iterate over edges until a closed loop is found.
+	repeat
+		table.insert(sortedVertices, searchVertex)
+
+		local found = false
+		for i, edge in ipairs(originalEdges) do
+			if searchVertex == edge.Vertices[1] then
+				if found then return nil, nil, ERROR:New("Too many neighbor edges at %s", sortedEdges[#sortedEdges]) end
+				table.insert(sortedEdges, table.remove(originalEdges, i))
+				searchVertex, found = edge.Vertices[2], true
+			elseif searchVertex == edge.Vertices[2] then
+				if found then return nil, nil, ERROR:New("Too many neighbor edges at %s", sortedEdges[#sortedEdges]) end
+				table.insert(sortedEdges, table.remove(originalEdges, i))
+				searchVertex, found = edge.Vertices[1], true
+			end
+		end
+
+		if not found then
+			return nil, nil, ERROR:New("Edges don't form a closed loop. Can't find next edge after %s", sortedEdges[#sortedEdges])
+		end
+	until searchVertex == endVertex
+
+	if #originalEdges > 0 then
+		return nil, nil, ERROR:New("There are %d floating/unconnected edges", #originalEdges)
+	end
+
+	return sortedEdges, sortedVertices, nil
+end
+
+---Calculates the normal of a polygon with the given corner points.
+---This may fail if the polygon is not convex and/or flat.
+---The resulting normal will be aligned to the winding direction of the vertices according to the right hand rule.
+---@param corners GVector[] @List of (sorted) corner positions that form the polygon.
+---@param maxError number @Maximum distance that a vertex is allowed to deviate from the "average" plane.
+---@return GVector | nil normal
+---@return D3botERROR | nil err
+function UTIL.CalculatePolygonNormal(corners, maxError)
+	if #corners < 3 then return nil, ERROR:New("Invalid number of vertices. Want at least %d, got %d", 3, #corners) end
+
+	-- List of orthogonal vectors for every edge neighbor pair.
+	-- All orthogonals point into the same direction if the polygon is flat and convex.
+	-- (This doesn't fully work if the polygon is self overlapping (E.g. star shaped), but we ignore this case)
+	local orthogonals = {}
+	local normal = Vector()
+	local center = Vector()
+	for i, vertex in ipairs(corners) do
+		local preVertex, nextVertex = corners[(i+#corners-2)%(#corners)+1], corners[i%(#corners)+1] -- ughghgh
+		local orthogonal = (nextVertex - vertex):Cross(preVertex - vertex):GetNormalized()
+		table.insert(orthogonals, orthogonal)
+		normal:Add(orthogonal)
+		center:Add(vertex)
+	end
+	normal:Normalize()
+	center:Div(#corners)
+
+	-- Check if any orthogonal points in the wrong direction.
+	for _, orthogonal in ipairs(orthogonals) do
+		if normal:Dot(orthogonal) < 0 then
+			return nil, ERROR:New("Vertices don't form a convex polygon")
+		end
+	end
+
+	-- Check vertex distances to the average plane.
+	for _, vertex in ipairs(corners) do
+		local dist = math.abs(normal:Dot((vertex - center)))
+		if dist > maxError then
+			return nil, ERROR:New("Vertices don't form a (nearly) flat polygon")
+		end
+	end
+
+	return normal, nil
 end
 
 ---Helper function for SWEPs that does a line trace on the given player.

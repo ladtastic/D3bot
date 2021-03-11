@@ -30,7 +30,7 @@ local VECTOR_DOWN = Vector(0, 0, -1)
 ---@class D3botPATH_POINT
 ---@field Navmesh D3botNAV_MESH
 ---@field Pos GVector
----@field Triangle D3botNAV_TRIANGLE @The triangle that the point lies on (or is closest to)
+---@field Polygon D3botNAV_POLYGON @The polygon that the point lies on (or is closest to)
 ---@field PathFragments D3botPATH_FRAGMENT[]
 ---@field InjectionPathFragment D3botPATH_FRAGMENT
 local PATH_POINT = D3bot.PATH_POINT
@@ -55,35 +55,35 @@ function PATH_POINT:New(navmesh, pos)
 		return nil, ERROR:New("Invalid position given")
 	end
 
-	-- Get triangle that the point is on.
-	obj.Triangle = UTIL.GetClosestToPos(pos, navmesh.Triangles)
-	if not obj.Triangle then
-		return nil, ERROR:New("Can't find closest triangle for point %s", pos)
+	-- Get polygon that the point is on.
+	obj.Polygon = UTIL.GetClosestToPos(pos, navmesh.Polygons)
+	if not obj.Polygon then
+		return nil, ERROR:New("Can't find closest polygon for point %s", pos)
 	end
 
-	-- Triangle normal and centroid.
-	local triangleNormal, triangleCentroid = obj.Triangle:GetNormal(), obj.Triangle:GetCentroid()
+	-- Polygon normal and centroid.
+	local polygonNormal, polygonCentroid = obj.Polygon:GetNormal(), obj.Polygon:GetCentroid()
 
 	---A list of possible paths to take from this point.
 	---@type D3botPATH_FRAGMENT[]
 	obj.PathFragments = {}
-	-- Generate path fragments from this point to connected edges (via triangles).
-	for _, edge in ipairs(obj.Triangle.Edges) do
-		if #edge.Triangles + #edge.AirConnections > 1 then
+	-- Generate path fragments from this point to connected edges (via polygons).
+	for _, edge in ipairs(obj.Polygon.Edges) do
+		if #edge.Polygons + #edge.AirConnections > 1 then
 			local eP1, eP2 = edge:GetPoints()
 			local edgeCenter = edge:GetCentroid() -- Use cache as it may be faster.
 			local edgeVector = eP2 - eP1
 			local pathDirection = edgeCenter - pos -- Basically the walking direction.
-			local edgeOrthogonal = UTIL.VectorFlipAlongVector(edgeVector:Cross(triangleNormal), pathDirection):GetNormalized() -- Vector that is orthogonal to the edge, additionally it always points outside the triangle.
+			local edgeOrthogonal = UTIL.VectorFlipAlongVector(edgeVector:Cross(polygonNormal), pathDirection):GetNormalized() -- Vector that is orthogonal to the edge, additionally it always points outside the polygon.
 			local edgeOrthogonal2D = UTIL.VectorFlipAlongVector(edgeVector:Cross(VECTOR_UP), pathDirection):GetNormalized() -- Flattened 2D version of the above.
 			---@type D3botPATH_FRAGMENT
 			local pathFragment = {
 				From = obj,
 				FromPos = pos,
-				Via = obj.Triangle,
+				Via = obj.Polygon,
 				To = edge,
 				ToPos = edgeCenter,
-				LocomotionType = obj.Triangle:GetLocomotionType(),
+				LocomotionType = obj.Polygon:GetLocomotionType(),
 				PathDirection = pathDirection, -- Vector from start position to dest position.
 				Distance = pathDirection:Length(), -- Distance from start to dest.
 				LimitingPlanes = {},
@@ -94,12 +94,12 @@ function PATH_POINT:New(navmesh, pos)
 			-- Limiting planes can be either walled or not.
 			-- A walled limiting plane implies that the bot has to keep more distance (depending on the bot's hull) to the plane.
 			-- TODO: If there is no direct walled edge, use neighbor walled edges
-			for _, wEdge in ipairs(obj.Triangle.Edges) do
+			for _, wEdge in ipairs(obj.Polygon.Edges) do
 				if wEdge ~= edge then
 					local wP1, wP2 = wEdge:GetPoints()
 					local wCentroid = wEdge:GetCentroid()
-					local wNormal = UTIL.VectorFlipAlongVector((wP2 - wP1):Cross(triangleNormal):GetNormalized(), wCentroid - triangleCentroid)
-					local wNormal2D = UTIL.VectorFlipAlongVector((wP2 - wP1):Cross(VECTOR_UP):GetNormalized(), wCentroid - triangleCentroid)
+					local wNormal = UTIL.VectorFlipAlongVector((wP2 - wP1):Cross(polygonNormal):GetNormalized(), wCentroid - polygonCentroid)
+					local wNormal2D = UTIL.VectorFlipAlongVector((wP2 - wP1):Cross(VECTOR_UP):GetNormalized(), wCentroid - polygonCentroid)
 					table.insert(pathFragment.LimitingPlanes, {Origin = wCentroid, Normal = wNormal, Normal2D = wNormal2D, IsWalled = wEdge:IsWalled()})
 				end
 			end
@@ -152,7 +152,7 @@ end
 
 ---Returns a single path fragment that can be injected into the pathFragments list in the pathfinding routine.
 ---This is basically the path fragment from any edge "from" to the PATH_POINT itself.
----This should be injected on edges of the triangle that the PATH_POINT is inside of.
+---This should be injected on edges of the polygon that the PATH_POINT is inside of.
 ---@param from table
 ---@param fromPos GVector
 ---@return D3botPATH_FRAGMENT
@@ -164,10 +164,10 @@ function PATH_POINT:GetPathFragmentsForInjection(from, fromPos)
 
 	pathFragment.From = from
 	pathFragment.FromPos = fromPos
-	pathFragment.Via = self.Triangle
+	pathFragment.Via = self.Polygon
 	pathFragment.To = self
 	pathFragment.ToPos = self.Pos
-	pathFragment.LocomotionType = self.Triangle:GetLocomotionType()
+	pathFragment.LocomotionType = self.Polygon:GetLocomotionType()
 	pathFragment.PathDirection = pathDirection -- Vector from start position to dest position.
 	pathFragment.Distance = pathLength -- Distance from start to dest.
 	pathFragment.LimitingPlanes = {}
@@ -178,13 +178,13 @@ function PATH_POINT:GetPathFragmentsForInjection(from, fromPos)
 	-- Limiting planes can be either walled or not.
 	-- A walled limiting plane implies that the bot has to keep more distance (depending on the bot's hull) to the plane.
 	-- TODO: If there is no direct walled edge, use neighbor walled edges
-	for _, wEdge in ipairs(self.Triangle.Edges) do
-		if wEdge ~= edge then
+	for _, wEdge in ipairs(self.Polygon.Edges) do
+		if wEdge ~= from then
 			local wP1, wP2 = wEdge:GetPoints()
 			local wCentroid = wEdge:GetCentroid()
-			local triangleNormal, triangleCentroid = self.Triangle:GetNormal(), self.Triangle:GetCentroid()
-			local wNormal = UTIL.VectorFlipAlongVector((wP2 - wP1):Cross(triangleNormal):GetNormalized(), wCentroid - triangleCentroid)
-			local wNormal2D = UTIL.VectorFlipAlongVector((wP2 - wP1):Cross(VECTOR_UP):GetNormalized(), wCentroid - triangleCentroid)
+			local polygonNormal, polygonCentroid = self.Polygon:GetNormal(), self.Polygon:GetCentroid()
+			local wNormal = UTIL.VectorFlipAlongVector((wP2 - wP1):Cross(polygonNormal):GetNormalized(), wCentroid - polygonCentroid)
+			local wNormal2D = UTIL.VectorFlipAlongVector((wP2 - wP1):Cross(VECTOR_UP):GetNormalized(), wCentroid - polygonCentroid)
 			table.insert(pathFragment.LimitingPlanes, {Origin = wCentroid, Normal = wNormal, Normal2D = wNormal2D, IsWalled = wEdge:IsWalled()})
 		end
 	end
@@ -193,7 +193,7 @@ function PATH_POINT:GetPathFragmentsForInjection(from, fromPos)
 end
 
 ---Change the position of the path point.
----This assumes that the point is still in the previous triangle.
+---This assumes that the point is still in the previous polygon.
 ---@param pos GVector
 function PATH_POINT:UpdatePosition(pos)
 	self.Pos = pos

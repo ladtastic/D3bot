@@ -74,10 +74,12 @@ function NAV_AIR_CONNECTION:New(navmesh, id, e1, e2)
 		return nil, ERROR:New("Distance between edges is too short: %s < %s", e1Centroid:Distance(e2Centroid), obj.MinLength)
 	end
 
-	-- Check if there is already a triangle connecting the two edges.
-	for _, triangle in ipairs(e1.Triangles) do
-		if triangle.Edges[1] == e2 or triangle.Edges[2] == e2 or triangle.Edges[3] == e2 then
-			return nil, ERROR:New("There is already a similar connection between %s and %s via %s", e1, e2, triangle)
+	-- Check if there is already a polygon connecting the two edges.
+	for _, polygon in ipairs(e1.Polygons) do
+		for _, edge in ipairs(polygon.Edges) do
+			if edge == e2 then
+				return nil, ERROR:New("There is already a similar connection between %s and %s via %s", e1, e2, polygon)
+			end
 		end
 	end
 
@@ -85,12 +87,12 @@ function NAV_AIR_CONNECTION:New(navmesh, id, e1, e2)
 	table.insert(e1.AirConnections, obj)
 	table.insert(e2.AirConnections, obj)
 
-	-- Invalidate the cache of the neighbor triangles/air connections and their edges.
+	-- Invalidate the cache of the neighbor polygons/air connections and their edges.
 	-- It's ugly but has to be done.
 	for _, edge in ipairs(obj.Edges) do
-		for _, triangle in ipairs(edge.Triangles) do
-			triangle:InvalidateCache()
-			for _, edge2 in ipairs(triangle.Edges) do
+		for _, polygon in ipairs(edge.Polygons) do
+			polygon:InvalidateCache()
+			for _, edge2 in ipairs(polygon.Edges) do
 				-- This may be run several times on some edges, but it's a fast operation.
 				edge2:InvalidateCache()
 			end
@@ -192,9 +194,9 @@ function NAV_AIR_CONNECTION:GetCache()
 	-- Determine locomotion type. (Hardcoded locomotion types)
 	cache.LocomotionType = "AirHorizontal" -- Default type
 	local direction = (point2 - point1)
-	local pitch = UTIL.Pitch180(direction:Angle())
+	local cosine = direction:GetNormalized():Dot(VECTOR_UP)
 	-- Everything steeper than 45 deg is considered vertical.
-	if pitch < -45 or pitch > 45 then
+	if math.abs(cosine) > 0.7071067812 then
 		cache.LocomotionType = "AirVertical"
 	end
 	-- TODO: Add user defined locomotion type override to air connections
@@ -205,12 +207,12 @@ function NAV_AIR_CONNECTION:GetCache()
 	if cache.IsValid then
 		-- Generate path fragments from this air connection to connected edges.
 		for _, edge in ipairs(self.Edges) do
-			if #edge.Triangles + #edge.AirConnections > 1 then
+			if #edge.Polygons + #edge.AirConnections > 1 then
 				local eP1, eP2 = edge:_GetPoints()
 				local edgeCenter = edge:_GetCentroid()
 				local edgeVector = eP2 - eP1
 				local pathDirection = edgeCenter - cache.Centroid -- Basically the walking direction.
-				local edgeOrthogonal = edgeVector:Cross(pathDirection):Cross(edgeVector):GetNormalized() -- Vector that is orthogonal to the edge, additionally it always points outside the triangle.
+				local edgeOrthogonal = edgeVector:Cross(pathDirection):Cross(edgeVector):GetNormalized() -- Vector that is orthogonal to the edge, additionally it always points outside the polygon.
 				local edgeOrthogonal2D = UTIL.VectorFlipAlongVector(edgeVector:Cross(VECTOR_UP), pathDirection):GetNormalized() -- Flattened 2D version of the above.
 				---@type D3botPATH_FRAGMENT
 				local pathFragment = {
@@ -256,9 +258,9 @@ function NAV_AIR_CONNECTION:_Delete()
 		table.RemoveByValue(edge.AirConnections, self)
 		-- Invalidate cache of the edge.
 		edge:InvalidateCache()
-		-- Invalidate cache of the (other) connected triangles and air connections.
-		for _, triangle in ipairs(edge.Triangles) do
-			triangle:InvalidateCache()
+		-- Invalidate cache of the (other) connected polygons and air connections.
+		for _, polygon in ipairs(edge.Polygons) do
+			polygon:InvalidateCache()
 		end
 		for _, airConnection in ipairs(edge.AirConnections) do
 			airConnection:InvalidateCache()

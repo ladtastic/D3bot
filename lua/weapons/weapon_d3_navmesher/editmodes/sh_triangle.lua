@@ -71,7 +71,7 @@ function THIS_EDIT_MODE:PrimaryAttack(wep)
 	if not CLIENT then return end
 
 	-- Get navmesh, but it's also fine if there is none.
-	-- In this case the navmesh will be created when the first triangle gets created.
+	-- In this case the navmesh will be created when the first polygon gets created.
 	local navmesh = NAV_MAIN:GetNavmesh()
 
 	-- Get map line trace result and navmesh tracing ray.
@@ -104,7 +104,7 @@ function THIS_EDIT_MODE:PrimaryAttack(wep)
 
 	if #self.TempPoints == 3 then
 		-- Edit server side navmesh.
-		NAV_EDIT.CreateTriangle3P(LocalPlayer(), self.TempPoints[1], self.TempPoints[2], self.TempPoints[3])
+		NAV_EDIT.CreatePolygonPs(LocalPlayer(), self.TempPoints)
 
 		-- Reset edit mode and its state.
 		wep:ResetEditMode()
@@ -134,10 +134,10 @@ function THIS_EDIT_MODE:SecondaryAttack(wep)
 	-- Get map line trace result and navmesh tracing ray.
 	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())
 
-	local tracedTriangle = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Triangles)
-	if tracedTriangle then
-		-- Remove triangle on the server side.
-		NAV_EDIT.RemoveByID(LocalPlayer(), tracedTriangle:GetID())
+	local tracedPolygon = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Polygons)
+	if tracedPolygon then
+		-- Remove polygon on the server side.
+		NAV_EDIT.RemoveByID(LocalPlayer(), tracedPolygon:GetID())
 
 		wep:EmitSound("buttons/blip2.wav")
 	else
@@ -160,11 +160,11 @@ end
 ---@param ply GPlayer @Can be nil in some gamemodes.
 function THIS_EDIT_MODE:PreDrawViewModel(wep, vm, weapon, ply)
 	-- Get navmesh, but it's also fine if there is none.
-	-- In this case the navmesh will be created when the first triangle gets created.
+	-- In this case the navmesh will be created when the first polygon gets created.
 	local navmesh = NAV_MAIN:GetNavmesh()
 
-	-- Triangle points that are used to draw a ghost of the current triangle.
-	local trianglePoints = {unpack(self.TempPoints)}
+	-- Polygon points that are used to draw a ghost of the current polygon.
+	local polygonPoints = {unpack(self.TempPoints)}
 
 	-- Get map line trace result and navmesh tracing ray.
 	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())
@@ -183,7 +183,7 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm, weapon, ply)
 
 	-- Highlighting of navmesh edges.
 	-- Check if any edge can be selected (based on the temp points needed), if so highlight it.
-	if navmesh and not snapped and (3 - #trianglePoints) >= 2 then
+	if navmesh and not snapped and (3 - #polygonPoints) >= 2 then
 		-- Trace closest edge.
 		tracedEdge = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Edges)
 
@@ -191,22 +191,22 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm, weapon, ply)
 		if tracedEdge then
 			tracedEdge.UI.Highlighted = true
 			local eP1, eP2 = tracedEdge:GetPoints()
-			table.insert(trianglePoints, eP1)
-			table.insert(trianglePoints, eP2)
+			table.insert(polygonPoints, eP1)
+			table.insert(polygonPoints, eP2)
 		end
 	end
 
-	-- Add point to temp triangle points, so it draws the 3D cursors and the ghost of the triangle if possible.
-	if not tracedEdge and trRes.Hit and (3 - #trianglePoints) >= 1 then
-		table.insert(trianglePoints, snappedPos)
+	-- Add point to temp polygon points, so it draws the 3D cursors and the ghost of the polygon if possible.
+	if not tracedEdge and trRes.Hit and (3 - #polygonPoints) >= 1 then
+		table.insert(polygonPoints, snappedPos)
 	end
 
-	-- Highlighting of navmesh triangles.
+	-- Highlighting of navmesh polygons.
 	if navmesh then
-		local tracedTriangle = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Triangles)
+		local tracedPolygon = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Polygons)
 		-- Set highlighted state of traced element.
-		if tracedTriangle then
-			tracedTriangle.UI.Highlighted = true
+		if tracedPolygon then
+			tracedPolygon.UI.Highlighted = true
 		end
 	end
 
@@ -215,16 +215,16 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm, weapon, ply)
 		navmesh:Render3D()
 	end
 
-	-- Draw ghost of triangle.
-	for _, point in ipairs(trianglePoints) do
+	-- Draw ghost of polygon.
+	for _, point in ipairs(polygonPoints) do
 		render.SetColorMaterialIgnoreZ()
 		RENDER_UTIL.Draw3DCursorPos(point, 2, Color(255, 255, 255, 31), Color(0, 0, 0, 31))
 		render.SetColorMaterial()
 		RENDER_UTIL.Draw3DCursorPos(point, 2, Color(255, 255, 255, 255), Color(0, 0, 0, 255))
 		--render.DrawSphere(point, 10, 10, 10, Color(255, 255, 255, 31))
 	end
-	if #trianglePoints == 3 then
-		local p1, p2, p3 = trianglePoints[1], trianglePoints[2], trianglePoints[3]
+	if #polygonPoints == 3 then
+		local p1, p2, p3 = polygonPoints[1], polygonPoints[2], polygonPoints[3]
 		render.SetColorMaterial()
 		render.DrawQuad(p1, p2, p3, p2, Color(255, 255, 255, 31))
 		render.DrawLine(p1, p2, Color(255, 255, 255, 255), false)

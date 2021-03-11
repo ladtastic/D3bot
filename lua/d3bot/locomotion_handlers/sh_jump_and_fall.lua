@@ -89,7 +89,7 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 		local nextPathFragment = nextPathElement.PathFragment
 		local nextDirection = nextPathFragment.PathDirection
 
-		-- Get points of the dest edge on the current cell/triangle (it may also be a point or something similar).
+		-- Get points of the dest edge on the current cell/polygon (it may also be a point or something similar).
 		local eP1, eP2 = pathFragment.To:GetPoints()
 
 		-- If there is only one point, position the second point in some way so that it is orthogonal to the moving direction.
@@ -149,7 +149,7 @@ function THIS_LOCO_HANDLER:RunPathElementAction(bot, mem, index, pathElements)
 	local pathElement = pathElements[index]
 	local pathFragment = pathElement.PathFragment
 
-	-- General direction to the next triangle/cell.
+	-- General direction to the next polygon/cell.
 	local direction = pathFragment.PathDirection
 
 	-- Plane used to align the bot to face the end plane from the front.

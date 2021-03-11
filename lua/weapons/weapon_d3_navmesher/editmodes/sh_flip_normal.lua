@@ -44,7 +44,7 @@ THIS_EDIT_MODE.__index = THIS_EDIT_MODE
 THIS_EDIT_MODE.Key = key
 
 -- Name that is shown to the user.
-THIS_EDIT_MODE.Name = "Recalc & flip triangle normals"
+THIS_EDIT_MODE.Name = "Recalc & flip normals"
 
 ---Set and overwrite current edit mode of the given weapon.
 ---This will create an instance of the edit mode class, and store it in the weapon's EditMode field.
@@ -77,11 +77,11 @@ function THIS_EDIT_MODE:PrimaryAttack(wep)
 	-- Get map line trace result and navmesh tracing ray.
 	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())
 
-	-- Trace triangle.
-	local tracedTriangle = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Triangles)
-	if tracedTriangle then
+	-- Trace polygon.
+	local tracedPolygon = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Polygons)
+	if tracedPolygon then
 		-- Edit server side navmesh.
-		NAV_EDIT.RecalcFlipNormalByID(LocalPlayer(), tracedTriangle:GetID())
+		NAV_EDIT.RecalcFlipNormalByID(LocalPlayer(), tracedPolygon:GetID())
 
 		wep:EmitSound("buttons/blip2.wav")
 	else
@@ -108,11 +108,11 @@ function THIS_EDIT_MODE:SecondaryAttack(wep)
 	-- Get map line trace result and navmesh tracing ray.
 	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())
 
-	-- Trace triangle.
-	local tracedTriangle = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Triangles)
-	if tracedTriangle then
+	-- Trace polygon.
+	local tracedPolygon = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Polygons)
+	if tracedPolygon then
 		-- Edit server side navmesh.
-		NAV_EDIT.SetFlipNormalByID(LocalPlayer(), tracedTriangle:GetID(), not tracedTriangle.FlipNormal)
+		NAV_EDIT.SetFlipNormalByID(LocalPlayer(), tracedPolygon:GetID(), not tracedPolygon.FlipNormal)
 
 		wep:EmitSound("buttons/blip2.wav")
 	else
@@ -140,11 +140,11 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm, weapon, ply)
 	-- Get map line trace result and navmesh tracing ray.
 	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())
 
-	-- Highlighting of navmesh triangles.
-	local tracedTriangle = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Triangles)
+	-- Highlighting of navmesh polygons.
+	local tracedPolygon = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Polygons)
 	-- Set highlighted state of traced element.
-	if tracedTriangle then
-		tracedTriangle.UI.Highlighted = true
+	if tracedPolygon then
+		tracedPolygon.UI.Highlighted = true
 	end
 
 	-- Setup rendering context.

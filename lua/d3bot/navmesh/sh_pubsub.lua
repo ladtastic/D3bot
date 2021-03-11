@@ -23,7 +23,7 @@ local NAV_MAIN = D3bot.NavMain
 local NAV_MESH = D3bot.NAV_MESH
 local NAV_VERTEX = D3bot.NAV_VERTEX
 local NAV_EDGE = D3bot.NAV_EDGE
-local NAV_TRIANGLE = D3bot.NAV_TRIANGLE
+local NAV_POLYGON = D3bot.NAV_POLYGON
 local NAV_AIR_CONNECTION = D3bot.NAV_AIR_CONNECTION
 
 ---@class D3botNAV_PUBSUB @Static class or just a collection of functions with a global state.
@@ -123,16 +123,16 @@ if SERVER then
 	end
 	util.AddNetworkString("D3bot_Nav_PubSub_Edge")
 
-	---Sends a given triangle to all the subscribers.
-	---@param triangle D3botNAV_TRIANGLE
-	function NAV_PUBSUB:SendTriangleToSubs(triangle)
+	---Sends a given polygon to all the subscribers.
+	---@param polygon D3botNAV_POLYGON
+	function NAV_PUBSUB:SendPolygonToSubs(polygon)
 		if not self.Subscribers then return end
 
-		net.Start("D3bot_Nav_PubSub_Triangle")
-		net.WriteTable(triangle:MarshalToTable())
+		net.Start("D3bot_Nav_PubSub_Polygon")
+		net.WriteTable(polygon:MarshalToTable())
 		net.Send(self.Subscribers)
 	end
-	util.AddNetworkString("D3bot_Nav_PubSub_Triangle")
+	util.AddNetworkString("D3bot_Nav_PubSub_Polygon")
 
 	---Sends a given air connection to all the subscribers.
 	---@param airConnection D3botNAV_AIR_CONNECTION
@@ -195,11 +195,11 @@ if CLIENT then
 		end
 	)
 
-	net.Receive("D3bot_Nav_PubSub_Triangle",
+	net.Receive("D3bot_Nav_PubSub_Polygon",
 		function(len)
 			local navmesh = NAV_MAIN:GetNavmesh()
-			local _, err = NAV_TRIANGLE:NewFromTable(navmesh, net.ReadTable())
-			if err then print(string.format("%s Failed to recreate triangle that the server sent: %s", D3bot.PrintPrefix, err)) end
+			local _, err = NAV_POLYGON:NewFromTable(navmesh, net.ReadTable())
+			if err then print(string.format("%s Failed to recreate polygon that the server sent: %s", D3bot.PrintPrefix, err)) end
 		end
 	)
 

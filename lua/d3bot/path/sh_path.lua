@@ -28,7 +28,7 @@ local PRIORITY_QUEUE = D3bot.PRIORITY_QUEUE
 ---@class D3botPATH_FRAGMENT @Basically a precalculated path fragment that is cached in navmesh objects. This enables the pathfinder to iterate over navmesh objects, and build paths. A list of these is returned by GetPathFragments methods.
 ---@field From table @Edge or similar navmesh object.
 ---@field FromPos GVector @Centroid of From.
----@field Via table @Triangle or similar navmesh object.
+---@field Via table @Polygon or similar navmesh object.
 ---@field To table @Edge or similar navmesh object.
 ---@field ToPos GVector @Centroid of To.
 ---@field LocomotionType string @Locomotion type.
@@ -58,7 +58,7 @@ PATH.__index = PATH
 
 ---Get new instance of a path object.
 ---abilities is a table that maps navmesh locomotion types (keys) to locomotion handlers (values).
----This contains a path as a series of points with some metadata (E.g. what navmesh triangle this points to, the navmesh connection entity it uses (NAV_EDGE, ...)).
+---This contains a path as a series of points with some metadata (E.g. what navmesh polygon this points to, the navmesh connection entity it uses (NAV_EDGE, ...)).
 ---@param navmesh D3botNAV_MESH
 ---@param abilities table<string, table>
 ---@return D3botPATH | nil
@@ -78,7 +78,7 @@ end
 ------------------------------------------------------
 
 ---Generates a path from startPoint to destPoint PATH_POINT objects.
----The actual pathfinding is mostly based on edges, not triangles.
+---The actual pathfinding is mostly based on edges, not polygons.
 ---@param startPoint D3botPATH_POINT
 ---@param destPoint D3botPATH_POINT
 ---@return D3botERROR | nil err
@@ -156,18 +156,18 @@ function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 	end
 
 	-- Add start point to open list.
-	enqueueEntity({To = startPoint, ToPos = startPos, Via = startPoint.Triangle}, 0)
+	enqueueEntity({To = startPoint, ToPos = startPos, Via = startPoint.Polygon}, 0)
 
-	-- If both points are on the same triangle, just output a direct path.
-	if startPoint.Triangle == destPoint.Triangle then
+	-- If both points are on the same polygon, just output a direct path.
+	if startPoint.Polygon == destPoint.Polygon then
 		local pathFragment = destPoint:GetPathFragmentsForInjection(startPoint, startPos)
 		enqueueEntity(pathFragment, 0)
 		return reconstructPath(destPoint)
 	end
 
 	-- As search is edge based, store edges where the destPoint has to be injected to the "neighbors" list.
-	local destTriangle = destPoint.Triangle
-	local endE1, endE2, endE3 = destTriangle.Edges[1], destTriangle.Edges[2], destTriangle.Edges[3]
+	local destPolygon = destPoint.Polygon
+	local endEdges = destPolygon.Edges
 
 	--local iterCounter = 0
 
@@ -194,10 +194,13 @@ function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 		---@type D3botPATH_FRAGMENT[]
 		local pathFragments = entity:GetPathFragments()
 
-		-- If we are at the edge of our destination triangle, inject the pathFragment to the destPoint into the list of possible paths.
-		if entity == endE1 or entity == endE2 or entity == endE3 then
-			local pathFragment = destPoint:GetPathFragmentsForInjection(entity, entityPos)
-			pathFragments = table.Add({pathFragment}, pathFragments)
+		-- If we are at the edge of our destination polygon, inject the pathFragment to the destPoint into the list of possible paths.
+		for _, endEdge in ipairs(endEdges) do
+			if entity == endEdge then
+				local pathFragment = destPoint:GetPathFragmentsForInjection(entity, entityPos)
+				pathFragments = table.Add({pathFragment}, pathFragments)
+				break
+			end
 		end
 
 		---Iterate over possible paths: Neighbor entities that are somehow connected to the current entity.
@@ -256,8 +259,8 @@ function PATH:UpdatePathToPos(startPos, destPos)
 
 	-- Update the destPoint if it lies on the same navmesh element as before.
 	if destPoint then
-		local currentTriangle = UTIL.GetClosestToPos(destPos, navmesh.Triangles)
-		if currentTriangle and destPoint.Triangle == currentTriangle then
+		local currentPolygon = UTIL.GetClosestToPos(destPos, navmesh.Polygons)
+		if currentPolygon and destPoint.Polygon == currentPolygon then
 			-- Update the destination point.
 			destPoint:UpdatePosition(destPos)
 		else
@@ -266,12 +269,12 @@ function PATH:UpdatePathToPos(startPos, destPos)
 		end
 	end
 
-	-- TODO: Check if destPos is still on the same navmesh entity (shortest distance to {current triangle, neighbors...})
+	-- TODO: Check if destPos is still on the same navmesh entity (shortest distance to {current polygon, neighbors...})
 	-- TODO: Regenerate path if destPos moved to different navmesh entity
 
 	-- It should be decided in an intelligent way how and when to regenerate the path.
 	-- Ideally it only has to do a full path regeneration when the destPos moves too much, otherwise it only has to update the last path element.
-	-- Also, if the current path is long enough, there is no need to regenerate the path every time the destPos moves from one triangle to another.
+	-- Also, if the current path is long enough, there is no need to regenerate the path every time the destPos moves from one polygon to another.
 	-- In this case it could do a search from the old "end" position of the path to the new destPos.
 
 	-- How efficient the bot is depends on how well we can prevent redundant calculations from here.

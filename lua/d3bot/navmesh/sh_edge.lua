@@ -35,7 +35,7 @@ local VECTOR_DOWN = Vector(0, 0, -1)
 ---@field Navmesh D3botNAV_MESH
 ---@field ID number | string
 ---@field Vertices D3botNAV_VERTEX[] @The two vertices that the edge is made of.
----@field Triangles D3botNAV_TRIANGLE[] @This points to triangles that this edge is part of. There should be at most 2 triangles.
+---@field Polygons D3botNAV_POLYGON[] @This points to polygons that this edge is part of. There should be at most 2 polygons.
 ---@field AirConnections D3botNAV_AIR_CONNECTION[] @This points to air connections that this edge is part of.
 ---@field Cache table | nil @Contains connected neighbor edges and other cached values.
 ---@field UI table @General structure for UI related properties like selection status
@@ -63,7 +63,7 @@ function NAV_EDGE:New(navmesh, id, v1, v2)
 		Navmesh = navmesh,
 		ID = id or navmesh:GetUniqueID(),
 		Vertices = {v1, v2},
-		Triangles = {},
+		Polygons = {},
 		AirConnections = {},
 		Cache = nil,
 		UI = {},
@@ -89,21 +89,21 @@ function NAV_EDGE:New(navmesh, id, v1, v2)
 	-- Check if there was a previous element. If so, change references to/from it.
 	local old = navmesh.Edges[obj.ID]
 	if old then
-		obj.Triangles = old.Triangles
+		obj.Polygons = old.Polygons
 		obj.AirConnections = old.AirConnections
 
-		-- Iterate over linked triangles.
-		for _, triangle in ipairs(obj.Triangles) do
-			-- Correct the edge references of these triangles.
-			for i, edge in ipairs(triangle.Edges) do
+		-- Iterate over linked polygons.
+		for _, polygon in ipairs(obj.Polygons) do
+			-- Correct the edge references of these polygons.
+			for i, edge in ipairs(polygon.Edges) do
 				if edge == old then
-					triangle.Edges[i] = obj
+					polygon.Edges[i] = obj
 				end
 			end
 		end
 		-- Iterate over linked air connections.
 		for _, airConnection in ipairs(obj.AirConnections) do
-			-- Correct the edge references of these triangles.
+			-- Correct the edge references of these air connections.
 			for i, edge in ipairs(airConnection.Edges) do
 				if edge == old then
 					airConnection.Edges[i] = obj
@@ -111,7 +111,7 @@ function NAV_EDGE:New(navmesh, id, v1, v2)
 			end
 		end
 
-		old.Triangles = {}
+		old.Polygons = {}
 		old.AirConnections = {}
 		old:_Delete()
 	end
@@ -120,8 +120,8 @@ function NAV_EDGE:New(navmesh, id, v1, v2)
 	for _, vertex in ipairs(obj.Vertices) do
 		vertex:InvalidateCache()
 	end
-	for _, triangle in ipairs(obj.Triangles) do
-		triangle:InvalidateCache()
+	for _, polygon in ipairs(obj.Polygons) do
+		polygon:InvalidateCache()
 	end
 	for _, airConnection in ipairs(obj.AirConnections) do
 		airConnection:InvalidateCache()
@@ -208,36 +208,31 @@ function NAV_EDGE:GetCache()
 	---@type D3botPATH_FRAGMENT[]
 	cache.PathFragments = {}
 	if cache.IsValid then
-		-- Generate path fragments from this edge to connected edges (via triangles).
-		for _, triangle in ipairs(self.Triangles) do
-			-- Get an orthogonal vector of the triangle plane, without using the triangle cache.
-			local triangleVertices, err = UTIL.EdgesToTriangleVertices(triangle.Edges)
-			local triangleNormal = VECTOR_UP
-			if triangleVertices then
-				local trianglePoints = {triangleVertices[1]:GetPoint(), triangleVertices[2]:GetPoint(), triangleVertices[3]:GetPoint()}
-				triangleNormal = (trianglePoints[1] - trianglePoints[2]):Cross(trianglePoints[3] - trianglePoints[1]):GetNormalized() -- Has to be normalized, because too large numbers will be interpreted as infinity. Thanks lua.
-			end
+		-- Generate path fragments from this edge to connected edges (via polygons).
+		for _, polygon in ipairs(self.Polygons) do
+			-- Get normal of the polygon.
+			local polygonNormal = polygon:_GetNormal()
 
-			-- Orthogonal vectors from self to the inside of the triangle.
-			--local selfOrthogonal = UTIL.VectorFlipAlongVector((p2-p1):Cross(triangleNormal), triangle:_GetCentroid() - cache.Center):GetNormalized() -- Vector orthogonal to the edge (self), that points inside the triangle.
-			--local selfOrthogonal2D = UTIL.VectorFlipAlongVector((p2-p1):Cross(VECTOR_UP), triangle:_GetCentroid() - cache.Center):GetNormalized() -- Flattened 2D version of the above.
+			-- Orthogonal vectors from self to the inside of the polygon.
+			--local selfOrthogonal = UTIL.VectorFlipAlongVector((p2-p1):Cross(polygonNormal), polygon:_GetCentroid() - cache.Center):GetNormalized() -- Vector orthogonal to the edge (self), that points inside the polygon.
+			--local selfOrthogonal2D = UTIL.VectorFlipAlongVector((p2-p1):Cross(VECTOR_UP), polygon:_GetCentroid() - cache.Center):GetNormalized() -- Flattened 2D version of the above.
 
-			for _, edge in ipairs(triangle.Edges) do
-				if edge ~= self and #edge.Triangles + #edge.AirConnections > 1 then
+			for _, edge in ipairs(polygon.Edges) do
+				if edge ~= self and #edge.Polygons + #edge.AirConnections > 1 then
 					local eP1, eP2 = edge:_GetPoints()
 					local neighborEdgeCenter = edge:_GetCentroid()
 					local edgeVector = eP2 - eP1
 					local pathDirection = neighborEdgeCenter - cache.Center -- Basically the walking direction.
-					local edgeOrthogonal = UTIL.VectorFlipAlongVector(edgeVector:Cross(triangleNormal), pathDirection):GetNormalized() -- Vector that is orthogonal to the edge, additionally it always points outside the triangle.
+					local edgeOrthogonal = UTIL.VectorFlipAlongVector(edgeVector:Cross(polygonNormal), pathDirection):GetNormalized() -- Vector that is orthogonal to the edge, additionally it always points outside the polygon. -- TODO: Reuse precalculated edge plane normal of the polygon
 					local edgeOrthogonal2D = UTIL.VectorFlipAlongVector(edgeVector:Cross(VECTOR_UP), pathDirection):GetNormalized() -- Flattened 2D version of the above.
 					---@type D3botPATH_FRAGMENT
 					local pathFragment = {
 						From = self,
 						FromPos = cache.Center,
-						Via = triangle,
+						Via = polygon,
 						To = edge,
 						ToPos = neighborEdgeCenter,
-						LocomotionType = triangle:GetLocomotionType(), -- Not optimal as it makes a cache query and has potential for infinite recursion.
+						LocomotionType = polygon:GetLocomotionType(), -- Not optimal as it makes a cache query and has potential for infinite recursion.
 						PathDirection = pathDirection, -- Vector from start position to dest position.
 						Distance = pathDirection:Length(), -- Distance from start to dest.
 						LimitingPlanes = {},
@@ -248,12 +243,12 @@ function NAV_EDGE:GetCache()
 					-- Limiting planes can be either walled or not.
 					-- A walled limiting plane implies that the bot has to keep more distance (depending on the bot's hull) to the plane.
 					-- TODO: If there is no direct walled edge, use neighbor walled edges
-					for _, wEdge in ipairs(triangle.Edges) do
+					for _, wEdge in ipairs(polygon.Edges) do
 						if wEdge ~= self and wEdge ~= edge then
 							local wP1, wP2 = wEdge:_GetPoints()
 							local wCentroid = wEdge:_GetCentroid()
-							local wNormal = UTIL.VectorFlipAlongVector((wP2 - wP1):Cross(triangleNormal):GetNormalized(), wCentroid - triangle:_GetCentroid())
-							local wNormal2D = UTIL.VectorFlipAlongVector((wP2 - wP1):Cross(VECTOR_UP):GetNormalized(), wCentroid - triangle:_GetCentroid())
+							local wNormal = UTIL.VectorFlipAlongVector((wP2 - wP1):Cross(polygonNormal):GetNormalized(), wCentroid - polygon:_GetCentroid())
+							local wNormal2D = UTIL.VectorFlipAlongVector((wP2 - wP1):Cross(VECTOR_UP):GetNormalized(), wCentroid - polygon:_GetCentroid())
 							table.insert(pathFragment.LimitingPlanes, {Origin = wCentroid, Normal = wNormal, Normal2D = wNormal2D, IsWalled = wEdge:_IsWalled()})
 							break
 						end
@@ -265,14 +260,14 @@ function NAV_EDGE:GetCache()
 		-- Generate path fragments from this edge to connected edges (via air connections).
 		for _, airConnection in ipairs(self.AirConnections) do
 
-			-- Orthogonal vectors from self to the inside of the triangle.
+			-- Orthogonal vectors from self to the inside of the air connection.
 			--local selfVector = p2 - p1
 			--local insideVector = airConnection:_GetCentroid() - cache.Center
 			--local selfOrthogonal = selfVector:Cross(insideVector):Cross(selfVector):GetNormalized() -- Vector that is orthogonal to the edge, additionally it always points inside.
 			--local selfOrthogonal2D = UTIL.VectorFlipAlongVector(selfVector:Cross(VECTOR_UP), insideVector):GetNormalized() -- Flattened 2D version of the above.
 
 			for _, edge in ipairs(airConnection.Edges) do
-				if edge ~= self and #edge.Triangles + #edge.AirConnections > 1 then
+				if edge ~= self and #edge.Polygons + #edge.AirConnections > 1 then
 					local eP1, eP2 = edge:_GetPoints()
 					local edgeCenter = edge:_GetCentroid()
 					local edgeVector = eP2 - eP1
@@ -319,9 +314,9 @@ end
 
 ---Internal method.
 function NAV_EDGE:_Delete()
-	-- Delete the triangles and air connections that are connected.
-	for _, triangle in ipairs(self.Triangles) do
-		triangle:_Delete()
+	-- Delete the polygons and air connections that are connected.
+	for _, polygon in ipairs(self.Polygons) do
+		polygon:_Delete()
 	end
 	for _, airConnection in ipairs(self.AirConnections) do
 		airConnection:_Delete()
@@ -341,7 +336,7 @@ end
 ---Internal method: Deletes the edge, if there is nothing that references it.
 ---Only call GC from the server side and let it sync the result to all clients.
 function NAV_EDGE:_GC()
-	if #self.Triangles + #self.AirConnections == 0 then
+	if #self.Polygons + #self.AirConnections == 0 then
 		self:Delete()
 	end
 end
@@ -392,17 +387,17 @@ end
 ---Internal and uncached version of IsWalled.
 ---@return boolean
 function NAV_EDGE:_IsWalled()
-	-- If the edge has less than two triangles, assume that the edge is at a wall.
-	if #self.Triangles < 2 then
+	-- If the edge has less than two polygons, assume that the edge is at a wall.
+	if #self.Polygons < 2 then
 		-- TODO: Add user override for edges that are at cliffs or similar geometries, and therefore "walkable"
 		return true
 	end
 
-	-- Check if any of the two connected triangles can be walked on.
-	for _, triangle in ipairs(self.Triangles) do
-		local locType = triangle:GetLocomotionType()
+	-- Check if any of the two connected polygons can be walked on.
+	for _, polygon in ipairs(self.Polygons) do
+		local locType = polygon:GetLocomotionType()
 		if locType ~= "Ground" then
-			-- TODO: Calculate "angle" between the two triangles, and use it to determine if the edge is at a cliff or wall
+			-- TODO: Calculate "angle" between the two polygons, and use it to determine if the edge is at a cliff or wall
 			return true
 		end
 	end

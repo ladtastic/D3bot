@@ -189,3 +189,24 @@ function RENDER_UTIL.Draw2DArrow2SidedRotatingPos(from, to, width, rotSpeed, col
 		cam.PopModelMatrix()
 	end
 end
+
+---Draw a two sided polygon based on a list of corner points.
+---An optional translation vector can be defined.
+---@param cornerPoints GVector[]
+---@param color GColor
+---@param translate GVector
+function RENDER_UTIL.DrawPolygon2Sided(cornerPoints, color, translate)
+	if translate then
+		local mat = Matrix()
+		mat:Translate(translate)
+		cam.PushModelMatrix(mat, true)
+	end
+
+	for i = 3, #cornerPoints do
+		render.DrawQuad(cornerPoints[1], cornerPoints[i-1], cornerPoints[i], cornerPoints[i-1], color)
+	end
+
+	if translate then
+		cam.PopModelMatrix()
+	end
+end

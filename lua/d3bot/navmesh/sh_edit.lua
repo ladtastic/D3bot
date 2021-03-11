@@ -24,42 +24,38 @@ local NAV_MAIN = D3bot.NavMain
 local NAV_EDIT = D3bot.NavEdit
 
 ------------------------------------------------------
---		CreateTriangle3P
+--		CreatePolygonPs
 ------------------------------------------------------
 
----Create a triangle in the main navmesh.
+---Create a polygon in the main navmesh.
 ---@param ply GPlayer
----@param p1 GVector
----@param p2 GVector
----@param p3 GVector
-function NAV_EDIT.CreateTriangle3P(ply, p1, p2, p3)
+---@param points GVector[]
+function NAV_EDIT.CreatePolygonPs(ply, points)
 	if SERVER then
 		-- Only he who wields the weapon has the power.
 		if not ply:HasWeapon("weapon_d3_navmesher") then return end
 		-- Get or create navmesh.
 		local navmesh = NAV_MAIN:ForceNavmesh()
 
-		local _, err = navmesh:FindOrCreateTriangle3P(p1, p2, p3)
-		if err then ply:ChatPrint(string.format("%s Failed to create triangle: %s", D3bot.PrintPrefix, err)) end
+		local _, err = navmesh:FindOrCreatePolygonPs(points)
+		if err then ply:ChatPrint(string.format("%s Failed to create polygon: %s", D3bot.PrintPrefix, err)) end
 
 		-- Try to garbage collect entities.
 		navmesh:_GC()
 
 	elseif CLIENT then
-		net.Start("D3bot_Nav_Edit_CreateTriangle3P")
-		net.WriteVector(p1)
-		net.WriteVector(p2)
-		net.WriteVector(p3)
+		net.Start("D3bot_Nav_Edit_CreatePolygonPs")
+		net.WriteTable(points)
 		net.SendToServer()
 	end
 end
 
 if SERVER then
-	util.AddNetworkString("D3bot_Nav_Edit_CreateTriangle3P")
-	net.Receive("D3bot_Nav_Edit_CreateTriangle3P",
+	util.AddNetworkString("D3bot_Nav_Edit_CreatePolygonPs")
+	net.Receive("D3bot_Nav_Edit_CreatePolygonPs",
 		function(len, ply)
-			local p1, p2, p3 = net.ReadVector(), net.ReadVector(), net.ReadVector()
-			NAV_EDIT.CreateTriangle3P(ply, p1, p2, p3)
+			local points = net.ReadTable()
+			NAV_EDIT.CreatePolygonPs(ply, points)
 		end
 	)
 end
@@ -149,7 +145,7 @@ end
 --		SetFlipNormalByID
 ------------------------------------------------------
 
----Flip normal of triangle.
+---Flip normal of entity.
 ---@param ply GPlayer
 ---@param id number | string
 ---@param state boolean
@@ -160,9 +156,9 @@ function NAV_EDIT.SetFlipNormalByID(ply, id, state)
 		-- Get or create navmesh.
 		local navmesh = NAV_MAIN:ForceNavmesh()
 
-		local triangle = navmesh:FindTriangleByID(id)
-		if triangle then
-			triangle:SetFlipNormal(state)
+		local polygon = navmesh:FindPolygonByID(id)
+		if polygon then
+			polygon:SetFlipNormal(state)
 		end
 
 	elseif CLIENT then
@@ -188,7 +184,7 @@ end
 --		RecalcFlipNormalByID
 ------------------------------------------------------
 
----Flip normal of triangle.
+---Recalculate normal of entity.
 ---@param ply GPlayer
 ---@param id number | string
 function NAV_EDIT.RecalcFlipNormalByID(ply, id)
@@ -198,9 +194,9 @@ function NAV_EDIT.RecalcFlipNormalByID(ply, id)
 		-- Get or create navmesh.
 		local navmesh = NAV_MAIN:ForceNavmesh()
 
-		local triangle = navmesh:FindTriangleByID(id)
-		if triangle then
-			triangle:RecalcFlipNormal()
+		local polygon = navmesh:FindPolygonByID(id)
+		if polygon then
+			polygon:RecalcFlipNormal()
 		end
 
 	elseif CLIENT then
