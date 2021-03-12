@@ -63,6 +63,8 @@ end
 ---This will try to load the navmesh from several directories, see NAV_FILE.BasePaths.
 ---@return D3botERROR | nil err
 function NAV_FILE.LoadMainNavmesh()
+	--local startTime = SysTime()
+
 	local mapName = game.GetMap()
 	local filePath, gamePath = findValidFilePath(NAV_FILE.BasePaths, mapName)
 	if filePath and gamePath then
@@ -75,6 +77,9 @@ function NAV_FILE.LoadMainNavmesh()
 	else
 		NAV_MAIN:SetNavmesh(nil)
 	end
+
+	--local duration = SysTime() - startTime
+	--print(string.format("%s Loaded %q navmesh in %f seconds", D3bot.PrintPrefix, mapName, duration))
 
 	return nil
 end

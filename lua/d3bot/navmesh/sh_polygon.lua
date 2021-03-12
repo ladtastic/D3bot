@@ -77,6 +77,16 @@ function NAV_POLYGON:New(navmesh, id, vertices)
 
 	-- TODO: Check if ID is used by a different entity type
 
+	-- Get corner points.
+	local cornerPoints = {}
+	for _, vertex in ipairs(vertices) do
+		table.insert(cornerPoints, vertex:GetPoint())
+	end
+
+	-- Check if the polygon is valid.
+	local err = self:VerifyVertices(cornerPoints)
+	if err then return nil, err end
+
 	-- Get list of edges that corresponds with the vertex list.
 	for i, v1 in ipairs(vertices) do
 		local v2 = vertices[i%(#vertices)+1]
@@ -160,6 +170,16 @@ function NAV_POLYGON:New(navmesh, id, vertices)
 	end
 
 	return obj, nil
+end
+
+---This verifies if a list of cornerPoints (vectors) can create a valid polygon.
+---If the polygon isn't nearly flat (no unique normal can be found), this function will return an error.
+---If the polygon isn't convex, this function will also return an error.
+---@param cornerPoints GVector[]
+---@return D3botERROR | nil err
+function NAV_POLYGON:VerifyVertices(cornerPoints)
+	local _, err = UTIL.CalculatePolygonNormal(cornerPoints, self.MaxPlaneDeviation)
+	return err
 end
 
 ---Same as NAV_POLYGON:New(), but uses table t to restore a previous state that came from MarshalToTable().

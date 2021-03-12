@@ -19,6 +19,7 @@ local D3bot = D3bot
 local CONVARS = D3bot.Convars
 local UTIL = D3bot.Util
 local RENDER_UTIL = D3bot.RenderUtil
+local NAV_POLYGON = D3bot.NAV_POLYGON
 local NAV_EDIT = D3bot.NavEdit
 local NAV_MAIN = D3bot.NavMain
 local MAPGEOMETRY = D3bot.MapGeometry
@@ -228,17 +229,31 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm, weapon, ply)
 	end
 
 	-- Draw ghost of polygon.
+	local polyError
+	if #polygonPoints >= 3 then
+		render.SetColorMaterial()
+		polyError = NAV_POLYGON:VerifyVertices(polygonPoints)
+		if polyError then
+			RENDER_UTIL.DrawPolygon2Sided(polygonPoints, Color(255, 0, 0, 127))
+		else
+			RENDER_UTIL.DrawPolygon2Sided(polygonPoints, Color(255, 255, 255, 31))
+		end
+	end
+	local oldPoint
 	for _, point in ipairs(polygonPoints) do
 		render.SetColorMaterialIgnoreZ()
 		RENDER_UTIL.Draw3DCursorPos(point, 2, Color(255, 255, 255, 31), Color(0, 0, 0, 31))
 		render.SetColorMaterial()
 		RENDER_UTIL.Draw3DCursorPos(point, 2, Color(255, 255, 255, 255), Color(0, 0, 0, 255))
-		--render.DrawSphere(point, 10, 10, 10, Color(255, 255, 255, 31))
-	end
-	if #polygonPoints >= 3 then
-		local p1, p2, p3 = polygonPoints[1], polygonPoints[2], polygonPoints[3]
-		render.SetColorMaterial()
-		RENDER_UTIL.DrawPolygon2Sided(polygonPoints, Color(255, 255, 255, 31))
+
+		if oldPoint then
+			if polyError then
+				render.DrawLine(point, oldPoint, Color(255, 0, 0, 255), false)
+			else
+				render.DrawLine(point, oldPoint, Color(255, 255, 255, 255), false)
+			end
+		end
+		oldPoint = point
 	end
 
 	cam.End3D()
