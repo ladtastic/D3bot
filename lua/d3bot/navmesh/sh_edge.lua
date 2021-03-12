@@ -195,7 +195,7 @@ function NAV_EDGE:GetCache()
 	cache.IsValid = true
 
 	-- Get the two edge corners/points.
-	local p1, p2 = self:_GetPoints()
+	local p1, p2 = unpack(self:_GetPoints())
 	cache.Point1, cache.Point2 = p1, p2
 
 	---Calculate center.
@@ -257,7 +257,7 @@ function NAV_EDGE:GetCache()
 
 			for _, edge in ipairs(airConnection.Edges) do
 				if edge ~= self and #edge.Polygons + #edge.AirConnections > 1 then
-					local eP1, eP2 = edge:_GetPoints()
+					local eP1, eP2 = unpack(edge:_GetPoints())
 					local edgeCenter = edge:_GetCentroid()
 					local edgeVector = eP2 - eP1
 					local pathDirection = edgeCenter - cache.Center -- Basically the walking direction.
@@ -340,28 +340,28 @@ end
 ---Internal and uncached version of GetCentroid.
 ---@return GVector
 function NAV_EDGE:_GetCentroid()
-	local p1, p2 = self:_GetPoints()
+	local p1, p2 = unpack(self:_GetPoints())
 	return (p1 + p2) / 2
 end
 
 ---Returns the points (vectors) that this entity is made of.
 ---May use the cache.
----@return GVector, GVector
+---@return GVector[]
 function NAV_EDGE:GetPoints()
 	local cache = self:GetCache()
-	return cache.Point1, cache.Point2
+	return {cache.Point1, cache.Point2}
 end
 
 ---Internal and uncached version of GetPoints.
----@return GVector, GVector
+---@return GVector[]
 function NAV_EDGE:_GetPoints()
-	return self.Vertices[1]:GetPoint(), self.Vertices[2]:GetPoint()
+	return {self.Vertices[1]:GetPoint(), self.Vertices[2]:GetPoint()}
 end
 
 ---Returns the list of vertices that this entity is made of.
----@return D3botNAV_VERTEX, D3botNAV_VERTEX
+---@return D3botNAV_VERTEX[]
 function NAV_EDGE:GetVertices()
-	return self.Vertices[1], self.Vertices[2]
+	return {self.Vertices[1], self.Vertices[2]}
 end
 
 ---Returns whether an edge is at a wall or wall like (not walkable) geometry.
@@ -422,7 +422,7 @@ end
 function NAV_EDGE:GetClosestPointToLine(origin, dir)
 	-- See: http://geomalgorithms.com/a07-_distance.html
 
-	local p1, p2 = self:GetPoints()
+	local p1, p2 = unpack(self:GetPoints())
 	local u = p2 - p1
 	local w0 = p1 - origin
 	local a, b, c, d, e = u:Dot(u), u:Dot(dir), dir:Dot(dir), u:Dot(w0), dir:Dot(w0)
@@ -453,7 +453,7 @@ function NAV_EDGE:IntersectsRay(origin, dir)
 	-- Also, subtract some amount ( √(radius² - dist²) ) from the calculated dist to give it some "volume".
 	-- That should be good enough.
 
-	local p1, p2 = self:GetPoints()
+	local p1, p2 = unpack(self:GetPoints())
 	local u = p2 - p1
 	local w0 = p1 - origin
 	local a, b, c, d, e = u:Dot(u), u:Dot(dir), dir:Dot(dir), u:Dot(w0), dir:Dot(w0)
@@ -491,7 +491,7 @@ end
 ---Draw the edge into a 3D rendering context.
 function NAV_EDGE:Render3D()
 	local ui = self.UI
-	local p1, p2 = self:GetPoints()
+	local p1, p2 = unpack(self:GetPoints())
 
 	if ui.Highlighted then
 		ui.Highlighted = nil

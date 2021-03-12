@@ -197,21 +197,21 @@ end
 
 ---Returns the points (vectors) that this entity is made of.
 ---May use the cache.
----@return GVector
+---@return GVector[]
 function NAV_VERTEX:GetPoints()
-	return self.Point
+	return {self.Point}
 end
 
 ---Internal and uncached version of GetPoints.
----@return GVector
+---@return GVector[]
 function NAV_VERTEX:_GetPoints()
-	return self.Point
+	return {self.Point}
 end
 
 ---Returns the list of vertices that this entity is made of.
----@return D3botNAV_VERTEX
+---@return D3botNAV_VERTEX[]
 function NAV_VERTEX:GetVertices()
-	return self
+	return {self}
 end
 
 ---Returns the vector that describes this vertex.

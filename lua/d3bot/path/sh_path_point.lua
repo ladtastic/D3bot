@@ -116,19 +116,22 @@ end
 
 ---Returns the points (vectors) that this entity is made of.
 ---May use the cache.
----@return GVector
+---@return GVector[]
 function PATH_POINT:GetPoints()
-	return self.Pos
+	return {self.Pos}
 end
 
 ---Internal and uncached version of GetPoints.
----@return GVector
+---@return GVector[]
 function PATH_POINT:_GetPoints()
-	return self.Pos
+	return {self.Pos}
 end
 
 ---Returns the list of vertices that this entity is made of.
-function PATH_POINT:GetVertices() end
+---@return D3botNAV_VERTEX[]
+function PATH_POINT:GetVertices()
+	return {}
+end
 
 ---Returns the vector that describes this path point.
 ---@return GVector

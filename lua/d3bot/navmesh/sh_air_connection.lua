@@ -202,7 +202,7 @@ function NAV_AIR_CONNECTION:GetCache()
 		-- Generate path fragments from this air connection to connected edges.
 		for _, edge in ipairs(self.Edges) do
 			if #edge.Polygons + #edge.AirConnections > 1 then
-				local eP1, eP2 = edge:_GetPoints()
+				local eP1, eP2 = unpack(edge:_GetPoints())
 				local edgeCenter = edge:_GetCentroid()
 				local edgeVector = eP2 - eP1
 				local pathDirection = edgeCenter - cache.Centroid -- Basically the walking direction.

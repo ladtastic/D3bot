@@ -90,7 +90,7 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 		local nextDirection = nextPathFragment.PathDirection
 
 		-- Get points of the dest edge on the current cell/polygon (it may also be a point or something similar).
-		local eP1, eP2 = pathFragment.To:GetPoints()
+		local eP1, eP2 = unpack(pathFragment.To:GetPoints())
 
 		-- If there is only one point, position the second point in some way so that it is orthogonal to the moving direction.
 		if not eP2 then

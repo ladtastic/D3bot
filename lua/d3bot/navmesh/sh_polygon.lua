@@ -275,7 +275,7 @@ function NAV_POLYGON:GetCache()
 		-- Generate path fragments from this polygon to connected edges.
 		for edgeIndex, edge in ipairs(self.Edges) do
 			if #edge.Polygons + #edge.AirConnections > 1 then
-				local eP1, eP2 = edge:_GetPoints()
+				local eP1, eP2 = unpack(edge:_GetPoints())
 				local edgeCenter = edge:_GetCentroid()
 				local edgeVector = eP2 - eP1
 				local pathDirection = edgeCenter - cache.Centroid -- Basically the walking direction.
@@ -623,7 +623,7 @@ function NAV_POLYGON:GetClosestPointToPoint(p)
 	-- Find the closest point on the edge that is also clamped to the edge length.
 	if maxIndex then
 		local edge = self.Edges[maxIndex]
-		local eP1, eP2 = edge:GetPoints() -- TODO: Add GetVector method to navmesh edge, and cache vector for faster calculations
+		local eP1, eP2 = unpack(edge:GetPoints()) -- TODO: Add GetVector method to navmesh edge, and cache vector for faster calculations
 		local edgeVector = (eP2 - eP1)
 		local edgeFraction = math.Clamp((projected - eP1):Dot(edgeVector) / edgeVector:LengthSqr(), 0, 1)
 		return eP1 + edgeVector * edgeFraction

@@ -142,8 +142,8 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 	local pathRight = pathFragment.PathDirection:Cross(pathFragment.Via:GetNormal()):GetNormalized()
 
 	-- Vertices of the destination element "To".
-	local v1, v2 = pathFragment.To:GetVertices()
-	local p1, p2 = pathFragment.To:GetPoints()
+	local v1, v2 = unpack(pathFragment.To:GetVertices())
+	local p1, p2 = unpack(pathFragment.To:GetPoints())
 	-- Check if "To" is an edge or similar entity.
 	if v1 and v2 then
 		-- Flip direction of the two vertices, so that v1 is the "left" and v2 is the "right" one.

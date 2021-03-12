@@ -91,7 +91,7 @@ function THIS_EDIT_MODE:PrimaryAttack(wep)
 		tracedEdge = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Edges)
 
 		if tracedEdge then
-			local eP1, eP2 = tracedEdge:GetPoints()
+			local eP1, eP2 = unpack(tracedEdge:GetPoints())
 			table.insert(self.TempPoints, eP1)
 			table.insert(self.TempPoints, eP2)
 		end
@@ -190,7 +190,7 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm, weapon, ply)
 		-- Set highlighted state of traced element.
 		if tracedEdge then
 			tracedEdge.UI.Highlighted = true
-			local eP1, eP2 = tracedEdge:GetPoints()
+			local eP1, eP2 = unpack(tracedEdge:GetPoints())
 			table.insert(polygonPoints, eP1)
 			table.insert(polygonPoints, eP2)
 		end
