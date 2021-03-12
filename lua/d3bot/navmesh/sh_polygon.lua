@@ -252,17 +252,7 @@ function NAV_POLYGON:GetCache()
 
 	-- List of "edge planes" that are orthogonal to the polygon surface and parallel to the edge.
 	-- They point outside of the polygon.
-	cache.EdgePlanes = {}
-	if cache.Normal then
-		for i, point in ipairs(cornerPoints) do
-			local nextPoint = cornerPoints[i%(#cornerPoints)+1]
-			local edge = self.Edges[i]
-			local edgeNormal = (nextPoint - point):Cross(cache.Normal):GetNormalized()
-			local edgeNormal2D = (nextPoint - point):Cross(VECTOR_UP):GetNormalized()
-			if VECTOR_UP:Dot(cache.Normal) < 0 then edgeNormal2D:Mul(-1) end
-			table.insert(cache.EdgePlanes, {Origin = (point + nextPoint)/2, Normal = edgeNormal, Normal2D = edgeNormal2D, IsWalled = edge:_IsWalled()})
-		end
-	end
+	cache.EdgePlanes = self:_GetEdgePlanes()
 
 	-- Determine locomotion type. (Hardcoded locomotion types)
 	cache.LocomotionType = self:_GetLocomotionType()
@@ -453,6 +443,26 @@ end
 function NAV_POLYGON:GetEdgePlanes()
 	local cache = self:GetCache()
 	return cache.EdgePlanes
+end
+
+---Internal and uncached version of GetEdgePlanes.
+---@return table[]
+function NAV_POLYGON:_GetEdgePlanes()
+	local cornerPoints = self:_GetPoints()
+	local normal = self:_GetNormal()
+
+	local edgePlanes = {}
+	if normal then
+		for i, point in ipairs(cornerPoints) do
+			local nextPoint = cornerPoints[i%(#cornerPoints)+1]
+			local edge = self.Edges[i]
+			local edgeNormal = (nextPoint - point):Cross(normal):GetNormalized()
+			local edgeNormal2D = (nextPoint - point):Cross(VECTOR_UP):GetNormalized()
+			if VECTOR_UP:Dot(normal) < 0 then edgeNormal2D:Mul(-1) end
+			table.insert(edgePlanes, {Origin = (point + nextPoint)/2, Normal = edgeNormal, Normal2D = edgeNormal2D, IsWalled = edge:_IsWalled()})
+		end
+	end
+	return edgePlanes
 end
 
 ---Returns the locomotion type as a string.

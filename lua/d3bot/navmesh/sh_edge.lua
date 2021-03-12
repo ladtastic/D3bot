@@ -194,14 +194,17 @@ function NAV_EDGE:GetCache()
 	-- Changing this to false will not cause the cache to be rebuilt.
 	cache.IsValid = true
 
-	-- Get the two edge corners/points.
-	local p1, p2 = unpack(self:_GetPoints())
-	cache.Point1, cache.Point2 = p1, p2
+	-- Get edge points from vertices.
+	cache.Points = self:_GetPoints()
+	local points = cache.Points
 
-	---Calculate center.
-	cache.Center = self:_GetCentroid()
+	-- Get edge vector.
+	cache.Vector = self:_GetVector()
 
-	---Cache IsWalled state.
+	-- Calculate centroid.
+	cache.Centroid = self:_GetCentroid()
+
+	-- Cache IsWalled state.
 	cache.IsWalled = self:_IsWalled()
 
 	---A list of possible paths to take from this edge.
@@ -212,26 +215,26 @@ function NAV_EDGE:GetCache()
 		for _, polygon in ipairs(self.Polygons) do
 			-- Get normal of the polygon.
 			local polygonNormal = polygon:_GetNormal()
-			local polygonEdgePlanes = polygon:GetEdgePlanes()
+			local polygonEdgePlanes = polygon:_GetEdgePlanes()
 
 			for edgeIndex, edge in ipairs(polygon.Edges) do
 				if edge ~= self and #edge.Polygons + #edge.AirConnections > 1 then
-					local neighborEdgeCenter = edge:_GetCentroid()
+					local neighborEdgeCentroid = edge:_GetCentroid()
 					local polygonEdgePlane = polygonEdgePlanes[edgeIndex]
-					local pathDirection = neighborEdgeCenter - cache.Center -- Basically the walking direction.
+					local pathDirection = neighborEdgeCentroid - cache.Centroid -- Basically the walking direction.
 					---@type D3botPATH_FRAGMENT
 					local pathFragment = {
 						From = self,
-						FromPos = cache.Center,
+						FromPos = cache.Centroid,
 						Via = polygon,
 						To = edge,
-						ToPos = neighborEdgeCenter,
+						ToPos = neighborEdgeCentroid,
 						LocomotionType = polygon:_GetLocomotionType(),
 						PathDirection = pathDirection, -- Vector from start position to dest position.
 						Distance = pathDirection:Length(), -- Distance from start to dest.
 						LimitingPlanes = {},
 						EndPlane = polygonEdgePlane,
-						--StartPlane = {Origin = cache.Center, Normal = selfOrthogonal, Normal2D = selfOrthogonal2D},
+						--StartPlane = {Origin = cache.Centroid, Normal = selfOrthogonal, Normal2D = selfOrthogonal2D},
 					}
 					-- Add edges to the limiting plane list.
 					-- Limiting planes can be either walled or not.
@@ -250,32 +253,32 @@ function NAV_EDGE:GetCache()
 		for _, airConnection in ipairs(self.AirConnections) do
 
 			-- Orthogonal vectors from self to the inside of the air connection.
-			--local selfVector = p2 - p1
-			--local insideVector = airConnection:_GetCentroid() - cache.Center
+			--local selfVector = cache.Vector
+			--local insideVector = airConnection:_GetCentroid() - cache.Centroid
 			--local selfOrthogonal = selfVector:Cross(insideVector):Cross(selfVector):GetNormalized() -- Vector that is orthogonal to the edge, additionally it always points inside.
 			--local selfOrthogonal2D = UTIL.VectorFlipAlongVector(selfVector:Cross(VECTOR_UP), insideVector):GetNormalized() -- Flattened 2D version of the above.
 
 			for _, edge in ipairs(airConnection.Edges) do
 				if edge ~= self and #edge.Polygons + #edge.AirConnections > 1 then
 					local eP1, eP2 = unpack(edge:_GetPoints())
-					local edgeCenter = edge:_GetCentroid()
+					local edgeCentroid = edge:_GetCentroid()
 					local edgeVector = eP2 - eP1
-					local pathDirection = edgeCenter - cache.Center -- Basically the walking direction.
+					local pathDirection = edgeCentroid - cache.Centroid -- Basically the walking direction.
 					local edgeOrthogonal = edgeVector:Cross(pathDirection):Cross(edgeVector):GetNormalized() -- Vector that is orthogonal to the edge, additionally it always points to the path direction.
 					local edgeOrthogonal2D = UTIL.VectorFlipAlongVector(edgeVector:Cross(VECTOR_UP), pathDirection):GetNormalized() -- Flattened 2D version of the above.
 					---@type D3botPATH_FRAGMENT
 					local pathFragment = {
 						From = self,
-						FromPos = cache.Center,
+						FromPos = cache.Centroid,
 						Via = airConnection,
 						To = edge,
-						ToPos = edgeCenter,
+						ToPos = edgeCentroid,
 						LocomotionType = airConnection:_GetLocomotionType(),
 						PathDirection = pathDirection, -- Vector from start position to dest position.
 						Distance = pathDirection:Length(), -- Distance from start to dest.
 						LimitingPlanes = {},
-						EndPlane = {Origin = edgeCenter, Normal = edgeOrthogonal, Normal2D = edgeOrthogonal2D},
-						--StartPlane = {Origin = cache.Center, Normal = selfOrthogonal, Normal2D = selfOrthogonal2D},
+						EndPlane = {Origin = edgeCentroid, Normal = edgeOrthogonal, Normal2D = edgeOrthogonal2D},
+						--StartPlane = {Origin = cache.Centroid, Normal = selfOrthogonal, Normal2D = selfOrthogonal2D},
 					}
 					table.insert(cache.PathFragments, pathFragment)
 				end
@@ -334,7 +337,7 @@ end
 ---@return GVector
 function NAV_EDGE:GetCentroid()
 	local cache = self:GetCache()
-	return cache.Center
+	return cache.Centroid
 end
 
 ---Internal and uncached version of GetCentroid.
@@ -349,7 +352,7 @@ end
 ---@return GVector[]
 function NAV_EDGE:GetPoints()
 	local cache = self:GetCache()
-	return {cache.Point1, cache.Point2}
+	return cache.Points
 end
 
 ---Internal and uncached version of GetPoints.
@@ -361,13 +364,19 @@ end
 ---Returns the list of vertices that this entity is made of.
 ---@return D3botNAV_VERTEX[]
 function NAV_EDGE:GetVertices()
-	return {self.Vertices[1], self.Vertices[2]}
+	return self.Vertices
 end
 
 ---Returns a vector representing the edge.
 function NAV_EDGE:GetVector()
 	local cache = self:GetCache()
-	return cache.Point2 - cache.Point1
+	return cache.Vector
+end
+
+---Internal and uncached version of GetVector.
+function NAV_EDGE:_GetVector()
+	local p1, p2 = unpack(self:_GetPoints())
+	return p2 - p1
 end
 
 ---Returns whether an edge is at a wall or wall like (not walkable) geometry.
