@@ -364,6 +364,12 @@ function NAV_EDGE:GetVertices()
 	return {self.Vertices[1], self.Vertices[2]}
 end
 
+---Returns a vector representing the edge.
+function NAV_EDGE:GetVector()
+	local cache = self:GetCache()
+	return cache.Point2 - cache.Point1
+end
+
 ---Returns whether an edge is at a wall or wall like (not walkable) geometry.
 ---This doesn't influence pathfinding or if bots can use this edge to navigate.
 ---This is used (indirectly via vertices) to determine if a bot has to keep distance to edges/vertices so it doesn't get stuck on walls or corners.

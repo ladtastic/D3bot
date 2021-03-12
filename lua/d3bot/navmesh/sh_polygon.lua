@@ -623,8 +623,8 @@ function NAV_POLYGON:GetClosestPointToPoint(p)
 	-- Find the closest point on the edge that is also clamped to the edge length.
 	if maxIndex then
 		local edge = self.Edges[maxIndex]
-		local eP1, eP2 = unpack(edge:GetPoints()) -- TODO: Add GetVector method to navmesh edge, and cache vector for faster calculations
-		local edgeVector = (eP2 - eP1)
+		local eP1 = edge:GetPoints()[1]
+		local edgeVector = edge:GetVector()
 		local edgeFraction = math.Clamp((projected - eP1):Dot(edgeVector) / edgeVector:LengthSqr(), 0, 1)
 		return eP1 + edgeVector * edgeFraction
 	end

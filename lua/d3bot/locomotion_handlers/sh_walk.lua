@@ -120,7 +120,6 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 			local locHandler = nextPathElement.LocomotionHandler
 			if locHandler.BeginOffset then
 				endPlaneOffset = locHandler:BeginOffset(index-1, pathElements, cache.EndPlane.Normal)
-				-- TODO: Handle positive offsets in a different way, as real time string pulling doesn't work correctly with bot positions behind the end plane
 				cache.EndPlane.Origin = cache.EndPlane.Origin + endPlaneOffset * cache.EndPlane.Normal
 			end
 		end
