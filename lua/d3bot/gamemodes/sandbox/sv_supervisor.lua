@@ -21,7 +21,6 @@ local function MaintainBotRoles()
 	local bots = player.GetBots()
 
 	if #bots < 5 then
-		---@type GPlayer
 		local bot = player.CreateNextBot(D3bot.GetBotName())
 		bot.D3bot = {}
 	elseif #bots > 5 then

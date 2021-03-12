@@ -174,7 +174,6 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm, weapon, ply)
 	-- TODO: Make navmesh drawing optional
 
 	---Highlight the selected bots somehow.
-	---@type GPlayer
 	for ply in pairs(self.Bots) do
 		local pos = ply:GetPos()
 		render.DrawSphere(pos, 16, 6, 6, Color(255, 255, 255, 255))
