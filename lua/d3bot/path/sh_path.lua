@@ -269,9 +269,6 @@ function PATH:UpdatePathToPos(startPos, destPos)
 		end
 	end
 
-	-- TODO: Check if destPos is still on the same navmesh entity (shortest distance to {current polygon, neighbors...})
-	-- TODO: Regenerate path if destPos moved to different navmesh entity
-
 	-- It should be decided in an intelligent way how and when to regenerate the path.
 	-- Ideally it only has to do a full path regeneration when the destPos moves too much, otherwise it only has to update the last path element.
 	-- Also, if the current path is long enough, there is no need to regenerate the path every time the destPos moves from one polygon to another.
