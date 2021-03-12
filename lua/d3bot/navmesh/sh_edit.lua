@@ -142,14 +142,13 @@ if SERVER then
 end
 
 ------------------------------------------------------
---		SetFlipNormalByID
+--		FlipNormalByID
 ------------------------------------------------------
 
 ---Flip normal of entity.
 ---@param ply GPlayer
 ---@param id number | string
----@param state boolean
-function NAV_EDIT.SetFlipNormalByID(ply, id, state)
+function NAV_EDIT.FlipNormalByID(ply, id)
 	if SERVER then
 		-- Only he who wields the weapon has the power.
 		if not ply:HasWeapon("weapon_d3_navmesher") then return end
@@ -158,24 +157,23 @@ function NAV_EDIT.SetFlipNormalByID(ply, id, state)
 
 		local polygon = navmesh:FindPolygonByID(id)
 		if polygon then
-			polygon:SetFlipNormal(state)
+			polygon:FlipNormal()
 		end
 
 	elseif CLIENT then
-		net.Start("D3bot_Nav_Edit_SetFlipNormalByID")
+		net.Start("D3bot_Nav_Edit_FlipNormalByID")
 		net.WriteTable({id})
-		net.WriteBool(state)
 		net.SendToServer()
 	end
 end
 
 if SERVER then
-	util.AddNetworkString("D3bot_Nav_Edit_SetFlipNormalByID")
-	net.Receive("D3bot_Nav_Edit_SetFlipNormalByID",
+	util.AddNetworkString("D3bot_Nav_Edit_FlipNormalByID")
+	net.Receive("D3bot_Nav_Edit_FlipNormalByID",
 		function(len, ply)
 			local id = unpack(net.ReadTable())
 			local state = net.ReadBool()
-			NAV_EDIT.SetFlipNormalByID(ply, id, state)
+			NAV_EDIT.FlipNormalByID(ply, id, state)
 		end
 	)
 end

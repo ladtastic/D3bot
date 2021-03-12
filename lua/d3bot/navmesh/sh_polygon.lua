@@ -36,9 +36,8 @@ local VECTOR_DOWN = Vector(0, 0, -1)
 ---@class D3botNAV_POLYGON
 ---@field Navmesh D3botNAV_MESH
 ---@field ID number | string
----@field Edges D3botNAV_EDGE[] @List of edges, sorted so that it builds a chained loop.
----@field Vertices D3botNAV_VERTEX[] @List of vertices, order corresponds with the edge list.
----@field FlipNormal boolean
+---@field Vertices D3botNAV_VERTEX[] @List of vertices that this polygon is made of.
+---@field Edges D3botNAV_EDGE[] @List of edges, order corresponds with the vertex list. This is generated in the constructor.
 ---@field Cache table | nil @Contains cached values like the normal, the 3 corner points and neighbor polygons. Can be invalidated.
 ---@field UI table @General structure for UI related properties like selection status.
 local NAV_POLYGON = D3bot.NAV_POLYGON
@@ -51,40 +50,39 @@ NAV_POLYGON.__index = NAV_POLYGON
 NAV_POLYGON.MaxPlaneDeviation = 5
 
 ---Get new instance of a polygon object.
----This represents a polygon that is defined by n edges that are connected in a loop.
+---This represents a polygon that is defined by n vertices that are connected in a loop.
+---The normal of the polygon is determined by the direction of the vertex loop (right hand rule).
 ---If a polygon with the same id already exists, it will be replaced.
 ---There are some restrictions to what represents a valid polygon.
 ---If the polygon isn't nearly flat (no unique normal can be found), this function will fail.
 ---If the polygon isn't convex, this function will also fail.
 ---@param navmesh D3botNAV_MESH
 ---@param id number | string
----@param edges D3botNAV_EDGE[]
----@param flipNormal boolean
+---@param vertices D3botNAV_VERTEX[]
 ---@return D3botNAV_POLYGON | nil
 ---@return D3botERROR | nil err
-function NAV_POLYGON:New(navmesh, id, edges, flipNormal)
+function NAV_POLYGON:New(navmesh, id, vertices)
 	local obj = setmetatable({
 		Navmesh = navmesh,
 		ID = id or navmesh:GetUniqueID(),
 		Edges = {},
-		Vertices = {},
-		FlipNormal = flipNormal, -- TODO: Get rid of FlipNormal flag inside of polygon. This needs polygons to be based on vertices not edges
+		Vertices = vertices,
 		Cache = nil,
 		UI = {},
 	}, self)
 
 	-- General parameter checks. -- TODO: Check parameters for types and other stuff
 	if not navmesh then return nil, ERROR:New("Invalid value of parameter %q", "navmesh") end
-	if not edges then return nil, ERROR:New("Invalid value of parameter %q", "edges") end
+	if not vertices then return nil, ERROR:New("Invalid value of parameter %q", "vertices") end
 
 	-- TODO: Check if ID is used by a different entity type
 
-	-- Sort edges so that they form a loop.
-	-- The loop direction depends on the alignment of the first edge.
-	local err
-	obj.Edges, obj.Vertices, err = UTIL.EdgeChainLoop(edges, flipNormal)
-	if err then
-		return nil, err
+	-- Get list of edges that corresponds with the vertex list.
+	for i, v1 in ipairs(vertices) do
+		local v2 = vertices[i%(#vertices)+1]
+		local edge, err = navmesh:FindEdge2V(v1, v2)
+		if err then return nil, err end
+		table.insert(obj.Edges, edge)
 	end
 
 	-- TODO: Check polygon min. height
@@ -171,16 +169,16 @@ end
 ---@return D3botNAV_POLYGON | nil
 ---@return D3botERROR | nil err
 function NAV_POLYGON:NewFromTable(navmesh, t)
-	if not t.Edges then return nil, ERROR:New("The field %q is missing from the table", "Edges") end
+	if not t.Vertices then return nil, ERROR:New("The field %q is missing from the table", "Vertices") end
 
-	local edges = {}
-	for _, edgeID in ipairs(t.Edges) do
-		local edge = navmesh:FindEdgeByID(edgeID)
-		if not edge then return nil, ERROR:New("Couldn't find all edges by their reference") end
-		table.insert(edges, edge)
+	local vertices = {}
+	for _, vertexID in ipairs(t.Vertices) do
+		local vertex = navmesh:FindVertexByID(vertexID)
+		if not vertex then return nil, ERROR:New("Couldn't find all vertices by their reference") end
+		table.insert(vertices, vertex)
 	end
 
-	local obj, err = self:New(navmesh, t.ID, edges, t.FlipNormal)
+	local obj, err = self:New(navmesh, t.ID, vertices)
 	return obj, err
 end
 
@@ -200,12 +198,11 @@ end
 function NAV_POLYGON:MarshalToTable()
 	local t = {
 		ID = self:GetID(),
-		Edges = {},
-		FlipNormal = self.FlipNormal,
+		Vertices = {},
 	}
 
-	for _, edge in ipairs(self.Edges) do
-		table.insert(t.Edges, edge:GetID())
+	for _, vertex in ipairs(self.Vertices) do
+		table.insert(t.Vertices, vertex:GetID())
 	end
 
 	return t -- Make sure that any object returned here is a deep copy of its original.
@@ -491,6 +488,35 @@ function NAV_POLYGON:_GetLocomotionType()
 	return locType
 end
 
+---Returns whether the polygon consists out of the given vertices or not.
+---@param vertices D3botNAV_VERTEX[]
+---@return boolean
+function NAV_POLYGON:ConsistsOfVertices(vertices)
+	if #self.Vertices ~= #vertices then return false end
+
+	-- Make copy of list.
+	local sVertices = {unpack(self.Vertices)}
+
+	-- Do a stupid linear search for every vertex entity.
+	-- It's a slow operation, but as this is only called when editing the navmesh, it has no impact on bot performance.
+	for _, vertex in ipairs(vertices) do
+		local found = false
+		for k, sVertex in pairs(sVertices) do
+			if vertex == sVertex then
+				sVertices[k], found = nil, true
+				break
+			end
+		end
+		-- Element not found, so there is a difference.
+		if not found then
+			return false
+		end
+	end
+
+	-- Both lists contain the same elements, order may differ.
+	return true
+end
+
 ---Returns whether the polygon consists out of the given edges or not.
 ---@param edges D3botNAV_EDGE[]
 ---@return boolean
@@ -500,7 +526,7 @@ function NAV_POLYGON:ConsistsOfEdges(edges)
 	-- Make copy of list.
 	local sEdges = {unpack(self.Edges)}
 
-	-- Do a stupid linear search for every edge element.
+	-- Do a stupid linear search for every edge entity.
 	-- It's a slow operation, but as this is only called when editing the navmesh, it has no impact on bot performance.
 	for _, edge in ipairs(edges) do
 		local found = false
@@ -568,34 +594,34 @@ function NAV_POLYGON:RecalcFlipNormal()
 
 	if FlipCounter < 0 then
 		-- Most neighbor polygons are flipped in the other direction.
-		self:SetFlipNormal(not self.FlipNormal)
+		self:FlipNormal()
 	elseif FlipCounter > 0 then
 		-- Most neighbor polygons are aligned in the same direction.
 	else
 		-- Neighbor polygon normals are indecisive: Assume upwards is more likely to be correct.
 		if cache.Normal[3] < 0 then
-			self:SetFlipNormal(not self.FlipNormal)
+			self:FlipNormal()
 		end
 	end
 end
 
----Changes and publishes the FlipNormal state.
----@param state boolean
-function NAV_POLYGON:SetFlipNormal(state)
+---Flips the normal of the polygon by changing the order of the vertices (and edges).
+function NAV_POLYGON:FlipNormal()
 	local navmesh = self.Navmesh
 
-	if state then
-		self.FlipNormal = true
-	else
-		self.FlipNormal = nil
+	if #self.Vertices ~= #self.Edges then error("Uh oh") end
+	local entityCount = #self.Vertices
+
+	-- Change order of the vertices and edges without destroying the interrelationship between both lists.
+	-- Also, this will keep the first vertex at the first index.
+	local vertices, edges = {}, {}
+	for edgeIndex = entityCount, 1, -1 do
+		local vertexIndex = edgeIndex%(entityCount) + 1
+		table.insert(edges, self.Edges[edgeIndex])
+		table.insert(vertices, self.Vertices[vertexIndex])
 	end
 
-	-- Recalc vertices and edges.
-	local err
-	self.Edges, self.Vertices, err = UTIL.EdgeChainLoop(self.Edges, self.FlipNormal)
-	if err then
-		print(string.format("%s UTIL.EdgeChainLoop failed for %s: %s", D3bot.PrintPrefix, self, err))
-	end
+	self.Vertices, self.Edges = vertices, edges
 
 	-- Recalc normal, neighbor polygons, corner positions and other stuff.
 	self:InvalidateCache()

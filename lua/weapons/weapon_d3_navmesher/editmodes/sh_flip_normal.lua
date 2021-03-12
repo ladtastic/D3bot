@@ -112,7 +112,7 @@ function THIS_EDIT_MODE:SecondaryAttack(wep)
 	local tracedPolygon = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Polygons)
 	if tracedPolygon then
 		-- Edit server side navmesh.
-		NAV_EDIT.SetFlipNormalByID(LocalPlayer(), tracedPolygon:GetID(), not tracedPolygon.FlipNormal)
+		NAV_EDIT.FlipNormalByID(LocalPlayer(), tracedPolygon:GetID())
 
 		wep:EmitSound("buttons/blip2.wav")
 	else

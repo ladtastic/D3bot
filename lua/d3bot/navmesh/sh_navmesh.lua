@@ -86,12 +86,39 @@ function NAV_MESH:NewFromTable(t)
 		end
 	end
 
-	-- Restore triangles as polygons.
+	-- Restore triangles as polygons. -- TODO: Delete this migration code
 	if t.Triangles then
 		for _, triangleTable in ipairs(t.Triangles) do
-			local polygon, err = NAV_POLYGON:NewFromTable(obj, triangleTable)
-			if err then print(string.format("%s Failed to restore triangle %s as polygon: %s", D3bot.PrintPrefix, triangleTable.ID, err)) end
-			if polygon then polygon:RecalcFlipNormal() end
+			local tableCopy = {unpack(triangleTable)}
+
+			-- Get list of edges.
+			local edges = {}
+			for _, edgeID in ipairs(triangleTable.Edges) do
+				local edge = obj:FindEdgeByID(edgeID)
+				if err then
+					print(string.format("%s Failed to restore triangle %s as polygon: Couldn't find all edge references", D3bot.PrintPrefix, triangleTable.ID, err))
+					edges = nil
+					break
+				end
+				table.insert(edges, edge)
+			end
+
+			if edges then
+				-- Sort edges so that they form a loop.
+				-- The loop direction depends on the alignment of the first edge.
+				local _, vertices, err = UTIL.EdgeChainLoop(edges, false)
+				if err then print(string.format("%s Failed to restore triangle %s as polygon: %s", D3bot.PrintPrefix, triangleTable.ID, err)) end
+
+				-- Migration: Add vertex IDs into polygon compatible triangle table.
+				tableCopy.Vertices = {}
+				for _, vertex in ipairs(vertices) do
+					table.insert(tableCopy.Vertices, vertex:GetID())
+				end
+
+				local polygon, err = NAV_POLYGON:NewFromTable(obj, tableCopy)
+				if err then print(string.format("%s Failed to restore triangle %s as polygon: %s", D3bot.PrintPrefix, triangleTable.ID, err)) end
+				if polygon then polygon:RecalcFlipNormal() end
+			end
 		end
 	end
 
@@ -313,15 +340,14 @@ end
 ---@return D3botNAV_POLYGON | nil
 ---@return D3botERROR | nil err
 function NAV_MESH:FindPolygonPs(points)
-	local edges = {}
-	for i, p1 in ipairs(points) do
-		local p2 = points[i%(#points)+1]
+	local vertices = {}
+	for i, point in ipairs(points) do
 		local err
-		edges[i], err = self:FindEdge2P(p1, p2)
+		vertices[i], err = self:FindVertex1P(point)
 		if err then return nil, err end
 	end
 
-	return self:FindPolygonEs(edges)
+	return self:FindPolygonVs(vertices)
 end
 
 ---Will return the polygon that is built with the given vertices, if there is one.
@@ -331,15 +357,11 @@ end
 ---@return D3botNAV_POLYGON | nil
 ---@return D3botERROR | nil err
 function NAV_MESH:FindPolygonVs(vertices)
-	local edges = {}
-	for i, v1 in ipairs(vertices) do
-		local v2 = vertices[i%(#vertices)+1]
-		local err
-		edges[i], err = self:FindEdge2V(v1, v2)
-		if err then return nil, err end
+	for _, polygon in pairs(self.Polygons) do
+		if polygon:ConsistsOfVertices(vertices) then return polygon, nil end
 	end
 
-	return self:FindPolygonEs(edges)
+	return nil, ERROR:New("No polygon found with the given vertices %s", vertices)
 end
 
 ---Will return the polygon that is built with the given edges, if there is one.
@@ -356,31 +378,39 @@ function NAV_MESH:FindPolygonEs(edges)
 end
 
 ---Will create a new polygon with the given points, or return an already existing polygon.
+---The order of the points determines the direction of the normal (Right hand rule).
 ---@param points GVector[]
 ---@return D3botNAV_POLYGON | nil
 ---@return D3botERROR | nil err
 function NAV_MESH:FindOrCreatePolygonPs(points)
-	local edges = {}
-	for i, p1 in ipairs(points) do
-		local p2 = points[i%(#points)+1]
+	local vertices = {}
+	for i, point in ipairs(points) do
 		local err
-		edges[i], err = self:FindOrCreateEdge2P(p1, p2)
+		vertices[i], err = self:FindOrCreateVertex1P(point)
 		if err then return nil, err end
 	end
 
-	return self:FindOrCreatePolygonEs(edges)
+	return self:FindOrCreatePolygonVs(vertices)
 end
 
----Will create a new polygon with the given edges, or return an already existing polygon.
----@param edges D3botNAV_EDGE[]
+---Will create a new polygon with the given vertices, or return an already existing polygon.
+---The order of the vertices determines the direction of the normal (Right hand rule).
+---@param vertices D3botNAV_VERTEX[]
 ---@return D3botNAV_POLYGON | nil
 ---@return D3botERROR | nil err
-function NAV_MESH:FindOrCreatePolygonEs(edges)
-	local polygon = self:FindPolygonEs(edges)
+function NAV_MESH:FindOrCreatePolygonVs(vertices)
+	local polygon = self:FindPolygonVs(vertices)
 	if polygon then return polygon, nil end
 
+	-- Make sure all edges exist.
+	for i, v1 in ipairs(vertices) do
+		local v2 = vertices[i%(#vertices)+1]
+		local _, err = self:FindOrCreateEdge2V(v1, v2)
+		if err then return nil, err end
+	end
+
 	-- Create new polygon.
-	local polygon, err = NAV_POLYGON:New(self, nil, edges, nil)
+	local polygon, err = NAV_POLYGON:New(self, nil, vertices)
 	if err then return nil, err end
 
 	-- Determine FlipNormal state.
