@@ -192,15 +192,9 @@ function NAV_AIR_CONNECTION:GetCache()
 	cache.Centroid = (point1 + point2) / 2
 
 	-- Determine locomotion type. (Hardcoded locomotion types)
-	cache.LocomotionType = "AirHorizontal" -- Default type
-	local direction = (point2 - point1)
-	local cosine = direction:GetNormalized():Dot(VECTOR_UP)
-	-- Everything steeper than 45 deg is considered vertical.
-	if math.abs(cosine) > 0.7071067812 then
-		cache.LocomotionType = "AirVertical"
-	end
-	-- TODO: Add user defined locomotion type override to air connections
+	cache.LocomotionType = self:_GetLocomotionType()
 
+	--[[ Exclude this, as paths don't start on polygons. They start on PATH_POINT objects.
 	---A list of possible paths to take from this air connection.
 	---@type D3botPATH_FRAGMENT[]
 	cache.PathFragments = {}
@@ -212,7 +206,7 @@ function NAV_AIR_CONNECTION:GetCache()
 				local edgeCenter = edge:_GetCentroid()
 				local edgeVector = eP2 - eP1
 				local pathDirection = edgeCenter - cache.Centroid -- Basically the walking direction.
-				local edgeOrthogonal = edgeVector:Cross(pathDirection):Cross(edgeVector):GetNormalized() -- Vector that is orthogonal to the edge, additionally it always points outside the polygon.
+				local edgeOrthogonal = edgeVector:Cross(pathDirection):Cross(edgeVector):GetNormalized() -- Vector that is orthogonal to the edge, additionally it always points to the path direction.
 				local edgeOrthogonal2D = UTIL.VectorFlipAlongVector(edgeVector:Cross(VECTOR_UP), pathDirection):GetNormalized() -- Flattened 2D version of the above.
 				---@type D3botPATH_FRAGMENT
 				local pathFragment = {
@@ -231,7 +225,7 @@ function NAV_AIR_CONNECTION:GetCache()
 				table.insert(cache.PathFragments, pathFragment)
 			end
 		end
-	end
+	end]]
 
 	return cache
 end
@@ -293,6 +287,23 @@ end
 function NAV_AIR_CONNECTION:GetLocomotionType()
 	local cache = self:GetCache()
 	return cache.LocomotionType
+end
+
+---Internal and uncached version of GetLocomotionType.
+---@return string
+function NAV_AIR_CONNECTION:_GetLocomotionType()
+	local locType = "AirHorizontal" -- Default type
+
+	local point1, point2 = self.Edges[1]:_GetCentroid(), self.Edges[2]:_GetCentroid()
+	local direction = (point2 - point1)
+	local cosine = direction:GetNormalized():Dot(VECTOR_UP)
+	-- Everything steeper than 45 deg is considered vertical.
+	if math.abs(cosine) > 0.7071067812 then
+		locType = "AirVertical"
+	end
+	-- TODO: Add user defined locomotion type override to air connections
+
+	return locType
 end
 
 ---Returns whether the air connection consists out of the two given edges or not.

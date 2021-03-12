@@ -63,19 +63,17 @@ function PATH_POINT:New(navmesh, pos)
 
 	-- Polygon normal and centroid.
 	local polygonNormal, polygonCentroid = obj.Polygon:GetNormal(), obj.Polygon:GetCentroid()
+	local polygonEdgePlanes = obj.Polygon:GetEdgePlanes()
 
 	---A list of possible paths to take from this point.
 	---@type D3botPATH_FRAGMENT[]
 	obj.PathFragments = {}
 	-- Generate path fragments from this point to connected edges (via polygons).
-	for _, edge in ipairs(obj.Polygon.Edges) do
+	for edgeIndex, edge in ipairs(obj.Polygon.Edges) do
 		if #edge.Polygons + #edge.AirConnections > 1 then
-			local eP1, eP2 = edge:GetPoints()
 			local edgeCenter = edge:GetCentroid() -- Use cache as it may be faster.
-			local edgeVector = eP2 - eP1
 			local pathDirection = edgeCenter - pos -- Basically the walking direction.
-			local edgeOrthogonal = UTIL.VectorFlipAlongVector(edgeVector:Cross(polygonNormal), pathDirection):GetNormalized() -- Vector that is orthogonal to the edge, additionally it always points outside the polygon.
-			local edgeOrthogonal2D = UTIL.VectorFlipAlongVector(edgeVector:Cross(VECTOR_UP), pathDirection):GetNormalized() -- Flattened 2D version of the above.
+			local polygonEdgePlane = polygonEdgePlanes[edgeIndex]
 			---@type D3botPATH_FRAGMENT
 			local pathFragment = {
 				From = obj,
@@ -87,20 +85,16 @@ function PATH_POINT:New(navmesh, pos)
 				PathDirection = pathDirection, -- Vector from start position to dest position.
 				Distance = pathDirection:Length(), -- Distance from start to dest.
 				LimitingPlanes = {},
-				EndPlane = {Origin = edgeCenter, Normal = edgeOrthogonal, Normal2D = edgeOrthogonal2D},
+				EndPlane = polygonEdgePlane,
 				--StartPlane = nil,
 			}
 			-- Add edges to the limiting plane list.
 			-- Limiting planes can be either walled or not.
 			-- A walled limiting plane implies that the bot has to keep more distance (depending on the bot's hull) to the plane.
 			-- TODO: If there is no direct walled edge, use neighbor walled edges
-			for _, wEdge in ipairs(obj.Polygon.Edges) do
+			for edgeIndex2, wEdge in ipairs(obj.Polygon.Edges) do
 				if wEdge ~= edge then
-					local wP1, wP2 = wEdge:GetPoints()
-					local wCentroid = wEdge:GetCentroid()
-					local wNormal = UTIL.VectorFlipAlongVector((wP2 - wP1):Cross(polygonNormal):GetNormalized(), wCentroid - polygonCentroid)
-					local wNormal2D = UTIL.VectorFlipAlongVector((wP2 - wP1):Cross(VECTOR_UP):GetNormalized(), wCentroid - polygonCentroid)
-					table.insert(pathFragment.LimitingPlanes, {Origin = wCentroid, Normal = wNormal, Normal2D = wNormal2D, IsWalled = wEdge:IsWalled()})
+					table.insert(pathFragment.LimitingPlanes, polygonEdgePlanes[edgeIndex2])
 				end
 			end
 			table.insert(obj.PathFragments, pathFragment)
@@ -178,14 +172,10 @@ function PATH_POINT:GetPathFragmentsForInjection(from, fromPos)
 	-- Limiting planes can be either walled or not.
 	-- A walled limiting plane implies that the bot has to keep more distance (depending on the bot's hull) to the plane.
 	-- TODO: If there is no direct walled edge, use neighbor walled edges
-	for _, wEdge in ipairs(self.Polygon.Edges) do
+	local polygonEdgePlanes = self.Polygon:GetEdgePlanes()
+	for wEdgeIndex, wEdge in ipairs(self.Polygon.Edges) do
 		if wEdge ~= from then
-			local wP1, wP2 = wEdge:GetPoints()
-			local wCentroid = wEdge:GetCentroid()
-			local polygonNormal, polygonCentroid = self.Polygon:GetNormal(), self.Polygon:GetCentroid()
-			local wNormal = UTIL.VectorFlipAlongVector((wP2 - wP1):Cross(polygonNormal):GetNormalized(), wCentroid - polygonCentroid)
-			local wNormal2D = UTIL.VectorFlipAlongVector((wP2 - wP1):Cross(VECTOR_UP):GetNormalized(), wCentroid - polygonCentroid)
-			table.insert(pathFragment.LimitingPlanes, {Origin = wCentroid, Normal = wNormal, Normal2D = wNormal2D, IsWalled = wEdge:IsWalled()})
+			table.insert(pathFragment.LimitingPlanes, polygonEdgePlanes[wEdgeIndex])
 		end
 	end
 

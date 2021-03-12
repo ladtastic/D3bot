@@ -250,43 +250,36 @@ function NAV_POLYGON:GetCache()
 	-- Calculate "centroid" center.
 	cache.Centroid = self:_GetCentroid()
 
-	-- List of "edge plane" normals that are orthogonal to the polygon surface and parallel to the edge.
-	-- They point outside of the polygon, and they correspond to the list of self.Vertices.
-	-- Therefore if the nth normal is paired up with the nth vertex, it creates a plane parallel to the nth edge.
-	cache.EdgePlaneNormals = {}
+	-- List of "edge planes" that are orthogonal to the polygon surface and parallel to the edge.
+	-- They point outside of the polygon.
+	cache.EdgePlanes = {}
 	if cache.Normal then
 		for i, point in ipairs(cornerPoints) do
 			local nextPoint = cornerPoints[i%(#cornerPoints)+1]
+			local edge = self.Edges[i]
 			local edgeNormal = (nextPoint - point):Cross(cache.Normal):GetNormalized()
-			table.insert(cache.EdgePlaneNormals, edgeNormal)
+			local edgeNormal2D = (nextPoint - point):Cross(VECTOR_UP):GetNormalized()
+			if VECTOR_UP:Dot(cache.Normal) < 0 then edgeNormal2D:Mul(-1) end
+			table.insert(cache.EdgePlanes, {Origin = (point + nextPoint)/2, Normal = edgeNormal, Normal2D = edgeNormal2D, IsWalled = edge:_IsWalled()})
 		end
 	end
 
 	-- Determine locomotion type. (Hardcoded locomotion types)
-	cache.LocomotionType = "Ground" -- Default type.
-	if cache.Normal then
-		local cosine = cache.Normal:Dot(VECTOR_UP)
-		if cosine < 0.2588190451 then
-			cache.LocomotionType = "Wall" -- Everything steeper than 75 deg is considered a wall.
-		elseif cosine < 0.7071067812 then
-			cache.LocomotionType = "SteepGround" -- Everything steeper than 45 deg is considered a steep ground (That is not walkable normally).
-		end
-		-- TODO: Add user defined locomotion type override to polygons
-	end
+	cache.LocomotionType = self:_GetLocomotionType()
 
+	--[[ Exclude this, as paths don't start on polygons. They start on PATH_POINT objects.
 	---A list of possible paths to take from this polygon.
 	---@type D3botPATH_FRAGMENT[]
 	cache.PathFragments = {}
 	if cache.IsValid then
 		-- Generate path fragments from this polygon to connected edges.
-		for _, edge in ipairs(self.Edges) do
+		for edgeIndex, edge in ipairs(self.Edges) do
 			if #edge.Polygons + #edge.AirConnections > 1 then
 				local eP1, eP2 = edge:_GetPoints()
 				local edgeCenter = edge:_GetCentroid()
 				local edgeVector = eP2 - eP1
 				local pathDirection = edgeCenter - cache.Centroid -- Basically the walking direction.
-				local edgeOrthogonal = UTIL.VectorFlipAlongVector(edgeVector:Cross(cache.Normal), pathDirection):GetNormalized() -- Vector that is orthogonal to the edge, additionally it always points outside the polygon. -- TODO: Use precalculated edgePlaneNormal here
-				local edgeOrthogonal2D = UTIL.VectorFlipAlongVector(edgeVector:Cross(VECTOR_UP), pathDirection):GetNormalized() -- Flattened 2D version of the above.
+				local polygonEdgePlane = cache.PolygonEdgePlanes[edgeIndex]
 				---@type D3botPATH_FRAGMENT
 				local pathFragment = {
 					From = self,
@@ -298,26 +291,22 @@ function NAV_POLYGON:GetCache()
 					PathDirection = pathDirection, -- Vector from start position to dest position.
 					Distance = pathDirection:Length(), -- Distance from start to dest.
 					LimitingPlanes = {},
-					EndPlane = {Origin = edgeCenter, Normal = edgeOrthogonal, Normal2D = edgeOrthogonal2D},
+					EndPlane = polygonEdgePlane,
 					--StartPlane = nil,
 				}
 				-- Add edges to the limiting plane list.
 				-- Limiting planes can be either walled or not.
 				-- A walled limiting plane implies that the bot has to keep more distance (depending on the bot's hull) to the plane.
 				-- TODO: If there is no direct walled edge, use neighbor walled edges
-				for _, wEdge in ipairs(self.Edges) do
+				for edgeIndex2, wEdge in ipairs(self.Edges) do
 					if wEdge ~= edge then
-						local wP1, wP2 = wEdge:_GetPoints()
-						local wCentroid = wEdge:_GetCentroid()
-						local wNormal = UTIL.VectorFlipAlongVector((wP2 - wP1):Cross(cache.Normal):GetNormalized(), wCentroid - cache.Centroid)
-						local wNormal2D = UTIL.VectorFlipAlongVector((wP2 - wP1):Cross(VECTOR_UP):GetNormalized(), wCentroid - cache.Centroid)
-						table.insert(pathFragment.LimitingPlanes, {Origin = wCentroid, Normal = wNormal, Normal2D = wNormal2D, IsWalled = wEdge:_IsWalled()})
+						table.insert(pathFragment.LimitingPlanes, cache.PolygonEdgePlanes[edgeIndex2])
 					end
 				end
 				table.insert(cache.PathFragments, pathFragment)
 			end
 		end
-	end
+	end]]
 
 	return cache
 end
@@ -457,11 +446,39 @@ function NAV_POLYGON:GetPathFragments()
 	return cache.PathFragments
 end
 
+---Returns a list of planes for every edge.
+---The planes are orthogonal to the polygon surface, and parallel to the edge.
+---The normals of the planes are pointing to the outside of the polygon.
+---@return table[]
+function NAV_POLYGON:GetEdgePlanes()
+	local cache = self:GetCache()
+	return cache.EdgePlanes
+end
+
 ---Returns the locomotion type as a string.
 ---@return string
 function NAV_POLYGON:GetLocomotionType()
 	local cache = self:GetCache()
 	return cache.LocomotionType
+end
+
+---Internal and uncached version of GetLocomotionType.
+---@return string
+function NAV_POLYGON:_GetLocomotionType()
+	local normal = self:_GetNormal()
+
+	local locType = "Ground" -- Default type.
+	if normal then
+		local cosine = normal:Dot(VECTOR_UP)
+		if cosine < 0.2588190451 then
+			locType = "Wall" -- Everything steeper than 75 deg is considered a wall.
+		elseif cosine < 0.7071067812 then
+			locType = "SteepGround" -- Everything steeper than 45 deg is considered a steep ground (That is not walkable normally).
+		end
+		-- TODO: Add user defined locomotion type override to polygons
+	end
+
+	return locType
 end
 
 ---Returns whether the polygon consists out of the given edges or not.
@@ -595,9 +612,8 @@ function NAV_POLYGON:GetClosestPointToPoint(p)
 	-- Get the edge plane that has the largest distance to the projected point (only positive distance).
 	local maxNormDist = 0
 	local maxIndex
-	for i, edgePlaneNormal in ipairs(cache.EdgePlaneNormals) do
-		local edgePlaneOrigin = cache.CornerPoints[i]
-		local dist = edgePlaneNormal:Dot(projected - edgePlaneOrigin)
+	for i, edgePlane in ipairs(cache.EdgePlanes) do
+		local dist = edgePlane.Normal:Dot(projected - edgePlane.Origin)
 		if maxNormDist < dist then
 			maxNormDist, maxIndex = dist, i
 		end
@@ -651,9 +667,8 @@ function NAV_POLYGON:IntersectsRay(origin, dir)
 	if d > 1 then return nil end
 
 	-- Check if the intersection lies outside of the polygon.
-	for i, edgePlaneNormal in ipairs(cache.EdgePlaneNormals) do
-		local edgePlaneOrigin = cache.CornerPoints[i]
-		local dist = edgePlaneNormal:Dot(intersectionPoint - edgePlaneOrigin)
+	for i, edgePlane in ipairs(cache.EdgePlanes) do
+		local dist = edgePlane.Normal:Dot(intersectionPoint - edgePlane.Origin)
 		if dist > 0 then
 			return nil
 		end

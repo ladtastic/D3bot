@@ -146,7 +146,7 @@ function NAV_VERTEX:GetCache()
 	-- A flag stating if this vertex is located at a wall. Bots will try to keep distance to these vertices.
 	cache.IsWalled = false
 	for _, edge in pairs(self.Edges) do
-		if edge:IsWalled() then
+		if edge:_IsWalled() then
 			cache.IsWalled = true
 			break
 		end

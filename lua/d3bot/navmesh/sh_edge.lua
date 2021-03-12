@@ -212,19 +212,13 @@ function NAV_EDGE:GetCache()
 		for _, polygon in ipairs(self.Polygons) do
 			-- Get normal of the polygon.
 			local polygonNormal = polygon:_GetNormal()
+			local polygonEdgePlanes = polygon:GetEdgePlanes()
 
-			-- Orthogonal vectors from self to the inside of the polygon.
-			--local selfOrthogonal = UTIL.VectorFlipAlongVector((p2-p1):Cross(polygonNormal), polygon:_GetCentroid() - cache.Center):GetNormalized() -- Vector orthogonal to the edge (self), that points inside the polygon.
-			--local selfOrthogonal2D = UTIL.VectorFlipAlongVector((p2-p1):Cross(VECTOR_UP), polygon:_GetCentroid() - cache.Center):GetNormalized() -- Flattened 2D version of the above.
-
-			for _, edge in ipairs(polygon.Edges) do
+			for edgeIndex, edge in ipairs(polygon.Edges) do
 				if edge ~= self and #edge.Polygons + #edge.AirConnections > 1 then
-					local eP1, eP2 = edge:_GetPoints()
 					local neighborEdgeCenter = edge:_GetCentroid()
-					local edgeVector = eP2 - eP1
+					local polygonEdgePlane = polygonEdgePlanes[edgeIndex]
 					local pathDirection = neighborEdgeCenter - cache.Center -- Basically the walking direction.
-					local edgeOrthogonal = UTIL.VectorFlipAlongVector(edgeVector:Cross(polygonNormal), pathDirection):GetNormalized() -- Vector that is orthogonal to the edge, additionally it always points outside the polygon. -- TODO: Reuse precalculated edge plane normal of the polygon
-					local edgeOrthogonal2D = UTIL.VectorFlipAlongVector(edgeVector:Cross(VECTOR_UP), pathDirection):GetNormalized() -- Flattened 2D version of the above.
 					---@type D3botPATH_FRAGMENT
 					local pathFragment = {
 						From = self,
@@ -232,25 +226,20 @@ function NAV_EDGE:GetCache()
 						Via = polygon,
 						To = edge,
 						ToPos = neighborEdgeCenter,
-						LocomotionType = polygon:GetLocomotionType(), -- Not optimal as it makes a cache query and has potential for infinite recursion.
+						LocomotionType = polygon:_GetLocomotionType(),
 						PathDirection = pathDirection, -- Vector from start position to dest position.
 						Distance = pathDirection:Length(), -- Distance from start to dest.
 						LimitingPlanes = {},
-						EndPlane = {Origin = neighborEdgeCenter, Normal = edgeOrthogonal, Normal2D = edgeOrthogonal2D},
+						EndPlane = polygonEdgePlane,
 						--StartPlane = {Origin = cache.Center, Normal = selfOrthogonal, Normal2D = selfOrthogonal2D},
 					}
 					-- Add edges to the limiting plane list.
 					-- Limiting planes can be either walled or not.
 					-- A walled limiting plane implies that the bot has to keep more distance (depending on the bot's hull) to the plane.
 					-- TODO: If there is no direct walled edge, use neighbor walled edges
-					for _, wEdge in ipairs(polygon.Edges) do
+					for edgeIndex2, wEdge in ipairs(polygon.Edges) do
 						if wEdge ~= self and wEdge ~= edge then
-							local wP1, wP2 = wEdge:_GetPoints()
-							local wCentroid = wEdge:_GetCentroid()
-							local wNormal = UTIL.VectorFlipAlongVector((wP2 - wP1):Cross(polygonNormal):GetNormalized(), wCentroid - polygon:_GetCentroid())
-							local wNormal2D = UTIL.VectorFlipAlongVector((wP2 - wP1):Cross(VECTOR_UP):GetNormalized(), wCentroid - polygon:_GetCentroid())
-							table.insert(pathFragment.LimitingPlanes, {Origin = wCentroid, Normal = wNormal, Normal2D = wNormal2D, IsWalled = wEdge:_IsWalled()})
-							break
+							table.insert(pathFragment.LimitingPlanes, polygonEdgePlanes[edgeIndex2])
 						end
 					end
 					table.insert(cache.PathFragments, pathFragment)
@@ -272,7 +261,7 @@ function NAV_EDGE:GetCache()
 					local edgeCenter = edge:_GetCentroid()
 					local edgeVector = eP2 - eP1
 					local pathDirection = edgeCenter - cache.Center -- Basically the walking direction.
-					local edgeOrthogonal = edgeVector:Cross(pathDirection):Cross(edgeVector):GetNormalized() -- Vector that is orthogonal to the edge, additionally it always points outside.
+					local edgeOrthogonal = edgeVector:Cross(pathDirection):Cross(edgeVector):GetNormalized() -- Vector that is orthogonal to the edge, additionally it always points to the path direction.
 					local edgeOrthogonal2D = UTIL.VectorFlipAlongVector(edgeVector:Cross(VECTOR_UP), pathDirection):GetNormalized() -- Flattened 2D version of the above.
 					---@type D3botPATH_FRAGMENT
 					local pathFragment = {
@@ -281,7 +270,7 @@ function NAV_EDGE:GetCache()
 						Via = airConnection,
 						To = edge,
 						ToPos = edgeCenter,
-						LocomotionType = airConnection:GetLocomotionType(), -- Not optimal as it makes a cache query and has potential for infinite recursion.
+						LocomotionType = airConnection:_GetLocomotionType(),
 						PathDirection = pathDirection, -- Vector from start position to dest position.
 						Distance = pathDirection:Length(), -- Distance from start to dest.
 						LimitingPlanes = {},
@@ -395,7 +384,7 @@ function NAV_EDGE:_IsWalled()
 
 	-- Check if any of the two connected polygons can be walked on.
 	for _, polygon in ipairs(self.Polygons) do
-		local locType = polygon:GetLocomotionType()
+		local locType = polygon:_GetLocomotionType()
 		if locType ~= "Ground" then
 			-- TODO: Calculate "angle" between the two polygons, and use it to determine if the edge is at a cliff or wall
 			return true

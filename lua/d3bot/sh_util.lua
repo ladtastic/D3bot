@@ -500,6 +500,11 @@ function UTIL.CalculatePolygonNormal(corners, maxError)
 	normal:Normalize()
 	center:Div(#corners)
 
+	-- Check if the resulting normal is zero.
+	if normal:IsZero() then
+		return nil, ERROR:New("Resulting normal has a length of zero")
+	end
+
 	-- Check if any orthogonal points in the wrong direction.
 	for _, orthogonal in ipairs(orthogonals) do
 		if normal:Dot(orthogonal) < 0 then
