@@ -486,16 +486,16 @@ function UTIL.CalculatePolygonNormal(corners, maxError)
 
 	-- List of orthogonal vectors for every edge neighbor pair.
 	-- All orthogonals point into the same direction if the polygon is flat and convex.
-	-- (This doesn't fully work if the polygon is self overlapping (E.g. star shaped), but we ignore this case)
+	-- (A self intersecting polygon (E.g. star shaped) can still pass this criteria, we check for that later)
 	local orthogonals = {}
 	local normal = Vector()
 	local center = Vector()
-	for i, vertex in ipairs(corners) do
-		local preVertex, nextVertex = corners[(i+#corners-2)%(#corners)+1], corners[i%(#corners)+1] -- ughghgh
-		local orthogonal = (nextVertex - vertex):Cross(preVertex - vertex):GetNormalized()
+	for i, point in ipairs(corners) do
+		local prePoint, nextPoint = corners[(i+#corners-2)%(#corners)+1], corners[i%(#corners)+1] -- ughghgh
+		local orthogonal = (nextPoint - point):Cross(prePoint - point):GetNormalized()
 		table.insert(orthogonals, orthogonal)
 		normal:Add(orthogonal)
-		center:Add(vertex)
+		center:Add(point)
 	end
 	normal:Normalize()
 	center:Div(#corners)
@@ -512,11 +512,24 @@ function UTIL.CalculatePolygonNormal(corners, maxError)
 		end
 	end
 
-	-- Check vertex distances to the average plane.
-	for _, vertex in ipairs(corners) do
-		local dist = math.abs(normal:Dot((vertex - center)))
+	-- Check corner distances to the average plane.
+	for _, point in ipairs(corners) do
+		local dist = math.abs(normal:Dot((point - center)))
 		if dist > maxError then
 			return nil, ERROR:New("Vertices don't form a (nearly) flat polygon")
+		end
+	end
+
+	-- Calculate edge plane normals and check if all polygon points are behind those edge planes.
+	-- Not the fastest way to do this.
+	for i, point in ipairs(corners) do
+		local i2 = i%(#corners)+1
+		local nextPoint = corners[i2]
+		local edgeNormal = (nextPoint - point):Cross(normal):GetNormalized()
+		for j, point2 in ipairs(corners) do
+			if j ~= i and j~= i2 and (point2 - point):Dot(edgeNormal) > 0 then
+				return nil, ERROR:New("Polygon is self intersecting")
+			end
 		end
 	end
 
