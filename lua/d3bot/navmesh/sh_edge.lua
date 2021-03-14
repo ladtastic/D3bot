@@ -515,8 +515,10 @@ function NAV_EDGE:Render3D()
 		cam.IgnoreZ(false)
 	else
 		render.DrawLine(p1, p2, COLOR_EDGE, true)
+		-- TODO: Don't query the console variable each edge
 		if CONVARS.NavmeshZCulling:GetBool() then render.SetColorMaterial()	else render.SetColorMaterialIgnoreZ() end -- Necessary here after some gMod update. DrawLine seems to overwrite the material now.
-		if self:IsWalled() then
+		--if self:IsWalled() then
+		if #self.Polygons < 2 then -- TODO: Add UI option for how to draw yellow edges (None, IsWalled state, connected polygons)
 			render.DrawBeam(p1 + VECTOR_UP, p2 + VECTOR_UP, self.DisplayRadius/2, 0, 1, COLOR_EDGE_WALLED)
 		end
 	end

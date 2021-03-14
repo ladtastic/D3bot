@@ -47,7 +47,8 @@ There will be importers/converters for the old navmeshes at some later point in 
 - [X] Debug "edit" modes for the SWEP (Select bots, give them a target, debug generated paths)
 - [ ] [Localization optimization](documentation/lookup-acceleration/README.md), alternatively just quad tree based and use a max. distance
 - [X] Use polygons instead of triangles. This will speed up pathfinding, but path generation needs to take special care of edges that are "obtuse"
-- [ ] Extend navmesh edit tools to work with polygons
+- [X] Extend navmesh edit tools to work with polygons
+- [ ] Add edit tool for merging and splitting
 - [ ] Navmesh groups (to apply parameters to several navmesh elements). But polygons should solve that problem good enough
 - [ ] Internationalization
 - [ ] Improve navmesh and path drawing style (Customizable colors, less eye strain inducing shapes and default colors)

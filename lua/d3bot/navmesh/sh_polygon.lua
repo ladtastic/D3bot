@@ -47,7 +47,7 @@ NAV_POLYGON.__index = NAV_POLYGON
 --NAV_POLYGON.MinHeight = 5
 
 -- Max distance a point is allowed to deviate from the average plane of all points.
-NAV_POLYGON.MaxPlaneDeviation = 5
+NAV_POLYGON.MaxPlaneDeviation = 16 -- TODO: Polygons: Use max. relative deviation or max. angles
 
 ---Get new instance of a polygon object.
 ---This represents a polygon that is defined by n vertices that are connected in a loop.
@@ -754,6 +754,7 @@ function NAV_POLYGON:Render3D()
 			cam.IgnoreZ(false)
 
 			render.DrawLine(centroid, centroid + normal * 30, COLOR_POLYGON_NORMAL, true)
+			-- TODO: Don't query the console variable for each triangle
 			if CONVARS.NavmeshZCulling:GetBool() then render.SetColorMaterial()	else render.SetColorMaterialIgnoreZ() end -- Necessary here after some gMod update. DrawLine seems to overwrite the material now.
 		else
 			if self:GetLocomotionType() == "Ground" then

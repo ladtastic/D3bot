@@ -86,36 +86,74 @@ function THIS_EDIT_MODE:PrimaryAttack(wep)
 	local snapToNav = CONVARS.SWEPSnapToNavmeshGeometry:GetBool()
 	local snappedPos, snapped = UTIL.GetSnappedPosition(snapToNav and navmesh or nil, snapToMap and MAPGEOMETRY or nil, trRes.HitPos, 10)
 
+	-- Store the old points to fallback in case of error.
+	local oldPoints = {unpack(self.TempPoints)}
+
 	-- Check if any edge can be selected, if so add the two edge points to the temp points list.
-	--[[if navmesh and not snapped then
+	local newPoints = {}
+	if navmesh and not snapped then
 		-- Trace closest edge.
 		tracedEdge = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Edges)
 
 		if tracedEdge then
 			local eP1, eP2 = unpack(tracedEdge:GetPoints())
-			table.insert(self.TempPoints, eP1)
-			table.insert(self.TempPoints, eP2)
+			table.insert(newPoints, eP1)
+			table.insert(newPoints, eP2)
 		end
-	end]]
+	end
 
 	-- If there is no traced edge, and there are still more points needed, get one.
 	if not tracedEdge and trRes.Hit then
-		table.insert(self.TempPoints, snappedPos)
+		table.insert(newPoints, snappedPos)
 	end
 
-	-- End condition: If there is a duplicate point.
-	local create
-	local lastPoint = self.TempPoints[#self.TempPoints]
-	for i, point in ipairs(self.TempPoints) do
-		if i < #self.TempPoints and point:IsEqualTol(lastPoint, 0.5) then
-			create = true
+	-- Add points to the temp point list.
+	for _, newPoint in ipairs(newPoints) do
+		local found = false
+		for _, tempPoint in ipairs(self.TempPoints) do
+			if newPoint:IsEqualTol(tempPoint, 0.5) then
+				found = true
+				break
+			end
+		end
+
+		if not found then
+			-- The point doesn't exist. Find the correct position to insert it into the list.
+			if #self.TempPoints >= 3 then
+				local center = UTIL.PointsAverage(self.TempPoints)
+				local normal = UTIL.CalculatePolygonNormal(self.TempPoints, 10000)
+
+				if normal then
+					for i, p1 in ipairs(self.TempPoints) do
+						local p2 = self.TempPoints[i%(#self.TempPoints)+1]
+						-- Check if the point is "between" p1 and p2 (circular chain).
+						local afterP1, afterP2 = (p1 - center):Cross(newPoint - center):Dot(normal) > 0, (p2 - center):Cross(newPoint - center):Dot(normal) > 0
+						if afterP1 and not afterP2 then
+							table.insert(self.TempPoints, i+1, newPoint)
+							break
+						end
+					end
+				else
+					-- Just add it so it causes an error on VerifyVertices.
+					table.insert(self.TempPoints, newPoint)
+				end
+			else
+				table.insert(self.TempPoints, newPoint)
+			end
 		end
 	end
 
-	if #self.TempPoints > 2 and create then
-		-- Remove the last point, which is a duplicate of the first.
-		table.remove(self.TempPoints)
+	if #self.TempPoints >= 3 then
+		local polyError = NAV_POLYGON:VerifyVertices(self.TempPoints)
+		if polyError then
+			self.TempPoints = oldPoints
+			wep:EmitSound("common/wpn_denyselect.wav")
+			return
+		end
+	end
 
+	-- Create polygon if the count didn't change (already existing points were added).
+	if #self.TempPoints >= 3 and #oldPoints == #self.TempPoints then
 		-- Edit server side navmesh.
 		NAV_EDIT.CreatePolygonPs(LocalPlayer(), self.TempPoints)
 
@@ -196,7 +234,8 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm, weapon, ply)
 
 	-- Highlighting of navmesh edges.
 	-- Check if any edge can be selected (based on the temp points needed), if so highlight it.
-	--[[if navmesh and not snapped then
+	local newPoints = {}
+	if navmesh and not snapped then
 		-- Trace closest edge.
 		tracedEdge = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Edges)
 
@@ -204,14 +243,50 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm, weapon, ply)
 		if tracedEdge then
 			tracedEdge.UI.Highlighted = true
 			local eP1, eP2 = unpack(tracedEdge:GetPoints())
-			table.insert(polygonPoints, eP1)
-			table.insert(polygonPoints, eP2)
+			table.insert(newPoints, eP1)
+			table.insert(newPoints, eP2)
 		end
-	end]]
+	end
 
 	-- Add point to temp polygon points, so it draws the 3D cursors and the ghost of the polygon if possible.
 	if not tracedEdge and trRes.Hit then
-		table.insert(polygonPoints, snappedPos)
+		table.insert(newPoints, snappedPos)
+	end
+
+	-- Add points to the temp point list.
+	for _, newPoint in ipairs(newPoints) do
+		local found = false
+		for _, tempPoint in ipairs(polygonPoints) do
+			if newPoint:IsEqualTol(tempPoint, 0.5) then
+				found = true
+				break
+			end
+		end
+
+		if not found then
+			-- The point doesn't exist. Find the correct position to insert it into the list.
+			if #polygonPoints >= 3 then
+				local center = UTIL.PointsAverage(polygonPoints)
+				local normal = UTIL.CalculatePolygonNormal(polygonPoints, 10000)
+
+				if normal then
+					for i, p1 in ipairs(polygonPoints) do
+						local p2 = polygonPoints[i%(#polygonPoints)+1]
+						-- Check if the point is "between" p1 and p2 (circular chain).
+						local afterP1, afterP2 = (p1 - center):Cross(newPoint - center):Dot(normal) > 0, (p2 - center):Cross(newPoint - center):Dot(normal) > 0
+						if afterP1 and not afterP2 then
+							table.insert(polygonPoints, i+1, newPoint)
+							break
+						end
+					end
+				else
+					-- Just add it so it causes an error on VerifyVertices.
+					table.insert(polygonPoints, newPoint)
+				end
+			else
+				table.insert(polygonPoints, newPoint)
+			end
+		end
 	end
 
 	-- Highlighting of navmesh polygons.
@@ -233,10 +308,12 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm, weapon, ply)
 	if #polygonPoints >= 3 then
 		render.SetColorMaterial()
 		polyError = NAV_POLYGON:VerifyVertices(polygonPoints)
+		local normal = UTIL.CalculatePolygonNormal(polygonPoints, 10000)
 		if polyError then
 			RENDER_UTIL.DrawPolygon2Sided(polygonPoints, Color(255, 0, 0, 127))
 		else
-			RENDER_UTIL.DrawPolygon2Sided(polygonPoints, Color(255, 255, 255, 31))
+			RENDER_UTIL.DrawPolygon2Sided(polygonPoints, Color(255, 255, 255, 31), -normal)
+			RENDER_UTIL.DrawPolygon2Sided(polygonPoints, Color(255, 255, 255, 31), normal)
 		end
 	end
 	local oldPoint

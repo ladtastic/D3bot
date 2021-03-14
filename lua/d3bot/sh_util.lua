@@ -474,6 +474,25 @@ function UTIL.EdgeChainLoop(edges, flipDirection)
 	return sortedEdges, sortedVertices, nil
 end
 
+---Returns the average of all given points (vectors), or a null vector if there are no points.
+---@param points GVector[]
+---@return GVector | nil
+function UTIL.PointsAverage(points)
+	if #points == 0 then return nil end
+
+	local center
+	for _, point in ipairs(points) do
+		if not center then
+			center = Vector(point)
+		else
+			center:Add(point)
+		end
+	end
+	center:Div(#points)
+
+	return center
+end
+
 ---Calculates the normal of a polygon with the given corner points.
 ---This may fail if the polygon is not convex and/or flat.
 ---The resulting normal will be aligned to the winding direction of the vertices according to the right hand rule.
