@@ -93,7 +93,7 @@ function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 	-- Reset current path.
 	self.Path = {}
 
-	-- Store destination point faster path updates in the future.
+	-- Store destination point for faster path updates in the future.
 	self.DestPoint = destPoint
 
 	-- Define some variables for optimization.
@@ -102,7 +102,7 @@ function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 	local startPos, destPos = startPoint:GetPoint(), destPoint:GetPoint()
 
 	-- Data structures for pathfinding.
-	local entityData = {} -- Contains scores and other information about visited navmesh entities.
+	local entityDataList = {} -- Contains scores and other information about visited navmesh entities.
 	local closedList = {} -- List of entities that have been expanded.
 	local openList = PRIORITY_QUEUE:New() -- List of entities that have to be expanded.
 
@@ -118,9 +118,9 @@ function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 			--if iterCounter > 10000 then return ERROR:New("Exceeded maximum number of path reconstruction iterations") end
 			--iterCounter = iterCounter + 1
 
-			local entityInfo = entityData[entity]
-			if not entityInfo.From then break end
-			local pathFragment = entityInfo.PathFragment
+			local entityData = entityDataList[entity]
+			if not entityData.From then break end
+			local pathFragment = entityData.PathFragment
 
 			---@type D3botPATH_ELEMENT
 			local pathElement = {
@@ -130,7 +130,7 @@ function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 			}
 			table.insert(self.Path, pathElement)
 
-			entity = entityInfo.From
+			entity = entityData.From
 		end
 
 		return nil
@@ -147,7 +147,7 @@ function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 	---@param tentative_gScore number
 	local function enqueueEntity(pathFragment, tentative_gScore)
 		local fScore = tentative_gScore + heuristic(pathFragment.ToPos) -- Best guess as to how cheap a path can be that goes through this entity.
-		entityData[pathFragment.To] = {
+		entityDataList[pathFragment.To] = {
 			GScore = tentative_gScore, -- The cheapest path from start to this entity.
 			From = pathFragment.From, -- The previous entity for path reconstruction.
 			PathFragment = pathFragment, -- Reference to the path fragment from the navmesh entity for later use. Do not modify the content!
@@ -186,8 +186,8 @@ function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 		end
 
 		-- Store some variables of this entity for later use.
-		local entityInfo = entityData[entity]
-		local gScore = entityInfo.GScore
+		local entityData = entityDataList[entity]
+		local gScore = entityData.GScore
 		local entityPos = entity:GetCentroid()
 
 		---Get list of possible paths to take.
@@ -218,7 +218,7 @@ function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 				if locomotionHandler then
 
 					-- And check if the bot is able to walk to the next entity.
-					if not locomotionHandler.CanNavigate or locomotionHandler:CanNavigate(pathFragment, entityData) then
+					if not locomotionHandler.CanNavigate or locomotionHandler:CanNavigate(pathFragment, entityDataList) then
 
 						-- Calculate gScore for the neighbor entity.
 						local tentative_gScore
@@ -229,8 +229,8 @@ function PATH:GeneratePathBetweenPoints(startPoint, destPoint)
 						end
 
 						-- Check if the gScore is better than the previous score.
-						local neighborEntityInfo = entityData[neighborEntity]
-						if tentative_gScore < (neighborEntityInfo and neighborEntityInfo.GScore or math.huge) then
+						local neighborEntityData = entityDataList[neighborEntity]
+						if tentative_gScore < (neighborEntityData and neighborEntityData.GScore or math.huge) then
 
 							-- Enqueue neighbor entity.
 							enqueueEntity(pathFragment, tentative_gScore)
