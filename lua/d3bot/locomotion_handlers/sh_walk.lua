@@ -146,7 +146,7 @@ function THIS_LOCO_HANDLER:GetPathElementCache(index, pathElements)
 	-- Check if "To" is an edge or similar entity.
 	if v1 and v2 then
 		-- Flip direction of the two vertices, so that v1 is the "left" and v2 is the "right" one.
-		if (p2 - p1):Dot(pathRight) < 0 then
+		if (p2 - p1):Dot(pathRight) < 0 then -- BUG: This may give wrong results for edges that are colinear, use polygon winding if possible, as it's always counter clockwise
 			v1, v2, p1, p2 = v2, v1, p2, p1
 		end
 

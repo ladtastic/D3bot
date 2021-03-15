@@ -93,14 +93,14 @@ function THIS_EDIT_MODE:GeneratePath(navmesh, debugOutput)
 	for i = 1, iterations do
 		local err = self.Path:GeneratePathBetweenPoints(startPoint, destPoint)
 		if debugOutput and err then
-			LocalPlayer():ChatPrint(string.format("Pathfinding aborted: %s", err))
+			LocalPlayer():ChatPrint(string.format("Pathfinding aborted: %s.", err))
 			break
 		end
 	end
 	local endTime = SysTime()
 
 	if debugOutput then
-		LocalPlayer():ChatPrint(string.format("It took %f ms to generate the path", (endTime - startTime)*1000/iterations))
+		LocalPlayer():ChatPrint(string.format("It took %f ms to generate the path.", (endTime - startTime)*1000/iterations))
 	end
 end
 

@@ -151,6 +151,7 @@ function THIS_EDIT_MODE:PrimaryAttack(wep)
 		local polyError = NAV_POLYGON:VerifyVertices(self.TempPoints)
 		if polyError then
 			self.TempPoints = oldPoints
+			LocalPlayer():ChatPrint(string.format("Can't add point: %s", polyError))
 			wep:EmitSound("common/wpn_denyselect.wav")
 			return
 		end

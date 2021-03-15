@@ -507,6 +507,30 @@ function NAV_POLYGON:_GetLocomotionType()
 	return locType
 end
 
+---Returns whether the polygon contains the given vertices or not.
+---This basically checks if the given list is a subset of the vertices the polygon is made of.
+---@param vertices D3botNAV_VERTEX[]
+---@return boolean
+function NAV_POLYGON:ContainsVertices(vertices)
+	-- Do a stupid linear search for every vertex entity.
+	for _, vertex in ipairs(vertices) do
+		local found = false
+		for _, sVertex in ipairs(self.Vertices) do
+			if vertex == sVertex then
+				found = true
+				break
+			end
+		end
+		-- Vertex not found.
+		if not found then
+			return false
+		end
+	end
+
+	-- The list vertices is a subset of self.Vertices.
+	return true
+end
+
 ---Returns whether the polygon consists out of the given vertices or not.
 ---@param vertices D3botNAV_VERTEX[]
 ---@return boolean
@@ -692,7 +716,7 @@ end
 ---@param p GVector
 ---@return number
 function NAV_POLYGON:GetClosestDistanceSqr(p)
-	local selfP = self:GetClosestPointToPoint(p)
+	local selfP = self:GetClosestPointToPoint(p) -- TODO: Add way to stop calculation early by using the current minDist of GetClosestToPos
 	return (selfP - p):LengthSqr()
 end
 

@@ -453,13 +453,13 @@ function UTIL.EdgeChainLoop(edges, flipDirection)
 		local found = false
 		for i, edge in ipairs(originalEdges) do
 			if searchVertex == edge.Vertices[1] then
-				if found then return nil, nil, ERROR:New("Too many neighbor edges at %s", sortedEdges[#sortedEdges]) end
 				table.insert(sortedEdges, table.remove(originalEdges, i))
 				searchVertex, found = edge.Vertices[2], true
+				break
 			elseif searchVertex == edge.Vertices[2] then
-				if found then return nil, nil, ERROR:New("Too many neighbor edges at %s", sortedEdges[#sortedEdges]) end
 				table.insert(sortedEdges, table.remove(originalEdges, i))
 				searchVertex, found = edge.Vertices[1], true
+				break
 			end
 		end
 
@@ -469,7 +469,7 @@ function UTIL.EdgeChainLoop(edges, flipDirection)
 	until searchVertex == endVertex
 
 	if #originalEdges > 0 then
-		return nil, nil, ERROR:New("There are %d floating/unconnected edges", #originalEdges)
+		return nil, nil, ERROR:New("There are %d floating/unconnected/dangling edges", #originalEdges)
 	end
 
 	return sortedEdges, sortedVertices, nil
