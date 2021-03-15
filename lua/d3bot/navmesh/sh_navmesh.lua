@@ -206,25 +206,24 @@ function NAV_MESH:_GC()
 	end
 end
 
----Returns the nearest polygon/edge corner to the given point p with a radius of r.
----If no point is found, nil will be returned.
+---Returns the closest vertex to the given point p with a search radius of r.
+---If no vertex is found, nil will be returned.
 ---@param p GVector
 ---@param r number
----@return GVector | nil
-function NAV_MESH:GetNearestPoint(p, r)
+---@return D3botNAV_VERTEX | nil
+function NAV_MESH:GetClosestVertex(p, r)
 	-- Stupid linear search for the closest point.
-	-- Also, it will go over points several times, as some edges share points.
 	local minDistSqr = (r and r * r) or math.huge
-	local resultPoint
+	local resultVertex
 	for _, vertex in pairs(self.Vertices) do
 		local distSqr = p:DistToSqr(vertex:GetPoint())
 		if minDistSqr > distSqr then
 			minDistSqr = distSqr
-			resultPoint = vertex.Point
+			resultVertex = vertex
 		end
 	end
 
-	return resultPoint
+	return resultVertex
 end
 
 ---Returns any entity with the given ID, or nil if doesn't exist.

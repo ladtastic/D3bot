@@ -223,7 +223,7 @@ end
 ---@param p GVector
 ---@param r number
 ---@return GVector | nil @Resulting closest point, or nil.
-function UTIL.GetNearestPoint(points, p, r)
+function UTIL.GetClosestPoint(points, p, r)
 	-- Stupid linear search for the closest point.
 	local minDistSqr = (r and r * r) or math.huge
 	local resultPoint
@@ -364,19 +364,20 @@ function UTIL.GetClosestToPos(pos, ...)
 	return minEntity, minDist
 end
 
----Returns pos snapped to the closest (in proximity range) snapping point of a given navmesh or map geometry.
----Additionally this will round the vector to one source engine unit.
+---Returns pos snapped to the closest snapping point (in search radius) of a given navmesh or map geometry.
+---Additionally this will round (any unsnapped) point to one source engine unit.
 ---The result is a snapped point and a bool stating if the pos got snapped or not.
 ---@param navmesh D3botNAV_MESH
 ---@param mapgeometry D3botMAPGEOMETRY
 ---@param pos GVector
----@param proximity number
+---@param proximity number @Search radius.
 ---@return GVector pos
 ---@return boolean snapped
 function UTIL.GetSnappedPosition(navmesh, mapgeometry, pos, proximity)
-	local posGeometry = mapgeometry and mapgeometry:GetNearestPoint(pos, proximity)
-	local posNavmesh = navmesh and navmesh:GetNearestPoint(pos, proximity)
-	local snapped = UTIL.GetNearestPoint({posGeometry, posNavmesh}, pos)
+	local posGeometry = mapgeometry and mapgeometry:GetClosestPoint(pos, proximity)
+	local vertexNavmesh = navmesh and navmesh:GetClosestVertex(pos, proximity)
+	local posNavmesh = vertexNavmesh and vertexNavmesh:GetPoint() or nil
+	local snapped = UTIL.GetClosestPoint({posGeometry, posNavmesh}, pos)
 	return UTIL.RoundVector(snapped or pos), snapped ~= nil
 end
 

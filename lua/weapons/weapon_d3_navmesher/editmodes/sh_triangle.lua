@@ -27,6 +27,11 @@ local NAV_SWEP = D3bot.NavSWEP
 local EDIT_MODES = D3bot.NavSWEP.EditModes
 local UI = D3bot.NavSWEP.UI
 
+-- Predefine some local constants for optimization.
+local COLOR_POLYGON_HIGHLIGHT_HOVER = Color(255, 0, 0, 127)
+local COLOR_EDGE_HIGHLIGHT_HOVER = Color(255, 255, 255, 127)
+
+-- Edit mode key.
 local key = "TriangleAddRemove"
 
 -- Add edit mode to list.
@@ -74,7 +79,7 @@ function THIS_EDIT_MODE:PrimaryAttack(wep)
 	-- In this case the navmesh will be created when the first polygon gets created.
 	local navmesh = NAV_MAIN:GetNavmesh()
 
-	-- Get map line trace result and navmesh tracing ray.
+	-- Get world trace result and navmesh tracing ray.
 	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())
 
 	-- An edge entity that the player points on.
@@ -131,7 +136,7 @@ function THIS_EDIT_MODE:SecondaryAttack(wep)
 		return
 	end
 
-	-- Get map line trace result and navmesh tracing ray.
+	-- Get world trace result and navmesh tracing ray.
 	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())
 
 	local tracedPolygon = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Polygons)
@@ -166,7 +171,7 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm, weapon, ply)
 	-- Polygon points that are used to draw a ghost of the current polygon.
 	local polygonPoints = {unpack(self.TempPoints)}
 
-	-- Get map line trace result and navmesh tracing ray.
+	-- Get world trace result and navmesh tracing ray.
 	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())
 
 	-- Setup rendering context.
@@ -187,9 +192,9 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm, weapon, ply)
 		-- Trace closest edge.
 		tracedEdge = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Edges)
 
-		-- Set highlighted state of traced element.
+		-- Highlight edge with specific color.
 		if tracedEdge then
-			tracedEdge.UI.Highlighted = true
+			tracedEdge.UI.HighlightColor = COLOR_EDGE_HIGHLIGHT_HOVER
 			local eP1, eP2 = unpack(tracedEdge:GetPoints())
 			table.insert(polygonPoints, eP1)
 			table.insert(polygonPoints, eP2)
@@ -204,9 +209,9 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm, weapon, ply)
 	-- Highlighting of navmesh polygons.
 	if navmesh then
 		local tracedPolygon = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Polygons)
-		-- Set highlighted state of traced element.
+		-- Highlight polygon with specific color.
 		if tracedPolygon then
-			tracedPolygon.UI.Highlighted = true
+			tracedPolygon.UI.HighlightColor = COLOR_POLYGON_HIGHLIGHT_HOVER
 		end
 	end
 

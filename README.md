@@ -51,6 +51,7 @@ There will be importers/converters for the old navmeshes at some later point in 
 - [ ] Add edit tool for merging and splitting
 - [ ] Navmesh groups (to apply parameters to several navmesh elements). But polygons should solve that problem good enough
 - [ ] Internationalization
+- [ ] Fix pathfinding along long edges (Idea: "Split" long edges and use a point near the corners as virtual "ToPos")
 - [ ] Improve navmesh and path drawing style (Customizable colors, less eye strain inducing shapes and default colors)
 - [ ] Navmesh entity selection optimization
 - [ ] Ignore navmesh elements (For drawing and selection) that are not visible (Coroutine will filter and select navmesh elements in the background) (Option to enable/disable in UI)

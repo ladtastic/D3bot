@@ -28,6 +28,11 @@ local NAV_SWEP = D3bot.NavSWEP
 local EDIT_MODES = D3bot.NavSWEP.EditModes
 local UI = D3bot.NavSWEP.UI
 
+-- Predefine some local constants for optimization.
+local COLOR_AIRCONNECTION_HIGHLIGHT_HOVER = Color(255, 255, 255, 255)
+local COLOR_EDGE_HIGHLIGHT_HOVER = Color(255, 255, 255, 127)
+
+-- Edit mode key.
 local key = "AirConnectionAddRemove"
 
 -- Add edit mode to list.
@@ -78,7 +83,7 @@ function THIS_EDIT_MODE:PrimaryAttack(wep)
 		return
 	end
 
-	-- Get map line trace result and navmesh tracing ray.
+	-- Get world trace result and navmesh tracing ray.
 	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())
 
 	-- Trace closest edge and add it to temporary list.
@@ -118,7 +123,7 @@ function THIS_EDIT_MODE:SecondaryAttack(wep)
 		return
 	end
 
-	-- Get map line trace result and navmesh tracing ray.
+	-- Get world trace result and navmesh tracing ray.
 	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())
 
 	local tracedAirConnection = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.AirConnections)
@@ -153,7 +158,7 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm, weapon, ply)
 	-- Make a copy of the table.
 	local tempEdges = {unpack(self.TempEdges)}
 
-	-- Get map line trace result and navmesh tracing ray.
+	-- Get world trace result and navmesh tracing ray.
 	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())
 
 	-- Setup rendering context.
@@ -165,16 +170,16 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm, weapon, ply)
 	if #tempEdges >= 1 then
 		table.insert(tempEdges, tracedEdge)
 	end
-	-- Highlight navmesh edge.
+	-- Highlight navmesh edge with specific color.
 	if tracedEdge then
-		tracedEdge.UI.Highlighted = true
+		tracedEdge.UI.HighlightColor = COLOR_EDGE_HIGHLIGHT_HOVER
 	end
 
 	-- Highlighting of navmesh air connections.
 	local airConnection = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.AirConnections)
-	-- Set highlighted state of traced element.
+	-- Highlight air connection with specific color.
 	if airConnection then
-		airConnection.UI.Highlighted = true
+		airConnection.UI.HighlightColor = COLOR_AIRCONNECTION_HIGHLIGHT_HOVER
 	end
 
 	-- Draw client side navmesh.

@@ -22,7 +22,6 @@ local RENDER_UTIL = D3bot.RenderUtil
 local ERROR = D3bot.ERROR
 
 -- Predefine some local constants for optimization.
-local COLOR_POLYGON_HIGHLIGHTED = Color(255, 0, 0, 127)
 local COLOR_POLYGON_NORMAL = Color(255, 255, 255, 255)
 local COLOR_POLYGON_GROUND = Color(255, 0, 0, 31)
 local COLOR_POLYGON_OTHER = Color(255, 255, 0, 31)
@@ -747,10 +746,11 @@ function NAV_POLYGON:Render3D()
 	--render.DrawSphere(clampedPos, 10, 6, 6, Color(255, 255, 255, 127))
 
 	if cornerPoints then
-		if ui.Highlighted then
-			ui.Highlighted = nil
+		if ui.HighlightColor then
+			local color = ui.HighlightColor
+			ui.HighlightColor = nil
 			cam.IgnoreZ(true)
-			RENDER_UTIL.DrawPolygon2Sided(cornerPoints, COLOR_POLYGON_HIGHLIGHTED)
+			RENDER_UTIL.DrawPolygon2Sided(cornerPoints, color)
 			cam.IgnoreZ(false)
 
 			render.DrawLine(centroid, centroid + normal * 30, COLOR_POLYGON_NORMAL, true)

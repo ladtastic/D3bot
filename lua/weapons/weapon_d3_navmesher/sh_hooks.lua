@@ -25,7 +25,7 @@ local RELOAD_MENU = D3bot.NavSWEP.UI.ReloadMenu
 ---Called when the weapon entity is created.
 function SWEP:Initialize()
 	-- Define starting edit mode.
-	self:ChangeEditMode("TriangleAddRemove")
+	self:ChangeEditMode("PolygonAddRemove")
 end
 
 ---Called when the swep is about to be removed.

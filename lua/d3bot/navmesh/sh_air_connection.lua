@@ -21,7 +21,6 @@ local RENDER_UTIL = D3bot.RenderUtil
 local ERROR = D3bot.ERROR
 
 -- Predefine some local constants for optimization.
-local COLOR_ARROW_HIGHLIGHTED = Color(255, 255, 255, 255)
 local COLOR_ARROW = Color(255, 255, 0, 127)
 local VECTOR_UP = Vector(0, 0, 1)
 local VECTOR_DOWN = Vector(0, 0, -1)
@@ -404,16 +403,16 @@ function NAV_AIR_CONNECTION:Render3D()
 	local center = cache.Centroid
 	local color = COLOR_ARROW
 
-	if ui.Highlighted then
-		color = COLOR_ARROW_HIGHLIGHTED
+	if ui.HighlightColor then
+		color = ui.HighlightColor
 		cam.IgnoreZ(true)
 	end
 
 	RENDER_UTIL.Draw2DArrow2SidedRotatingPos(center, p1, self.DisplayRadius*6, -0.5, color)
 	RENDER_UTIL.Draw2DArrow2SidedRotatingPos(center, p2, self.DisplayRadius*6, 0.5, color)
 
-	if ui.Highlighted then
-		ui.Highlighted = nil
+	if ui.HighlightColor then
+		ui.HighlightColor = nil
 		cam.IgnoreZ(false)
 	end
 end

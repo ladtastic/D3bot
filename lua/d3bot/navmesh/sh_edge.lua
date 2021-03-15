@@ -21,7 +21,6 @@ local UTIL = D3bot.Util
 local ERROR = D3bot.ERROR
 
 -- Predefine some local constants for optimization.
-local COLOR_EDGE_HIGHLIGHTED = Color(255, 255, 255, 127)
 local COLOR_EDGE_WALLED = Color(255, 255, 0, 127)
 local COLOR_EDGE = Color(255, 0, 0, 255)
 local VECTOR_UP = Vector(0, 0, 1)
@@ -508,10 +507,11 @@ function NAV_EDGE:Render3D()
 	local ui = self.UI
 	local p1, p2 = unpack(self:GetPoints())
 
-	if ui.Highlighted then
-		ui.Highlighted = nil
+	if ui.HighlightColor then
+		local color = ui.HighlightColor
+		ui.HighlightColor = nil
 		cam.IgnoreZ(true)
-		render.DrawBeam(p1, p2, self.DisplayRadius*2, 0, 1, COLOR_EDGE_HIGHLIGHTED)
+		render.DrawBeam(p1, p2, self.DisplayRadius*2, 0, 1, color)
 		cam.IgnoreZ(false)
 	else
 		render.DrawLine(p1, p2, COLOR_EDGE, true)

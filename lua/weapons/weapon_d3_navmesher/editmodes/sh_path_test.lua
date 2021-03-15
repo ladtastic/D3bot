@@ -119,7 +119,7 @@ function THIS_EDIT_MODE:PrimaryAttack(wep)
 		return
 	end
 
-	-- Get map line trace result and navmesh tracing ray.
+	-- Get world trace result and navmesh tracing ray.
 	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())
 
 	-- Set start pos.
@@ -147,7 +147,7 @@ function THIS_EDIT_MODE:SecondaryAttack(wep)
 		return
 	end
 
-	-- Get map line trace result and navmesh tracing ray.
+	-- Get world trace result and navmesh tracing ray.
 	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())
 
 	-- Set end pos.
@@ -176,7 +176,7 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm, weapon, ply)
 	local navmesh = NAV_MAIN:GetNavmesh()
 	if not navmesh then return end
 
-	-- Get map line trace result and navmesh tracing ray.
+	-- Get world trace result and navmesh tracing ray.
 	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())
 
 	-- Setup rendering context.

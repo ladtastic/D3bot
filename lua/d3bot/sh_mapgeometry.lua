@@ -42,12 +42,12 @@ function MAPGEOMETRY:GetCache()
 	return cache
 end
 
----Returns the nearest corner of any world surface to the given point p with a search radius of r.
+---Returns the closest corner of any world surface to the given point p with a search radius of r.
 ---@param p GVector
 ---@param r number
 ---@return GVector | nil @Result is either a vector or nil.
-function MAPGEOMETRY:GetNearestPoint(p, r)
+function MAPGEOMETRY:GetClosestPoint(p, r)
 	local cache = self:GetCache()
 
-	return UTIL.GetNearestPoint(cache.Vertices, p, r)
+	return UTIL.GetClosestPoint(cache.Vertices, p, r)
 end

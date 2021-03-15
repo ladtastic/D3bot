@@ -19,6 +19,12 @@ local D3bot = D3bot
 local UTIL = D3bot.Util
 local ERROR = D3bot.ERROR
 
+-- Predefine some local constants for optimization.
+local COLOR_VERTEX_WALLED = Color(255, 255, 0, 255)
+local COLOR_VERTEX = Color(255, 0, 0, 255)
+local VECTOR_UP = Vector(0, 0, 1)
+local VECTOR_DOWN = Vector(0, 0, -1)
+
 ------------------------------------------------------
 --		Static
 ------------------------------------------------------
@@ -244,16 +250,17 @@ function NAV_VERTEX:Render3D()
 	local p = self.Point
 	local cache = self:GetCache()
 
-	if ui.Highlighted then
-		ui.Highlighted = nil
+	if ui.HighlightColor then
+		local color = ui.HighlightColor
+		ui.HighlightColor = nil
 		cam.IgnoreZ(true)
-		render.DrawSphere(p, self.DisplayRadius, 6, 6, Color(255, 255, 255, 127))
+		render.DrawSphere(p, self.DisplayRadius, 6, 6, color)
 		cam.IgnoreZ(false)
 	else
 		if cache.IsWalled then
-			render.DrawSphere(p, self.DisplayRadius, 6, 6, Color(255, 255, 0, 255))
+			render.DrawSphere(p, self.DisplayRadius, 6, 6, COLOR_VERTEX_WALLED)
 		else
-			render.DrawSphere(p, self.DisplayRadius, 6, 6, Color(255, 0, 0, 255))
+			render.DrawSphere(p, self.DisplayRadius, 6, 6, COLOR_VERTEX)
 		end
 	end
 end

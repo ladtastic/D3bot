@@ -27,6 +27,10 @@ local NAV_SWEP = D3bot.NavSWEP
 local EDIT_MODES = D3bot.NavSWEP.EditModes
 local UI = D3bot.NavSWEP.UI
 
+-- Predefine some local constants for optimization.
+local COLOR_POLYGON_HIGHLIGHT_HOVER = Color(255, 0, 0, 127)
+
+-- Edit mode key.
 local key = "FlipNormal"
 
 -- Add edit mode to list.
@@ -74,7 +78,7 @@ function THIS_EDIT_MODE:PrimaryAttack(wep)
 		return
 	end
 
-	-- Get map line trace result and navmesh tracing ray.
+	-- Get world trace result and navmesh tracing ray.
 	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())
 
 	-- Trace polygon.
@@ -105,7 +109,7 @@ function THIS_EDIT_MODE:SecondaryAttack(wep)
 		return
 	end
 
-	-- Get map line trace result and navmesh tracing ray.
+	-- Get world trace result and navmesh tracing ray.
 	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())
 
 	-- Trace polygon.
@@ -137,14 +141,14 @@ function THIS_EDIT_MODE:PreDrawViewModel(wep, vm, weapon, ply)
 	local navmesh = NAV_MAIN:GetNavmesh()
 	if not navmesh then return end
 
-	-- Get map line trace result and navmesh tracing ray.
+	-- Get world trace result and navmesh tracing ray.
 	local tr, trRes, aimOrigin, aimVec = UTIL.SWEPLineTrace(LocalPlayer())
 
 	-- Highlighting of navmesh polygons.
 	local tracedPolygon = UTIL.GetClosestIntersectingWithRay(aimOrigin, aimVec, navmesh.Polygons)
-	-- Set highlighted state of traced element.
+	-- Highlight polygon with specific color.
 	if tracedPolygon then
-		tracedPolygon.UI.Highlighted = true
+		tracedPolygon.UI.HighlightColor = COLOR_POLYGON_HIGHLIGHT_HOVER
 	end
 
 	-- Setup rendering context.
