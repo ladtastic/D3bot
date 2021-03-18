@@ -261,10 +261,7 @@ end
 function THIS_EDIT_MODE:PreDrawViewModel(wep, vm, weapon, ply)
 	-- If there is no navmesh, stop.
 	local navmesh = NAV_MAIN:GetNavmesh()
-	if not navmesh then
-		wep:EmitSound("buttons/button1.wav")
-		return
-	end
+	if not navmesh then return end
 
 	-- Copy of temporary vertices used to split polygons.
 	local tempVertices = {unpack(self.TempVertices)}
