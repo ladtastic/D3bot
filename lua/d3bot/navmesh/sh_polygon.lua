@@ -700,7 +700,7 @@ function NAV_POLYGON:GetClosestPointToPoint(p)
 
 	-- Point is outside, maxIndex is the index of the edge that has the largest distance to the point.
 	-- Find the closest point on the edge that is also clamped to the edge length.
-	if maxIndex then
+	if maxIndex then -- BUG: For colinear edges this may use the wrong edge to clamp. Solution: Combine colinear edges into a single edge (cached)
 		local edge = self.Edges[maxIndex]
 		local eP1 = edge:GetPoints()[1]
 		local edgeVector = edge:GetVector()
