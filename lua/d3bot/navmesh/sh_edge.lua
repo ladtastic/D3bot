@@ -306,10 +306,10 @@ end
 ---Internal method.
 function NAV_EDGE:_Delete()
 	-- Delete the polygons and air connections that are connected.
-	for _, polygon in ipairs(self.Polygons) do
+	for _, polygon in ipairs({unpack(self.Polygons)}) do -- Need to copy the table, as it is modified when elements are deleted.
 		polygon:_Delete()
 	end
-	for _, airConnection in ipairs(self.AirConnections) do
+	for _, airConnection in ipairs({unpack(self.AirConnections)}) do -- Need to copy the table, as it is modified when elements are deleted.
 		airConnection:_Delete()
 	end
 

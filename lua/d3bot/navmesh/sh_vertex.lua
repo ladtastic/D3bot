@@ -179,7 +179,7 @@ end
 ---Internal method.
 function NAV_VERTEX:_Delete()
 	-- Delete any edges that use this vertex.
-	for _, edge in ipairs(self.Edges) do
+	for _, edge in ipairs({unpack(self.Edges)}) do -- Need to copy the table, as it is modified when elements are deleted.
 		edge:_Delete()
 	end
 
