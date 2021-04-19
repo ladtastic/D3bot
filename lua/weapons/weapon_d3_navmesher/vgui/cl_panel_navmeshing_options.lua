@@ -31,12 +31,14 @@ function PANEL:Init()
 	self:SetTitle("D3bot navmeshing options")
 	self:SetSizable(true)
 	self:SetDraggable(true)
+	self:SetMouseInputEnabled(true)
+	self:SetKeyboardInputEnabled(true)
 	self:ShowCloseButton(false)
 	self:SetMinimumSize(200, 300)
 
 	-- Restore its previous size and pos.
 	self:SetCookieName(D3bot.VGUIPrefix .. "NavmeshingOptions")
-	local x, y, width, height = self:GetCookieNumber("x", 100), self:GetCookieNumber("y", 100), self:GetCookieNumber("width", 300), self:GetCookieNumber("height", 400)
+	local x, y, width, height = self:GetCookieNumber("x", 400), self:GetCookieNumber("y", 400), self:GetCookieNumber("width", 300), self:GetCookieNumber("height", 400)
 	self:SetPos(x, y)
 	self:SetSize(width, height)
 

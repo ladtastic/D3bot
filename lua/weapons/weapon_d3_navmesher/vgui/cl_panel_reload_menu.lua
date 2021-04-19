@@ -25,6 +25,7 @@ function PANEL:Init()
 	self:Dock(FILL)
 	self:SetWorldClicker(true)
 	self:SetVisible(false)
+	self:MakePopup()
 
 	-- Create navmeshing options window.
 	local dNavmeshingOptions = vgui.Create(D3bot.VGUIPrefix .. "NavmeshingOptions", self)
@@ -34,13 +35,13 @@ end
 
 function PANEL:Open()
 	self:SetVisible(true)
-	gui.EnableScreenClicker(true)
+	--gui.EnableScreenClicker(true)
 	RestoreCursorPosition()
 end
 
 function PANEL:Close()
 	RememberCursorPosition()
-	gui.EnableScreenClicker(false)
+	--gui.EnableScreenClicker(false)
 	self:SetVisible(false)
 end
 
