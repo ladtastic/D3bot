@@ -66,6 +66,7 @@ UTIL.IncludeDirectory("weapons/weapon_d3_navmesher/editmodes/", "*.lua")
 
 -- UI stuff.
 UTIL.IncludeRealm("", "cl_viewscreen.lua")
+UTIL.IncludeRealm("vgui/", "cl_panel_navmesh_entity_properties.lua")
 UTIL.IncludeRealm("vgui/", "cl_panel_navmeshing_options.lua")
 UTIL.IncludeRealm("vgui/", "cl_panel_reload_menu.lua")
 UTIL.IncludeRealm("vgui/", "cl_ui_reload_menu.lua")

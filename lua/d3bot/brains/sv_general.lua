@@ -70,7 +70,7 @@ function THIS_BRAIN:_ThinkCoroutine(bot, mem)
 	ACTIONS.DebugCommands(bot, mem, abilities)
 
 	-- Get some target entity.
-	local targetEnt = player.GetHumans()[1]
+	local targetEnt = table.Random(player.GetHumans())
 	if not IsValid(targetEnt) then coroutine.wait(2) return end
 
 	-- Go to target.
